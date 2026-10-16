@@ -1,0 +1,1 @@
+print("Advent Calendar starting...")

@@ -1,0 +1,20 @@
+# Local operating system and editor files
+.DS_Store
+.idea/
+*.iml
+*.swp
+
+# Python / MicroPython development artifacts
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+
+# Flutter artifacts (platform-specific rules also live in app/.gitignore)
+/app/.dart_tool/
+/app/.flutter-plugins-dependencies
+/app/build/
+/app/coverage/

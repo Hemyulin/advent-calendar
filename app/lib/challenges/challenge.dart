@@ -1,4 +1,4 @@
-/// Supported challenge categories; implementations will be added separately.
+/// Shared categories for daily challenge content.
 enum ChallengeType { puzzle, quiz, questionnaire, minigame }
 
 /// Shared identity for challenge definitions, independent of UI and hardware.

@@ -17,14 +17,18 @@ class CalendarDay {
   bool get isAvailable => state != DayState.future;
 }
 
-/// Availability always takes priority over mock completion data.
-List<CalendarDay> calendarDays(DateTime now, Set<String> completedIds) {
+/// Date restrictions apply unless the explicit design preview is enabled.
+List<CalendarDay> calendarDays(
+  DateTime now,
+  Set<String> completedIds, {
+  bool unlockAll = false,
+}) {
   final today = DateTime(now.year, now.month, now.day);
   return List.generate(24, (index) {
     final day = index + 1;
     final content = DailyContent(day: day, challengeId: 'day-$day');
     final date = DateTime(now.year, 12, day);
-    final state = date.isAfter(today)
+    final state = date.isAfter(today) && !unlockAll
         ? DayState.future
         : completedIds.contains(content.challengeId)
         ? DayState.completed

@@ -4,7 +4,7 @@ import 'progress_repository.dart';
 class MockProgressRepository implements ProgressRepository {
   MockProgressRepository({Set<String>? completedIds})
     : _completedIds = {
-        ...(completedIds ?? {'day-1', 'day-3', 'day-5'}),
+        ...(completedIds ?? {'day-3', 'day-5'}),
       };
 
   final Set<String> _completedIds;

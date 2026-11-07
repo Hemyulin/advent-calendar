@@ -6,30 +6,107 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   Future<void> start(WidgetTester tester, DateTime date) async {
-    await tester.pumpWidget(AdventCalendarApp(now: date));
+    await tester.pumpWidget(
+      AdventCalendarApp(now: date, previewAllDays: false),
+    );
     await tester.pumpAndSettle();
   }
 
   testWidgets('before December all doors are locked', (tester) async {
     await start(tester, DateTime(2026, 11, 4));
     expect(find.text('Dein Adventskalender'), findsOneWidget);
-    expect(find.text('Öffnet am 1. Dezember'), findsOneWidget);
+    expect(find.text('Ab 1. Dezember'), findsOneWidget);
     await tester.tap(find.byType(IllustratedDoor));
     await tester.pumpAndSettle();
     expect(find.byType(ChallengeScreen), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('preview unlocks the entire carousel before December', (
+    tester,
+  ) async {
+    await tester.pumpWidget(AdventCalendarApp(now: DateTime(2026, 11, 4)));
+    await tester.pumpAndSettle();
+    expect(find.text('Vorschau'), findsOneWidget);
+    expect(
+      tester
+          .widget<IllustratedDoor>(find.byType(IllustratedDoor))
+          .day
+          .isAvailable,
+      isTrue,
+    );
+    await tester.scrollUntilVisible(
+      find.bySemanticsLabel('24. Dezember, Noch offen'),
+      400,
+      scrollable: find.descendant(
+        of: find.byType(ListView),
+        matching: find.byType(Scrollable),
+      ),
+    );
+    await tester.tap(find.bySemanticsLabel('24. Dezember, Noch offen'));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<IllustratedDoor>(find.byType(IllustratedDoor)).day.number,
+      24,
+    );
+    await tester.tap(find.byType(IllustratedDoor));
+    await tester.pumpAndSettle();
+    expect(find.text('Türchen 24'), findsOneWidget);
+  });
+
+  testWidgets(
+    'door swings before navigation, ignores repeated taps, and resets',
+    (tester) async {
+      await start(tester, DateTime(2026, 12, 8));
+      await tester.tap(find.byType(IllustratedDoor));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+      expect(find.byType(ChallengeScreen), findsNothing);
+      final transform = find.descendant(
+        of: find.byType(IllustratedDoor),
+        matching: find.byType(Transform),
+      );
+      expect(
+        tester.widget<Transform>(transform).transform.storage[0],
+        lessThan(0.99),
+      );
+      await tester.tap(find.byType(IllustratedDoor));
+      await tester.pumpAndSettle();
+      expect(find.byType(ChallengeScreen), findsOneWidget);
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<Transform>(transform).transform.storage[0],
+        closeTo(1, 0.001),
+      );
+      await tester.tap(find.byType(IllustratedDoor));
+      await tester.pumpAndSettle();
+      expect(find.text('Türchen 8'), findsOneWidget);
+    },
+  );
+
+  testWidgets('reduced motion opens without a door swing', (tester) async {
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+    await start(tester, DateTime(2026, 12, 8));
+    await tester.tap(find.byType(IllustratedDoor));
+    await tester.pump();
+    await tester.pump();
+    expect(find.byType(ChallengeScreen), findsOneWidget);
+    await tester.pumpAndSettle();
+  });
+
   testWidgets('today opens a German placeholder and can return', (
     tester,
   ) async {
     await start(tester, DateTime(2026, 12, 8));
-    expect(find.text('Dein Moment für heute'), findsOneWidget);
+    expect(find.text('Heute'), findsOneWidget);
     await tester.tap(find.byType(IllustratedDoor));
     await tester.pumpAndSettle();
     expect(find.text('Türchen 8'), findsOneWidget);
     expect(find.byTooltip('Zurück'), findsOneWidget);
-    await tester.tap(find.text('Zurück zum Kalender'));
+    await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
     expect(find.byType(IllustratedDoor), findsOneWidget);
   });
@@ -40,15 +117,16 @@ void main() {
     await start(tester, DateTime(2026, 12, 4));
     await tester.tap(find.bySemanticsLabel('2. Dezember, Noch offen'));
     await tester.pumpAndSettle();
-    expect(find.text('Ein Türchen wartet noch auf dich'), findsOneWidget);
+    expect(find.text('2. Dezember'), findsOneWidget);
     await tester.tap(find.byType(IllustratedDoor));
     await tester.pumpAndSettle();
-    expect(find.text('Türchen 2'), findsOneWidget);
-    await tester.tap(find.text('Zurück zum Kalender'));
+    expect(find.text('Paare finden'), findsOneWidget);
+    await tester.ensureVisible(find.byType(BackButton));
+    await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
     await tester.tap(find.bySemanticsLabel('3. Dezember, Geschafft'));
     await tester.pumpAndSettle();
-    expect(find.text('Schon geöffnet. Noch einmal entdecken?'), findsOneWidget);
+    expect(find.text('3. Dezember'), findsOneWidget);
     await tester.tap(find.bySemanticsLabel('5. Dezember, Gesperrt'));
     await tester.pumpAndSettle();
     expect(
@@ -57,11 +135,8 @@ void main() {
     );
     await tester.tap(find.byType(IllustratedDoor));
     await tester.pumpAndSettle();
-    expect(find.text('Türchen 3'), findsOneWidget);
-    expect(
-      find.text('Bereits geschafft · jederzeit wieder entdecken'),
-      findsOneWidget,
-    );
+    expect(find.text('Kugellabyrinth'), findsOneWidget);
+    expect(find.byTooltip('Bereits geschafft'), findsOneWidget);
   });
 
   testWidgets('carousel scrolls to day 24', (tester) async {
@@ -83,10 +158,9 @@ void main() {
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
       await start(tester, DateTime(2026, 12, 8));
       expect(tester.takeException(), isNull);
-      await tester.scrollUntilVisible(
-        find.byType(IllustratedDoor),
-        100,
-        scrollable: find.byType(Scrollable).first,
+      expect(
+        tester.getRect(find.byType(IllustratedDoor)).bottom,
+        lessThanOrEqualTo(568),
       );
       await tester.tap(find.byType(IllustratedDoor));
       await tester.pumpAndSettle();

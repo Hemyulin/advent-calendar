@@ -4,6 +4,21 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test(
+    'explicit preview unlocks every day without completing unsolved days',
+    () {
+      final days = calendarDays(DateTime(2026, 11, 4), {
+        'day-1',
+      }, unlockAll: true);
+      expect(days, hasLength(24));
+      expect(days.every((day) => day.isAvailable), isTrue);
+      expect(days.first.state, DayState.completed);
+      expect(
+        days.skip(1).every((day) => day.state == DayState.available),
+        isTrue,
+      );
+    },
+  );
+  test(
     'all 24 days are locked before December, including mock completions',
     () {
       final days = calendarDays(DateTime(2026, 11, 30), {'day-1'});

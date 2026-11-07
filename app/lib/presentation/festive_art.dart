@@ -4,13 +4,23 @@ import 'package:flutter/material.dart';
 
 import 'calendar_style.dart';
 
-enum DoorMotif { reindeer, hat, present, candyCane, mitten, tree, bell, star }
+enum DoorMotif {
+  reindeer,
+  hat,
+  present,
+  candyCane,
+  mitten,
+  tree,
+  bell,
+  star,
+  boot,
+}
 
-/// Eight little illustrations and three colour rotations give all 24 days
-/// their own combination, without image assets or downloaded fonts.
+/// Storybook illustrations and rotating colours give the days their own
+/// character, with a special Nikolaus boot for day six.
 class DoorDesign {
   DoorDesign.forDay(int day)
-    : motif = DoorMotif.values[(day - 1) % 8],
+    : motif = day == 6 ? DoorMotif.boot : DoorMotif.values[(day - 1) % 8],
       color = _colors[((day - 1) % 8 + (day - 1) ~/ 8) % _colors.length];
 
   static const _colors = [
@@ -235,6 +245,23 @@ void paintOrnament(Canvas canvas, DoorMotif motif) {
         red,
       );
       line(const Offset(36, 46), const Offset(35, 58), cream, 3);
+    case DoorMotif.boot:
+      path(
+        Path()
+          ..moveTo(27, 22)
+          ..lineTo(56, 22)
+          ..lineTo(57, 57)
+          ..cubicTo(91, 54, 93, 83, 77, 86)
+          ..lineTo(24, 86)
+          ..quadraticBezierTo(17, 82, 23, 67)
+          ..close(),
+        red,
+      );
+      box(const Rect.fromLTWH(23, 17, 37, 14), cream, 4);
+      box(const Rect.fromLTWH(23, 80, 58, 8), gold, 3);
+      line(const Offset(34, 43), const Offset(49, 47), cream, 2);
+      line(const Offset(34, 54), const Offset(49, 58), cream, 2);
+      paintStar(canvas, const Offset(76, 28), 9, gold);
     case DoorMotif.star:
       paintStar(canvas, const Offset(50, 49), 37, gold);
       paintStar(canvas, const Offset(50, 49), 25, const Color(0xFFFFDB85));

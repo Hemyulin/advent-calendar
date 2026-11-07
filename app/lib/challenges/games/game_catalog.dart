@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../content/calendar_day.dart';
 import '../../presentation/challenge_screen.dart';
 import '../completion.dart';
+import '../cookies/cookie_game.dart';
+import '../cookies/cookie_screen.dart';
 import '../bells/bells_game.dart';
 import '../bells/bells_screen.dart';
 import '../chimney/chimney_game.dart';
@@ -36,6 +38,11 @@ enum Minigame {
     'Weihnachtsglocken',
     'Lausche und lass die Glocken erklingen.',
     Icons.notifications_active_outlined,
+  ),
+  cookies(
+    'Plätzchen ausstechen',
+    'Folge der Form und triff den richtigen Moment.',
+    Icons.cookie_outlined,
   ),
   shoe(
     'Nikolausstiefel',
@@ -77,6 +84,11 @@ Widget buildMinigame(
     alreadyCompleted: alreadyCompleted,
     previewControls: developmentPreview,
   ),
+  Minigame.cookies => CookieScreen(
+    level: CookieLevel.forDifficulty(difficulty),
+    onComplete: onComplete,
+    alreadyCompleted: alreadyCompleted,
+  ),
   Minigame.shoe => ShoeScreen(
     level: ShoeLevel.forDifficulty(difficulty),
     onComplete: onComplete,
@@ -98,6 +110,7 @@ Widget buildDailyChallenge(CalendarDay day, ChallengeCompletion onComplete) {
     4 => Minigame.chimney,
     5 => Minigame.bells,
     6 => Minigame.shoe,
+    7 => Minigame.cookies,
     _ => null,
   };
   return game == null

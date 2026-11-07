@@ -10,6 +10,7 @@ Day 1 is the one-button tutorial. The following daily assignments are defined in
 | 4 | Rettet den Weihnachtsmann! | Klassisch |
 | 5 | Weihnachtsglocken | Klassisch |
 | 6 | Nikolausstiefel | Klassisch |
+| 7 | Plätzchen ausstechen | Klassisch |
 
 All other days keep their placeholders. The sample repository still marks days
 3 and 5 as complete so replay can be tried. Progress stays in memory and resets
@@ -43,6 +44,7 @@ To hide the menu, use `--dart-define=SHOW_GAME_PREVIEW=false`.
 | Maze | 4×4, 1 pit, 8 lives | 5×5, 2 pits, 6 lives | 6×6, 3 pits, 4 lives |
 | Chimney | 3×3, 12 s preparation, 1.5 s/tile | 4×4, 10 s preparation, 1.1 s/tile | 5×5, 10 s preparation, 0.9 s/tile |
 | Bells | 4–8 notes, five melodies | 4–10 notes, six rounds | 4–10 notes, seven rounds |
+| Cookie cutting | Star, 6 points, 1.3 s window | Tree, 9 points, 0.8 s window | Snowflake, 12 points, 0.46 s window |
 | Shoe | Broad brush, light mud | Regular brush, thick mud | Smaller brush, stubborn mud |
 
 `MemoryLevel`, `MazeCourse`, `ChimneyLevel`, `BellsLevel` and `ShoeLevel` can also be passed directly into their
@@ -111,6 +113,42 @@ maps pan gestures into normalized strokes, including fast initial swipes. A
 screen-reader action can brush the next remaining area using the same rules.
 Day 6 also has a boot illustration on its calendar door. All art is vector code;
 there are no additional assets, packages, hardware calls or permissions.
+
+## Plätzchen ausstechen (Day 7)
+
+The pastry wheel follows a closed, arc-length-measured outline. A direction cue
+appears before each marked checkpoint. Its ring and marker turn green during
+the timing window; press the matching arrow then. Touch input fires on pointer
+down, with arrow-key and screen-reader actions using the same rules. Held keys
+do not repeat inputs. Correct inputs progressively reveal the cut groove.
+
+Wrong directions, early inputs and missed windows each count as one mistake.
+After a short feedback pause, the wheel approaches that same checkpoint again;
+previous cuts remain complete. Input during recovery is ignored, so a burst of
+taps cannot consume all attempts. Three mistakes end the attempt. Every
+checkpoint must be cut successfully and the final outline closed to win.
+The finished biscuit lifts from the dough before the shared completion overlay
+appears. Replay keeps the day's saved completion.
+
+`CookieLevel` configures shape, perimeter fractions per second, checkpoint count,
+full timing-window duration and mistake limit. Defaults are star / 0.035 / 6 /
+1.3 s, tree / 0.05 / 9 / 0.8 s and snowflake / 0.075 / 12 / 0.46 s, all with a
+three-mistake limit. Windows must not overlap neighbouring checkpoints.
+`CookieOutline` provides the same polygon, arc lengths, positions and tangents to
+the pure Dart rules and native drawing code. Directions follow the dominant
+component of the tangent at each checkpoint. No randomness or engine is needed.
+
+**Spiele ausprobieren** exposes all three shapes through the existing difficulty
+selector. Help and backgrounding pause timing; **Weiter** explicitly resumes,
+so returning never costs a missed window. Long stalled frames are capped at
+100 ms to preserve a chance to react. Reduced motion removes shake, scale and
+rotation and skips the lift animation. All UI remains German and fits without
+vertical scrolling. No new dependencies, assets, audio or hardware calls.
+
+Tests cover outline closure and sampling, tangent directions, all-level solvability,
+exact timing boundaries, early/wrong/missed inputs, recovery, custom limits,
+immediate pointer-down input, keyboard control, lift-before-save ordering,
+completion/replay, pause/resume and every difficulty at small/large text sizes.
 
 ## Motion input
 

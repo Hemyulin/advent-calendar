@@ -24,7 +24,7 @@ flutter run
 ```
 
 The app displays a German Advent calendar with an illustrated door and a
-horizontal day carousel. Days 1–6 contain playable challenges; the remaining
+horizontal day carousel. Days 1–7 contain playable challenges; the remaining
 days lead to a placeholder challenge screen.
 Each day has a festive paper door with a storybook ornament, a rotating warm
 colour palette, and fairy lights. Locked doors keep their colour and show a lock
@@ -67,6 +67,8 @@ chimney-pipe puzzle with a ten-second head start.
 Day 5 has **Weihnachtsglocken**, a melody-memory game with eight sampled chimes
 and growing fragments of five Christmas songs.
 Day 6 celebrates Nikolaus with a muddy shoe to brush clean and polish.
+Day 7 has **Plätzchen ausstechen**: timed arrow inputs guide a moving pastry
+wheel around a cookie, followed by an illustrated lift out of the dough.
 **Spiele ausprobieren** opens all games at configurable difficulty,
 independent of the device date and without changing daily progress. See
 [Minigame setup, controls and architecture](docs/minigames.md) for details.
@@ -98,7 +100,7 @@ Additional platforms can be generated from `app/` with `flutter create
 - `lib/presentation/`: calendar screen, vector door illustration, day carousel,
   and challenge placeholder. Reduced-motion preferences are respected.
 - `lib/challenges/`: challenge identities and types (puzzles, quizzes,
-  questionnaires, interactive minigames), Day 1's tutorial, and the five playable
+  questionnaires, interactive minigames), Day 1's tutorial, and the six playable
   games. Pure Dart mechanics are separate from screens and motion input.
 - `lib/content/`: daily content and its association with challenge IDs.
 - `lib/progress/`: progress contract and in-memory mock implementation.

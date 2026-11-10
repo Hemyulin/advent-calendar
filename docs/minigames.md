@@ -14,6 +14,7 @@ Day 1 is the one-button tutorial. The following daily assignments are defined in
 | 8 | Wichtelwerkstatt | Klassisch |
 | 9 | Oy Vey, Weihnachten! | Klassisch |
 | 10 | Ein Glühwein zu viel | Klassisch |
+| 11 | Akku-Panik | Klassisch |
 
 All other days keep their placeholders. The sample repository still marks days
 3 and 5 as complete so replay can be tried. Progress stays in memory and resets
@@ -52,6 +53,7 @@ To hide the menu, use `--dart-define=SHOW_GAME_PREVIEW=false`.
 | Oy Vey | Slower falling objects | Standard falling objects | Faster falling objects |
 | Shoe | Broad brush, light mud | Regular brush, thick mud | Smaller brush, stubborn mud |
 | Walk home | 32 s, wide path, gentle wobble | 37 s, regular path and wobble | 42 s, narrow path, stronger wobble |
+| Battery | 45 s, slower drain, fewer events | 45 s, standard drain and events | 45 s, lower initial charge, faster drain and events |
 
 `MemoryLevel`, `MazeCourse`, `ChimneyLevel`, `BellsLevel` and `ShoeLevel` can also be passed directly into their
 screens. Optional random seeds reproduce card shuffles; maze
@@ -230,6 +232,34 @@ Flutter painters, with reduced-motion support and no additional dependencies.
 Tests cover recoverable collisions, ice, sustained falls, seeded route clearance,
 successful controlled navigation at every difficulty, calibration, sensor loss,
 held controls, lifecycle pauses, completion/replay and responsive layouts.
+
+## Akku-Panik (Day 11)
+
+Drag the plug onto any device or tap a device to connect the single cable.
+Connecting the first device starts the round; **Los geht’s** also starts it
+unplugged. Keep the smartphone, smartwatch, tablet, headphones and laptop alive
+for 45 seconds. A green card and bolt mark the connected device. Percentages
+show remaining charge; red batteries warn below 5%. A small event icon has a
+German tooltip naming the temporary power drain. Devices never charge together.
+
+`battery/battery_game.dart` contains the Flutter-independent model. `BatteryLevel`
+configures duration, drain, charging rate, event interval/duration/boost, initial
+charge range and an optional random seed. Defaults stay within 1–10% initially.
+Drain and event frequency increase throughout the round. Collapsed batteries
+lose immediately, including on the final frame; otherwise reaching 45 seconds
+wins. Seeded retries repeat initial levels/events for testing; normal retries
+randomize them. Touch switching is immediate, without a connection cooldown.
+
+`battery_screen.dart` provides drag targets, accessible tap actions, visual
+charging feedback and the shared completion/retry overlays. Help, explicit pause
+and backgrounding freeze both charge and events. **Weiter** resumes without
+catching up suspended time. Completion and replay use the existing callback;
+no persistence, hardware or dependencies are added. All difficulties can be
+launched from **Spiele ausprobieren**, without changing the device date.
+
+Balance tests exercise 100 seeds per difficulty with cable decisions every
+half-second. Additional tests cover one-cable exclusivity, event consumption,
+expiry, win/loss, bounds, drag/tap controls, lifecycle, completion and layouts.
 
 ## Motion input
 

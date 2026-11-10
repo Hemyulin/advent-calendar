@@ -278,8 +278,8 @@ void main() {
 
   test('daily games receive the same completion interface', () {
     Future<void> complete() async {}
-    final days = calendarDays(DateTime(2026, 12, 11), {});
-    expect(buildDailyChallenge(days[10], complete), isA<ChallengeScreen>());
+    final days = calendarDays(DateTime(2026, 12, 12), {});
+    expect(buildDailyChallenge(days[11], complete), isA<ChallengeScreen>());
     expect(
       (buildDailyChallenge(days[1], complete) as MemoryScreen).onComplete,
       same(complete),

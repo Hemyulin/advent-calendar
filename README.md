@@ -25,7 +25,7 @@ flutter run
 
 The app displays a German Advent calendar with an illustrated door and a
 horizontal day carousel. Swipe left or right across the main door to select the
-next or previous available day; the carousel also remains independently scrollable. Days 1–10 contain playable challenges; the remaining
+next or previous available day; the carousel also remains independently scrollable. Days 1–11 contain playable challenges; the remaining
 days lead to a placeholder challenge screen.
 Each day has a festive paper door with a storybook ornament, a rotating warm
 colour palette, and fairy lights. Locked doors keep their colour and show a lock
@@ -77,6 +77,8 @@ Day 9 has **Oy Vey, Weihnachten!**, a locally processed front-camera mouth game
 adapted from Brush Buddies. See [camera reuse, privacy and testing](docs/oy-vey.md).
 Day 10 has **Ein Glühwein zu viel**, a 32–42 second walk home with tilt balance,
 winter obstacles, calibration and held touch controls.
+Day 11 has **Akku-Panik**: keep five low-battery devices alive for 45 seconds
+with one cable, random power-hungry events and drag/tap controls.
 **Spiele ausprobieren** opens all games at configurable difficulty,
 independent of the device date and without changing daily progress. See
 [Minigame setup, controls and architecture](docs/minigames.md) for details.
@@ -108,7 +110,7 @@ Additional platforms can be generated from `app/` with `flutter create
 - `lib/presentation/`: calendar screen, vector door illustration, day carousel,
   and challenge placeholder. Reduced-motion preferences are respected.
 - `lib/challenges/`: challenge identities and types (puzzles, quizzes,
-  questionnaires, interactive minigames), Day 1's tutorial, and the nine playable
+  questionnaires, interactive minigames), Day 1's tutorial, and the ten playable
   games. Pure Dart mechanics are separate from screens and motion input.
 - `lib/content/`: daily content and its association with challenge IDs.
 - `lib/progress/`: progress contract and in-memory mock implementation.

@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 
@@ -36,6 +37,8 @@ class _CookieScreenState extends State<CookieScreen>
   bool _showResult = false;
   CutDirection? _pressed;
   double _cutFrom = 0;
+  Offset _swipeDelta = Offset.zero;
+  bool _swipeUsed = false;
 
   @override
   void initState() {
@@ -138,6 +141,18 @@ class _CookieScreenState extends State<CookieScreen>
     _finishIfNeeded();
   }
 
+  void _swipe(DragUpdateDetails details) {
+    if (_swipeUsed) return;
+    _swipeDelta += details.delta;
+    if (_swipeDelta.distance < 20) return;
+    _swipeUsed = true;
+    _press(
+      _swipeDelta.dx.abs() > _swipeDelta.dy.abs()
+          ? (_swipeDelta.dx > 0 ? CutDirection.right : CutDirection.left)
+          : (_swipeDelta.dy > 0 ? CutDirection.down : CutDirection.up),
+    );
+  }
+
   void _restart() {
     _ticker.stop();
     _feedback.reset();
@@ -184,7 +199,7 @@ class _CookieScreenState extends State<CookieScreen>
         alreadyCompleted: widget.alreadyCompleted,
         onRestart: _restart,
         instructions:
-            'Der Ausstecher folgt der Form. Sobald der Pfeil grün aufleuchtet, tippe die passende Richtung. Ein falscher oder verpasster Pfeil kostet einen Fehler. Die Stelle wird noch einmal angefahren. Bei ${widget.level.mistakeLimit} Fehlern beginnt ein neuer Versuch.',
+            'Der Ausstecher folgt der Form. Sobald der Pfeil grün aufleuchtet, wische die passende Richtung über den Teig oder nutze die Pfeile. Ein falscher oder verpasster Pfeil kostet einen Fehler. Die Stelle wird noch einmal angefahren. Bei ${widget.level.mistakeLimit} Fehlern beginnt ein neuer Versuch.',
         children: [
           GameStats(
             text:
@@ -205,25 +220,40 @@ class _CookieScreenState extends State<CookieScreen>
                 ? '${_game.target!.direction.label}${_game.inWindow ? ', jetzt drücken' : ', gleich drücken'}'
                 : 'Der Ausstecher folgt der Form',
             liveRegion: true,
-            child: AspectRatio(
-              aspectRatio: 1,
-              child: AnimatedBuilder(
-                animation: Listenable.merge([_feedback, _lift]),
-                builder: (_, _) => CustomPaint(
-                  key: const ValueKey('cookie-board'),
-                  painter: _CookiePainter(
-                    game: _game,
-                    visibleCut:
-                        _feedback.isAnimating &&
-                            _game.lastInput == CutInput.correct
-                        ? _cutFrom +
-                              (_game.cutUntil - _cutFrom) *
-                                  Curves.easeOut.transform(_feedback.value)
-                        : _game.cutUntil,
-                    feedback: _feedback.isAnimating ? 1 - _feedback.value : 0,
-                    lift: Curves.easeOutCubic.transform(_lift.value),
-                    reducedMotion: MediaQuery.disableAnimationsOf(context),
-                    paused: _paused,
+            child: GestureDetector(
+              key: const ValueKey('cookie-swipe-area'),
+              behavior: HitTestBehavior.opaque,
+              dragStartBehavior: DragStartBehavior.down,
+              onPanStart: (_) {
+                _swipeDelta = Offset.zero;
+                _swipeUsed = !enabled;
+              },
+              onPanUpdate: _swipe,
+              onPanEnd: (_) => _swipeDelta = Offset.zero,
+              onPanCancel: () {
+                _swipeDelta = Offset.zero;
+                _swipeUsed = true;
+              },
+              child: AspectRatio(
+                aspectRatio: 1,
+                child: AnimatedBuilder(
+                  animation: Listenable.merge([_feedback, _lift]),
+                  builder: (_, _) => CustomPaint(
+                    key: const ValueKey('cookie-board'),
+                    painter: _CookiePainter(
+                      game: _game,
+                      visibleCut:
+                          _feedback.isAnimating &&
+                              _game.lastInput == CutInput.correct
+                          ? _cutFrom +
+                                (_game.cutUntil - _cutFrom) *
+                                    Curves.easeOut.transform(_feedback.value)
+                          : _game.cutUntil,
+                      feedback: _feedback.isAnimating ? 1 - _feedback.value : 0,
+                      lift: Curves.easeOutCubic.transform(_lift.value),
+                      reducedMotion: MediaQuery.disableAnimationsOf(context),
+                      paused: _paused,
+                    ),
                   ),
                 ),
               ),
@@ -477,116 +507,6 @@ class _CookiePainter extends CustomPainter {
         );
         paint.style = PaintingStyle.fill;
       }
-      for (var i = 0; i < game.checkpoints.length; i++) {
-        final center = point(
-          game.outline.at(game.checkpoints[i].fraction),
-          size,
-        );
-        canvas.drawCircle(
-          center,
-          i == game.next ? 5 : 3,
-          paint
-            ..color = i < game.next
-                ? CalendarStyle.green
-                : const Color(0xFFC3A77E),
-        );
-      }
-      if (game.showCue &&
-          game.target != null &&
-          game.phase != CookiePhase.ready &&
-          !paused) {
-        final targetPoint = point(game.outline.at(game.target!.fraction), size);
-        final towardMiddle =
-            Offset(size.width * .5, size.height * .5) - targetPoint;
-        final anchor =
-            targetPoint +
-            (towardMiddle.distance > .001
-                ? towardMiddle / towardMiddle.distance * 54
-                : const Offset(0, -54));
-        final center = Offset(
-          anchor.dx.clamp(38.0, size.width - 38),
-          anchor.dy.clamp(38.0, size.height - 38),
-        );
-        canvas.drawLine(
-          targetPoint,
-          center,
-          paint
-            ..color = const Color(0xFFC3A77E)
-            ..strokeWidth = 1.2,
-        );
-        final color =
-            game.phase == CookiePhase.recovering ||
-                game.phase == CookiePhase.lost
-            ? const Color(0xFFB87863)
-            : game.inWindow
-            ? CalendarStyle.green
-            : CalendarStyle.gold;
-        canvas.drawCircle(
-          center,
-          30,
-          paint..color = CalendarStyle.ivory.withValues(alpha: .85),
-        );
-        canvas.drawCircle(
-          center,
-          34,
-          paint
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 2
-            ..color = CalendarStyle.ivory.withValues(alpha: .5),
-        );
-        final remaining = (game.secondsToTarget / 1.35).clamp(0.0, 1.0);
-        canvas.drawArc(
-          Rect.fromCircle(center: center, radius: 34),
-          -math.pi / 2,
-          math.pi * 2 * (game.inWindow ? 1 : remaining),
-          false,
-          paint
-            ..strokeWidth = game.inWindow ? 4 : 2
-            ..color = color,
-        );
-        paint.style = PaintingStyle.fill;
-        final direction = game.target!.direction;
-        final delta = switch (direction) {
-          CutDirection.up => const Offset(0, -1),
-          CutDirection.down => const Offset(0, 1),
-          CutDirection.left => const Offset(-1, 0),
-          CutDirection.right => const Offset(1, 0),
-        };
-        final perpendicular = Offset(-delta.dy, delta.dx);
-        canvas.drawLine(
-          center - delta * 12,
-          center + delta * 12,
-          paint
-            ..color = color
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 3
-            ..strokeCap = StrokeCap.round,
-        );
-        canvas.drawPath(
-          Path()
-            ..moveTo(
-              (center + delta * 4 + perpendicular * 8).dx,
-              (center + delta * 4 + perpendicular * 8).dy,
-            )
-            ..lineTo((center + delta * 12).dx, (center + delta * 12).dy)
-            ..lineTo(
-              (center + delta * 4 - perpendicular * 8).dx,
-              (center + delta * 4 - perpendicular * 8).dy,
-            ),
-          paint,
-        );
-        paint.style = PaintingStyle.fill;
-        final target = point(game.outline.at(game.target!.fraction), size);
-        canvas.drawCircle(
-          target,
-          10,
-          paint
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 2
-            ..color = color,
-        );
-        paint.style = PaintingStyle.fill;
-      }
       // Pastry wheel: a steel cutting disc and a warm wooden handle.
       final position = point(game.outline.at(game.progress), size);
       final tangent = game.outline.tangentAt(game.progress);
@@ -626,8 +546,77 @@ class _CookiePainter extends CustomPainter {
       canvas.drawCircle(Offset.zero, 7, paint..color = const Color(0xFFF2F1E5));
       canvas.drawCircle(Offset.zero, 2.5, paint..color = CalendarStyle.gold);
       canvas.restore();
+      _paintCheckpointArrows(canvas, size);
     }
     canvas.restore();
+  }
+
+  void _paintCheckpointArrows(Canvas canvas, Size size) {
+    for (var i = 0; i < game.checkpoints.length; i++) {
+      final checkpoint = game.checkpoints[i];
+      final center = point(game.outline.at(checkpoint.fraction), size);
+      final current = i == game.next && !paused;
+      final active = current && game.inWindow;
+      final failed =
+          current &&
+          (game.phase == CookiePhase.recovering ||
+              game.phase == CookiePhase.lost);
+      final approaching =
+          current && game.phase == CookiePhase.cutting && game.showCue;
+      final color = i < game.next
+          ? CalendarStyle.green.withValues(alpha: .45)
+          : failed
+          ? const Color(0xFFB87863)
+          : active
+          ? CalendarStyle.green
+          : approaching
+          ? CalendarStyle.gold
+          : const Color(0xFF977B55);
+      if (active || failed) {
+        canvas.drawCircle(
+          center,
+          14,
+          Paint()..color = color.withValues(alpha: .12),
+        );
+      }
+      final delta = switch (checkpoint.direction) {
+        CutDirection.up => const Offset(0, -1),
+        CutDirection.down => const Offset(0, 1),
+        CutDirection.left => const Offset(-1, 0),
+        CutDirection.right => const Offset(1, 0),
+      };
+      final perpendicular = Offset(-delta.dy, delta.dx);
+      final arrow = Path()
+        ..moveTo((center - delta * 7).dx, (center - delta * 7).dy)
+        ..lineTo((center + delta * 7).dx, (center + delta * 7).dy)
+        ..moveTo(
+          (center + delta * 2 - perpendicular * 5).dx,
+          (center + delta * 2 - perpendicular * 5).dy,
+        )
+        ..lineTo((center + delta * 7).dx, (center + delta * 7).dy)
+        ..lineTo(
+          (center + delta * 2 + perpendicular * 5).dx,
+          (center + delta * 2 + perpendicular * 5).dy,
+        );
+      final stroke = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round;
+      // A narrow dough-coloured halo keeps the glyph legible over the guide
+      // and cutting wheel without adding a floating badge or moving cue.
+      canvas.drawPath(
+        arrow,
+        stroke
+          ..color = const Color(0xFFF0DFBF)
+          ..strokeWidth = 5,
+      );
+      canvas.drawPath(
+        arrow,
+        stroke
+          ..color = color
+          ..strokeWidth = active ? 2.6 : 2,
+      );
+    }
   }
 
   @override

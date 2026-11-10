@@ -3,6 +3,12 @@ import 'package:flutter/material.dart';
 import '../../content/calendar_day.dart';
 import '../../presentation/challenge_screen.dart';
 import '../completion.dart';
+import '../walk_home/walk_game.dart';
+import '../walk_home/walk_screen.dart';
+import '../oy_vey/oy_vey_game.dart';
+import '../oy_vey/oy_vey_screen.dart';
+import '../workshop/workshop_game.dart';
+import '../workshop/workshop_screen.dart';
 import '../cookies/cookie_game.dart';
 import '../cookies/cookie_screen.dart';
 import '../bells/bells_game.dart';
@@ -43,6 +49,21 @@ enum Minigame {
     'Plätzchen ausstechen',
     'Folge der Form und triff den richtigen Moment.',
     Icons.cookie_outlined,
+  ),
+  workshop(
+    'Wichtelwerkstatt',
+    'Schiebe die Geschenke an ihren Platz.',
+    Icons.warehouse_outlined,
+  ),
+  oyVey(
+    'Oy Vey, Weihnachten!',
+    'Kopf bewegen, Mund auf und richtig einsammeln.',
+    Icons.face_outlined,
+  ),
+  walkHome(
+    'Ein Glühwein zu viel',
+    'Schwankend durch den Schnee nach Hause.',
+    Icons.directions_walk_rounded,
   ),
   shoe(
     'Nikolausstiefel',
@@ -89,6 +110,22 @@ Widget buildMinigame(
     onComplete: onComplete,
     alreadyCompleted: alreadyCompleted,
   ),
+  Minigame.workshop => WorkshopScreen(
+    level: WorkshopLevel.forDifficulty(difficulty),
+    onComplete: onComplete,
+    alreadyCompleted: alreadyCompleted,
+  ),
+  Minigame.oyVey => OyVeyScreen(
+    level: OyVeyLevel.forDifficulty(difficulty),
+    onComplete: onComplete,
+    alreadyCompleted: alreadyCompleted,
+    developmentPreview: developmentPreview,
+  ),
+  Minigame.walkHome => WalkScreen(
+    level: WalkLevel.forDifficulty(difficulty),
+    onComplete: onComplete,
+    alreadyCompleted: alreadyCompleted,
+  ),
   Minigame.shoe => ShoeScreen(
     level: ShoeLevel.forDifficulty(difficulty),
     onComplete: onComplete,
@@ -111,6 +148,9 @@ Widget buildDailyChallenge(CalendarDay day, ChallengeCompletion onComplete) {
     5 => Minigame.bells,
     6 => Minigame.shoe,
     7 => Minigame.cookies,
+    8 => Minigame.workshop,
+    9 => Minigame.oyVey,
+    10 => Minigame.walkHome,
     _ => null,
   };
   return game == null

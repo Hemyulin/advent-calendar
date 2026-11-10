@@ -7,54 +7,83 @@ import 'package:advent_calendar/challenges/games/difficulty.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('published melody fragments and durations are preserved', () {
-    expect(
-      bellMelodies.map((m) => m.notes.map((n) => n.pitch.label).join(' ')),
-      [
-        'C C G G A A G F F E',
-        'G A G F E D C D E F',
-        'C F F F G A A A A G',
-        'E G C D E F F F F F',
-        'G E F G A G A G F D',
-      ],
-    );
-    expect(bellMelodies[1].notes.take(4).map((n) => n.beats), [1.5, .5, 1, 1]);
-    expect(bellMelodies[2].notes.take(5).map((n) => n.beats), [
-      1,
-      .75,
-      .25,
-      1,
-      1,
-    ]);
-    expect(bellMelodies[4].notes.take(8).map((n) => n.beats), [
-      2,
-      1,
-      1,
-      .5,
-      .5,
-      .5,
-      .5,
-      2,
-    ]);
-    for (final melody in bellMelodies) {
+  test(
+    'complete score melodies, repeats, chromatic notes and rests are preserved',
+    () {
+      expect(bellMelodies.map((m) => m.notes.length), [40, 25, 46, 97, 48]);
       expect(
-        melody.notes.every(
-          (n) => BellNote.values.contains(n.pitch) && n.beats > 0,
+        bellMelodies.map(
+          (m) =>
+              m.notes.fold<double>(0, (sum, n) => sum + n.beats + n.restBeats),
         ),
+        [48, 32, 36, 64, 64],
+      );
+      expect(
+        bellMelodies[0].notes.map((n) => n.pitch.label).join(' '),
+        'C C G G A A G F F E E D C G G F F E E D G G F F E E D C C G G A A G F F E E D C',
+      );
+      expect(
+        bellMelodies[1].notes.map((n) => n.pitch.label).join(' '),
+        'G A G F E D C D E F E D E G A G C↑ H A G F E F G E',
+      );
+      expect(bellMelodies[1].notes[11].restBeats, 1);
+      expect(bellMelodies[1].notes.last.restBeats, 1);
+      expect(
+        bellMelodies[2].notes.any((n) => n.pitch == BellNote.bFlat),
         isTrue,
       );
-    }
-  });
-
-  test('every difficulty begins with four notes and increases to 8–10', () {
-    for (final difficulty in GameDifficulty.values) {
-      final level = BellsLevel.forDifficulty(difficulty);
-      expect(level.rounds.first.length, 4);
-      expect(level.rounds.last.length, inInclusiveRange(8, 10));
-      for (var i = 1; i < level.rounds.length; i++) {
-        expect(level.rounds[i].length, greaterThan(level.rounds[i - 1].length));
+      expect(
+        bellMelodies[2].notes.any((n) => n.pitch == BellNote.highD),
+        isTrue,
+      );
+      expect(
+        bellMelodies[4].notes.any((n) => n.pitch == BellNote.fSharp),
+        isTrue,
+      );
+      expect(bellMelodies[3].notes.take(4).map((n) => n.pitch), [
+        BellNote.c,
+        BellNote.a,
+        BellNote.g,
+        BellNote.f,
+      ]);
+      expect(
+        bellMelodies[3].notes.skip(46).take(6).map((n) => n.pitch),
+        List.filled(6, BellNote.a),
+      );
+      expect(bellMelodies[3].notes.last.pitch, BellNote.f);
+      for (final melody in bellMelodies) {
+        expect(
+          melody.notes.every(
+            (n) =>
+                melody.bells.contains(n.pitch) &&
+                n.beats > 0 &&
+                n.restBeats >= 0,
+          ),
+          isTrue,
+        );
+        expect(melody.bells.toSet().length, melody.bells.length);
       }
-      expect(level.rounds.map((r) => r.melodyIndex).toSet(), {0, 1, 2, 3, 4});
+      expect(bellMelodies.map((m) => m.bells.length), [8, 8, 8, 9, 8]);
+    },
+  );
+
+  test('difficulty uses full songs and decreases visual guidance', () {
+    final levels = GameDifficulty.values.map(BellsLevel.forDifficulty).toList();
+    expect(levels.map((l) => l.guidance), BellGuidance.values);
+    expect(levels.map((l) => l.rounds.single.length), [25, 40, 97]);
+    for (final level in levels) {
+      expect(
+        level.rounds.single.length,
+        level.rounds.single.melody.notes.length,
+      );
+    }
+    for (var index = 0; index < 100; index++) {
+      expect(levels[0].showsDemonstrationNote(index), isTrue);
+      expect(levels[1].showsDemonstrationNote(index), index == 0);
+      expect(levels[2].showsDemonstrationNote(index), isFalse);
+    }
+    for (final round in bellRounds) {
+      expect(round.length, round.melody.notes.length);
     }
   });
 
@@ -78,7 +107,9 @@ void main() {
   test(
     'wrong notes reset only the current attempt, with unlimited retries',
     () {
-      final game = BellsGame(const BellsLevel());
+      final game = BellsGame(
+        const BellsLevel(rounds: [BellRound(0, 4), BellRound(1, 5)]),
+      );
       game.listen();
       game.finishListening();
       for (final note in game.current.notes) {
@@ -143,41 +174,38 @@ void main() {
       const BellsLevel(rounds: [BellRound(-1, 4)]),
       const BellsLevel(rounds: [BellRound(9, 4)]),
       const BellsLevel(rounds: [BellRound(0, 0)]),
-      const BellsLevel(rounds: [BellRound(0, 11)]),
+      const BellsLevel(rounds: [BellRound(0, 1000)]),
     ]) {
       expect(() => BellsGame(level), throwsArgumentError);
     }
   });
 
-  test(
-    'all eight bell assets are distinct audible PCM recordings with a fade',
-    () {
-      final hashes = <int>{};
-      for (final note in BellNote.values) {
-        final bytes = File(
-          'assets/audio/bells/${note.asset}.wav',
-        ).readAsBytesSync();
-        final header = ByteData.sublistView(bytes);
-        expect(String.fromCharCodes(bytes.take(4)), 'RIFF');
-        expect(header.getUint16(22, Endian.little), 1);
-        expect(header.getUint32(24, Endian.little), 32000);
-        expect(header.getUint16(34, Endian.little), 16);
-        expect(bytes.length, greaterThan(64000));
-        var energy = 0.0;
-        var peak = 0;
-        var hash = 17;
-        for (var i = 44; i < bytes.length - 1; i += 2) {
-          final sample = header.getInt16(i, Endian.little);
-          energy += sample * sample;
-          if (sample.abs() > peak) peak = sample.abs();
-          hash = (hash * 31 + sample) & 0x7fffffff;
-        }
-        expect(peak, inInclusiveRange(10000, 24000));
-        expect(energy / (bytes.length / 2), greaterThan(10000));
-        expect(header.getInt16(bytes.length - 2, Endian.little), 0);
-        hashes.add(hash);
+  test('all bell assets are distinct audible PCM recordings with a fade', () {
+    final hashes = <int>{};
+    for (final note in BellNote.values) {
+      final bytes = File(
+        'assets/audio/bells/${note.asset}.wav',
+      ).readAsBytesSync();
+      final header = ByteData.sublistView(bytes);
+      expect(String.fromCharCodes(bytes.take(4)), 'RIFF');
+      expect(header.getUint16(22, Endian.little), 1);
+      expect(header.getUint32(24, Endian.little), 32000);
+      expect(header.getUint16(34, Endian.little), 16);
+      expect(bytes.length, greaterThan(64000));
+      var energy = 0.0;
+      var peak = 0;
+      var hash = 17;
+      for (var i = 44; i < bytes.length - 1; i += 2) {
+        final sample = header.getInt16(i, Endian.little);
+        energy += sample * sample;
+        if (sample.abs() > peak) peak = sample.abs();
+        hash = (hash * 31 + sample) & 0x7fffffff;
       }
-      expect(hashes, hasLength(8));
-    },
-  );
+      expect(peak, inInclusiveRange(10000, 24000));
+      expect(energy / (bytes.length / 2), greaterThan(10000));
+      expect(header.getInt16(bytes.length - 2, Endian.little), 0);
+      hashes.add(hash);
+    }
+    expect(hashes, hasLength(BellNote.values.length));
+  });
 }

@@ -185,6 +185,84 @@ void main() {
     });
   }
 
+  Offset swipeVector(CutDirection direction) => switch (direction) {
+    CutDirection.up => const Offset(0, -40),
+    CutDirection.down => const Offset(0, 40),
+    CutDirection.left => const Offset(-40, 0),
+    CutDirection.right => const Offset(40, 0),
+  };
+
+  for (final difficulty in GameDifficulty.values) {
+    testWidgets(
+      'swipe cuts in time before release, once per gesture at $difficulty',
+      (tester) async {
+        final level = CookieLevel.forDifficulty(difficulty);
+        final reference = CookieGame(level);
+        await tester.pumpWidget(
+          MaterialApp(
+            home: CookieScreen(level: level, onComplete: () async {}),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await start(tester);
+        await frames(tester, reference.target!.fraction / level.speed);
+        final gesture = await tester.startGesture(
+          tester.getCenter(find.byKey(const ValueKey('cookie-board'))),
+        );
+        await gesture.moveBy(swipeVector(reference.target!.direction));
+        await tester.pump();
+        expect(
+          find.text('1 / ${level.checkpoints} · 0 / 3 Fehler'),
+          findsOneWidget,
+        );
+        await gesture.moveBy(swipeVector(reference.target!.direction));
+        await tester.pump();
+        expect(
+          find.text('1 / ${level.checkpoints} · 0 / 3 Fehler'),
+          findsOneWidget,
+        );
+        await gesture.up();
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
+  }
+
+  testWidgets('early and wrong-direction swipes count as mistakes', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: CookieScreen(level: fastLevel, onComplete: () async {}),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.drag(
+      find.byKey(const ValueKey('cookie-board')),
+      const Offset(80, 0),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('0 / 1 · 0 / 3 Fehler'), findsOneWidget); // Not started.
+    await start(tester);
+    await tester.drag(
+      find.byKey(const ValueKey('cookie-board')),
+      const Offset(80, 0),
+    );
+    await tester.pump();
+    expect(find.text('0 / 1 · 1 / 3 Fehler'), findsOneWidget);
+    await tester.tap(find.byTooltip('Neu starten'));
+    await tester.pumpAndSettle();
+    await start(tester);
+    await frames(tester, 2);
+    final direction = CookieGame(fastLevel).target!.direction;
+    await tester.drag(
+      find.byKey(const ValueKey('cookie-board')),
+      -swipeVector(direction),
+    );
+    await tester.pump();
+    expect(find.text('0 / 1 · 1 / 3 Fehler'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
   testWidgets('development preview launches every difficulty', (tester) async {
     for (final difficulty in GameDifficulty.values) {
       await tester.pumpWidget(

@@ -3,28 +3,37 @@ import 'bell_melodies.dart';
 
 enum BellsPhase { ready, listening, answering, mistake, roundWon, won }
 
+/// Visual assistance applies only to the demonstration, never to player taps.
+enum BellGuidance { all, firstOnly, none }
+
 class BellsLevel {
   const BellsLevel({
-    this.rounds = const [
-      BellRound(0, 4),
-      BellRound(1, 5),
-      BellRound(2, 6),
-      BellRound(3, 7),
-      BellRound(4, 8),
-      BellRound(0, 10),
-    ],
+    this.rounds = const [BellRound(0)],
     this.beatMilliseconds = 620,
+    this.guidance = BellGuidance.firstOnly,
   });
   final List<BellRound> rounds;
   final int beatMilliseconds;
+  final BellGuidance guidance;
 
-  factory BellsLevel.forDifficulty(GameDifficulty difficulty) => BellsLevel(
-    rounds: switch (difficulty) {
-      GameDifficulty.easy => bellRounds.take(5).toList(growable: false),
-      GameDifficulty.normal => const BellsLevel().rounds,
-      GameDifficulty.hard => bellRounds,
-    },
-  );
+  bool showsDemonstrationNote(int index) => switch (guidance) {
+    BellGuidance.all => true,
+    BellGuidance.firstOnly => index == 0,
+    BellGuidance.none => false,
+  };
+
+  factory BellsLevel.forDifficulty(GameDifficulty difficulty) =>
+      switch (difficulty) {
+        GameDifficulty.easy => const BellsLevel(
+          rounds: [BellRound(1)],
+          guidance: BellGuidance.all,
+        ),
+        GameDifficulty.normal => const BellsLevel(),
+        GameDifficulty.hard => const BellsLevel(
+          rounds: [BellRound(3)],
+          guidance: BellGuidance.none,
+        ),
+      };
 }
 
 /// No timers or audio: only pitch order is evaluated. Attempts are unlimited.
@@ -37,7 +46,8 @@ class BellsGame {
               r.melodyIndex < 0 ||
               r.melodyIndex >= bellMelodies.length ||
               r.length < 1 ||
-              r.length > r.melody.notes.length,
+              r.length > r.melody.notes.length ||
+              r.notes.any((note) => !r.melody.bells.contains(note.pitch)),
         )) {
       throw ArgumentError('Invalid bell level');
     }

@@ -24,7 +24,8 @@ flutter run
 ```
 
 The app displays a German Advent calendar with an illustrated door and a
-horizontal day carousel. Days 1–7 contain playable challenges; the remaining
+horizontal day carousel. Swipe left or right across the main door to select the
+next or previous available day; the carousel also remains independently scrollable. Days 1–10 contain playable challenges; the remaining
 days lead to a placeholder challenge screen.
 Each day has a festive paper door with a storybook ornament, a rotating warm
 colour palette, and fairy lights. Locked doors keep their colour and show a lock
@@ -64,11 +65,18 @@ does not complete the day. Completed tutorials can be replayed.
 Day 2 has **Paare finden** (4×4 Memory) and Day 3 **Kugellabyrinth** (one sensor-
 or touch-controlled maze per day). Day 4 has **Rettet den Weihnachtsmann!**, a rotating
 chimney-pipe puzzle with a ten-second head start.
-Day 5 has **Weihnachtsglocken**, a melody-memory game with eight sampled chimes
-and growing fragments of five Christmas songs.
+Day 5 has **Weihnachtsglocken**, a melody-memory game with complete versions
+of five Christmas songs. Difficulty reduces visual help from every note to the
+first note to audio only, with longer melodies on the hardest setting.
 Day 6 celebrates Nikolaus with a muddy shoe to brush clean and polish.
 Day 7 has **Plätzchen ausstechen**: timed arrow inputs guide a moving pastry
 wheel around a cookie, followed by an illustrated lift out of the dough.
+Day 8 has **Wichtelwerkstatt**, a Sokoban-style present-pushing puzzle with
+handcrafted boards, undo, restart and swipe/button controls.
+Day 9 has **Oy Vey, Weihnachten!**, a locally processed front-camera mouth game
+adapted from Brush Buddies. See [camera reuse, privacy and testing](docs/oy-vey.md).
+Day 10 has **Ein Glühwein zu viel**, a 32–42 second walk home with tilt balance,
+winter obstacles, calibration and held touch controls.
 **Spiele ausprobieren** opens all games at configurable difficulty,
 independent of the device date and without changing daily progress. See
 [Minigame setup, controls and architecture](docs/minigames.md) for details.
@@ -100,7 +108,7 @@ Additional platforms can be generated from `app/` with `flutter create
 - `lib/presentation/`: calendar screen, vector door illustration, day carousel,
   and challenge placeholder. Reduced-motion preferences are respected.
 - `lib/challenges/`: challenge identities and types (puzzles, quizzes,
-  questionnaires, interactive minigames), Day 1's tutorial, and the six playable
+  questionnaires, interactive minigames), Day 1's tutorial, and the nine playable
   games. Pure Dart mechanics are separate from screens and motion input.
 - `lib/content/`: daily content and its association with challenge IDs.
 - `lib/progress/`: progress contract and in-memory mock implementation.
@@ -114,7 +122,9 @@ flows can coordinate progress and the lock through their interfaces without
 coupling challenge logic to hardware.
 
 Runtime dependencies are Flutter, its SDK localization package, and
-`audioplayers` for offline recorded bell sounds. Audio credits, melody sources
+`audioplayers` for offline recorded bell sounds, plus the same `camera` and
+`mediapipe_face_mesh` packages used by Brush Buddies for local mouth tracking.
+The bundled face runtime raises Android minimum SDK to 24. Audio credits, melody sources
 and preview controls are documented in [Weihnachtsglocken](docs/bell-melodies.md).
 Typography uses platform serif fallbacks without network font downloads. Development uses
 `flutter_test` and `flutter_lints`. Keep `app/pubspec.lock` in version control for

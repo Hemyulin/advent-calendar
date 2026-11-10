@@ -11,6 +11,9 @@ Day 1 is the one-button tutorial. The following daily assignments are defined in
 | 5 | Weihnachtsglocken | Klassisch |
 | 6 | Nikolausstiefel | Klassisch |
 | 7 | Plätzchen ausstechen | Klassisch |
+| 8 | Wichtelwerkstatt | Klassisch |
+| 9 | Oy Vey, Weihnachten! | Klassisch |
+| 10 | Ein Glühwein zu viel | Klassisch |
 
 All other days keep their placeholders. The sample repository still marks days
 3 and 5 as complete so replay can be tried. Progress stays in memory and resets
@@ -43,9 +46,12 @@ To hide the menu, use `--dart-define=SHOW_GAME_PREVIEW=false`.
 | Memory | 26 attempts | 20 attempts | 15 attempts |
 | Maze | 4×4, 1 pit, 8 lives | 5×5, 2 pits, 6 lives | 6×6, 3 pits, 4 lives |
 | Chimney | 3×3, 12 s preparation, 1.5 s/tile | 4×4, 10 s preparation, 1.1 s/tile | 5×5, 10 s preparation, 0.9 s/tile |
-| Bells | 4–8 notes, five melodies | 4–10 notes, six rounds | 4–10 notes, seven rounds |
+| Bells | Full Alle Jahre wieder, all notes shown | Full Morgen kommt der Weihnachtsmann, first note shown | Full Jingle Bells verse + refrain, audio only |
 | Cookie cutting | Star, 6 points, 1.3 s window | Tree, 9 points, 0.8 s window | Snowflake, 12 points, 0.46 s window |
+| Workshop | 5×5, 2 presents | 7×7, 3 presents | 8×8, 4 presents |
+| Oy Vey | Slower falling objects | Standard falling objects | Faster falling objects |
 | Shoe | Broad brush, light mud | Regular brush, thick mud | Smaller brush, stubborn mud |
+| Walk home | 32 s, wide path, gentle wobble | 37 s, regular path and wobble | 42 s, narrow path, stronger wobble |
 
 `MemoryLevel`, `MazeCourse`, `ChimneyLevel`, `BellsLevel` and `ShoeLevel` can also be passed directly into their
 screens. Optional random seeds reproduce card shuffles; maze
@@ -94,7 +100,9 @@ All illustrations are native vector drawings; no dependencies were added.
 
 ## Weihnachtsglocken (Day 5)
 
-Listen to the recorded chimes and repeat the note order at your own pace.
+Listen to a complete song played on recorded chimes and repeat the note order
+at your own pace. Easy demonstrates every bell; medium only shows the first;
+hard gives no visual pitch hints and uses the longer full Jingle Bells melody.
 Mistakes allow unlimited attempts; replay and repeat-listening are always
 available. See [melodies, sample sources and preview controls](bell-melodies.md).
 
@@ -116,10 +124,13 @@ there are no additional assets, packages, hardware calls or permissions.
 
 ## Plätzchen ausstechen (Day 7)
 
-The pastry wheel follows a closed, arc-length-measured outline. A direction cue
-appears before each marked checkpoint. Its ring and marker turn green during
-the timing window; press the matching arrow then. Touch input fires on pointer
-down, with arrow-key and screen-reader actions using the same rules. Held keys
+The pastry wheel follows a closed, arc-length-measured outline. Small directional arrows sit directly on every checkpoint from the start.
+The approaching arrow turns gold, then green during its timing window; press
+the matching arrow then. Completed arrows fade into the cut. There is no
+floating direction badge or countdown ring. Swipe across the dough in the arrow direction, or use the buttons. A swipe
+registers as soon as its direction is clear, with one input per gesture. Button
+input fires on pointer-down; arrow-key and screen-reader actions use the same
+rules. Swipes obey the same direction and timing windows as the buttons. Held keys
 do not repeat inputs. Correct inputs progressively reveal the cut groove.
 
 Wrong directions, early inputs and missed windows each count as one mistake.
@@ -149,6 +160,76 @@ Tests cover outline closure and sampling, tangent directions, all-level solvabil
 exact timing boundaries, early/wrong/missed inputs, recovery, custom limits,
 immediate pointer-down input, keyboard control, lift-before-save ordering,
 completion/replay, pause/resume and every difficulty at small/large text sizes.
+
+## Wichtelwerkstatt (Day 8)
+
+Move the elf one tile with a swipe, a direction button or an arrow key. Push
+presents onto all golden bow-marked target mats. Wooden crates are walls;
+presents block each other and can only be pushed, never pulled. A goal mat
+turns green and the present gains a checkmark when occupied. The short movement
+and arrival animations respect reduced-motion settings. Completion uses the
+shared foreground result and callback; replay never clears earlier completion.
+
+The three boards are handcrafted 5×5 / 2-present, 7×7 / 3-present and 8×8 /
+4-present layouts. Independently solved push-state searches found solutions
+requiring 12 / 31 / 73 moves and 2 / 6 / 12 pushes. Witnesses in
+`app/test/helpers/workshop_solutions.dart` are replayed against the real model.
+The small board includes an ordering trap: filling one target too early blocks
+access needed to place the other present. Undo makes this safe to explore.
+
+`WorkshopLevel` parses reusable square ASCII boards with `#` walls, `.` targets,
+`$` presents and `@` elf; `*` and `+` represent occupied targets. Board data is
+immutable. `WorkshopGame` validates walking and pushing and records snapshots
+only for legal moves. **Rückgängig** restores elf position, stable present IDs,
+facing and move/push counters. The app-bar restart resets the same board. There
+is no move limit, random puzzle generation or forced deadlock detection.
+
+`WorkshopScreen` renders native vector art and animates stable pieces between
+tiles. Each swipe produces exactly one move. **Spiele ausprobieren** exposes all
+boards through the existing difficulty selector, independent of device date.
+Tests cover every solution, illegal moves, pushing without pulling, target
+occupancy, full undo histories, reset, gestures/keyboard, completion/replay and
+small-screen layouts with enlarged text. No dependencies or hardware calls added.
+
+## Oy Vey, Weihnachten! (Day 9)
+
+The mirrored front camera drives a sack at the calibrated mouth. Catch 15
+Hanukkah objects while open and avoid swallowing three Christmas objects.
+Tracking loss pauses gameplay. Local capture, frame conversion and face-mesh
+processing adapt Brush Buddies; game rules remain independent. The preview
+includes an explicitly labelled camera-free test driver. See
+[reuse, calibration, privacy and device testing](oy-vey.md) for details.
+
+## Ein Glühwein zu viel (Day 10)
+
+Balance a scarf-wearing character on an automatically scrolling winter street.
+Lean left/right to counter the sway and steer past snowmen, bicycles, bins,
+sleeping revellers and ice. The protagonist has shoulder-length blonde hair.
+Each attempt randomly starts in daylight or at night. A sun/moon button switches
+between snowy daylight and a lantern-lit night scene. Collisions give a
+recoverable shove; ice briefly reduces grip. Sustained
+overbalancing or walking off the path causes a fall. Reach the warm house to win.
+Falling and arrival animate before the shared foreground result card appears.
+
+`walk_home/walk_game.dart` contains the Flutter-independent simulation and seeded
+obstacle generation. `WalkLevel` configures duration, path width, wobble, obstacle
+spacing, lean limit, recovery grace and an optional seed. Every obstacle leaves
+a passing gap. Fixed small physics steps and smoothly varying disturbances keep
+corrections responsive; long stalled frames are capped. The three difficulty
+presets are available in **Spiele ausprobieren** without changing daily progress.
+
+`walk_screen.dart` reuses the maze's injectable `TiltSource` and native adapter.
+Eight stable readings calibrate the starting posture; the calibration icon pauses
+the game and sets a new centre. Held touch arrows and keyboard arrows are the
+fallback. Sensor errors or three seconds without readings pause play and offer
+touch controls. Help and backgrounding freeze the simulation; returning requires
+explicit resume, with fresh calibration for sensors. Replay preserves completion.
+`walk_art.dart` draws the street, character, obstacles and ending animations using
+Flutter painters, with reduced-motion support and no additional dependencies.
+
+Tests cover recoverable collisions, ice, sustained falls, seeded route clearance,
+successful controlled navigation at every difficulty, calibration, sensor loss,
+held controls, lifecycle pauses, completion/replay and responsive layouts.
 
 ## Motion input
 
@@ -187,6 +268,10 @@ and actions, with save details visible only if an error needs attention.
 Pages are fixed game scenes, with no vertical scrolling. `ViewportFit` scales a
 scene down only when its content exceeds the available space. The calendar's
 horizontal day carousel remains scrollable; the preview uses a fixed card grid.
+On the calendar, a left/right swipe across the main scene selects the next/previous
+available door and keeps the carousel selection visible. The carousel itself
+continues to scroll independently. Gestures do not wrap past days 1 and 24 or
+bypass locked dates, and swiping does not open a challenge.
 
 Success and failure cards use `GameResultLayer`: a foreground card over a dimmed,
 input-blocked game, including the app bar. The card contains replay/retry and

@@ -207,6 +207,10 @@ void main() {
             home: BellsScreen(
               audio: FakeBellAudio(),
               previewControls: true,
+              level: const BellsLevel(
+                rounds: [BellRound(3)],
+                guidance: BellGuidance.none,
+              ),
               onComplete: () async {},
             ),
           ),
@@ -246,12 +250,126 @@ void main() {
           .onChanged!(i);
       await tester.pumpAndSettle();
       audio.played.clear();
-      await hear(tester, frames: 100);
+      final milliseconds = bellRounds[i].notes.fold<int>(
+        0,
+        (sum, n) =>
+            sum + ((n.beats + n.restBeats) * 200).round().clamp(60, 100000),
+      );
+      await hear(tester, frames: (milliseconds / 100).ceil() + 20);
       expect(audio.played, bellRounds[i].notes.map((note) => note.pitch));
-      expect(find.text(bellRounds[i].melody.title), findsOneWidget);
+      expect(
+        tester.widget<Text>(find.byKey(const ValueKey('bell-song-title'))).data,
+        bellRounds[i].melody.title,
+      );
     }
     await tester.pumpWidget(const SizedBox.shrink());
   });
+
+  for (final guidance in BellGuidance.values) {
+    testWidgets(
+      'demonstration guidance $guidance controls actual bell movement',
+      (tester) async {
+        final audio = FakeBellAudio();
+        await tester.pumpWidget(
+          MaterialApp(
+            home: BellsScreen(
+              audio: audio,
+              level: BellsLevel(
+                rounds: const [BellRound(1, 2)],
+                beatMilliseconds: 400,
+                guidance: guidance,
+              ),
+              onComplete: () async {},
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        double swing(BellNote note) => tester
+            .widget<Transform>(
+              find.descendant(
+                of: find.byKey(ValueKey('bell-${note.name}')),
+                matching: find.byType(Transform),
+              ),
+            )
+            .transform
+            .storage[1]
+            .abs();
+        await tester.tap(find.text('Melodie anhören'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(audio.played, [BellNote.g]);
+        expect(
+          swing(BellNote.g),
+          guidance == BellGuidance.none ? closeTo(0, 1e-9) : greaterThan(.01),
+        );
+        await tester.pump(const Duration(milliseconds: 500));
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(audio.played, [BellNote.g, BellNote.a]);
+        expect(
+          swing(BellNote.a),
+          guidance == BellGuidance.all ? greaterThan(.01) : closeTo(0, 1e-9),
+        );
+        await tester.pump(const Duration(milliseconds: 200));
+        expect(find.text('Jetzt bist du dran'), findsOneWidget);
+        await tester.tap(find.byKey(const ValueKey('bell-g')));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(
+          swing(BellNote.g),
+          greaterThan(.01),
+        ); // Player input always has feedback.
+        await tester.tap(find.text('Erneut anhören'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+        if (guidance == BellGuidance.none) {
+          expect(swing(BellNote.g), closeTo(0, 1e-9));
+        }
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
+  }
+
+  testWidgets(
+    'audio-only guidance survives preview selection and repeat listening',
+    (tester) async {
+      final audio = FakeBellAudio();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: BellsScreen(
+            audio: audio,
+            previewControls: true,
+            level: const BellsLevel(
+              guidance: BellGuidance.none,
+              beatMilliseconds: 200,
+            ),
+            onComplete: () async {},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      tester
+          .widget<DropdownButtonFormField<int>>(
+            find.byKey(const ValueKey('bell-melody-preview')),
+          )
+          .onChanged!(0);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Melodie anhören'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      final rotation = tester
+          .widget<Transform>(
+            find.descendant(
+              of: find.byKey(const ValueKey('bell-g')),
+              matching: find.byType(Transform),
+            ),
+          )
+          .transform
+          .storage[1];
+      expect(rotation, closeTo(0, 1e-9));
+      expect(audio.played.first, BellNote.g);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
 
   test('Day 5 receives the shared completion and replay state', () {
     Future<void> complete() async {}

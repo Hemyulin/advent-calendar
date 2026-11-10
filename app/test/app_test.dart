@@ -57,7 +57,7 @@ void main() {
   testWidgets(
     'door swings before navigation, ignores repeated taps, and resets',
     (tester) async {
-      await start(tester, DateTime(2026, 12, 8));
+      await start(tester, DateTime(2026, 12, 11));
       await tester.tap(find.byType(IllustratedDoor));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
@@ -81,7 +81,7 @@ void main() {
       );
       await tester.tap(find.byType(IllustratedDoor));
       await tester.pumpAndSettle();
-      expect(find.text('Türchen 8'), findsOneWidget);
+      expect(find.text('Türchen 11'), findsOneWidget);
     },
   );
 
@@ -89,7 +89,7 @@ void main() {
     tester.platformDispatcher.accessibilityFeaturesTestValue =
         FakeAccessibilityFeatures(disableAnimations: true);
     addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
-    await start(tester, DateTime(2026, 12, 8));
+    await start(tester, DateTime(2026, 12, 11));
     await tester.tap(find.byType(IllustratedDoor));
     await tester.pump();
     await tester.pump();
@@ -100,11 +100,11 @@ void main() {
   testWidgets('today opens a German placeholder and can return', (
     tester,
   ) async {
-    await start(tester, DateTime(2026, 12, 8));
+    await start(tester, DateTime(2026, 12, 11));
     expect(find.text('Heute'), findsOneWidget);
     await tester.tap(find.byType(IllustratedDoor));
     await tester.pumpAndSettle();
-    expect(find.text('Türchen 8'), findsOneWidget);
+    expect(find.text('Türchen 11'), findsOneWidget);
     expect(find.byTooltip('Zurück'), findsOneWidget);
     await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
@@ -156,7 +156,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-      await start(tester, DateTime(2026, 12, 8));
+      await start(tester, DateTime(2026, 12, 11));
       expect(tester.takeException(), isNull);
       expect(
         tester.getRect(find.byType(IllustratedDoor)).bottom,

@@ -32,6 +32,7 @@ class _BellsScreenState extends State<BellsScreen> with WidgetsBindingObserver {
   late final BellAudio _audio;
   Timer? _timer;
   int _generation = 0;
+  int _animationEpoch = 0;
   bool _ready = false;
   bool _error = false;
   bool _foreground = true;
@@ -64,6 +65,7 @@ class _BellsScreenState extends State<BellsScreen> with WidgetsBindingObserver {
 
   void _cancel() {
     _generation++;
+    _animationEpoch++;
     _timer?.cancel();
     _active = null;
     unawaited(_audio.stop().catchError((Object _) {}));
@@ -99,9 +101,8 @@ class _BellsScreenState extends State<BellsScreen> with WidgetsBindingObserver {
   }
 
   void _listen() {
-    if (!_ready || !_foreground) return;
+    if (!_ready || !_foreground || !_game.listen()) return;
     _cancel();
-    if (!_game.listen()) return;
     setState(() {});
     _playNext(0, _generation);
   }
@@ -121,12 +122,13 @@ class _BellsScreenState extends State<BellsScreen> with WidgetsBindingObserver {
       await _audio.play(note.pitch);
       if (!_valid(generation)) return;
       setState(() {
-        _active = note.pitch;
-        _strikes[note.pitch] = _strikes[note.pitch]! + 1;
+        final show = _game.level.showsDemonstrationNote(index);
+        _active = show ? note.pitch : null;
+        if (show) _strikes[note.pitch] = _strikes[note.pitch]! + 1;
       });
       final duration = math.max(
-        220,
-        (note.beats * _game.level.beatMilliseconds).round(),
+        60,
+        ((note.beats + note.restBeats) * _game.level.beatMilliseconds).round(),
       );
       _timer = Timer(
         Duration(milliseconds: duration),
@@ -179,6 +181,7 @@ class _BellsScreenState extends State<BellsScreen> with WidgetsBindingObserver {
           : BellsLevel(
               rounds: [bellRounds[_previewRound!]],
               beatMilliseconds: widget.level.beatMilliseconds,
+              guidance: widget.level.guidance,
             ),
     );
   });
@@ -201,7 +204,11 @@ class _BellsScreenState extends State<BellsScreen> with WidgetsBindingObserver {
       alreadyCompleted: widget.alreadyCompleted,
       onRestart: _restart,
       instructions:
-          'Hör der Melodie zu. Spiele danach dieselben Glocken in derselben Reihenfolge. Dein Tempo ist egal. Du darfst beliebig oft zuhören und es noch einmal versuchen.',
+          'Hör dir das ganze Lied an und spiele es danach nach. Dein Tempo ist egal. Du darfst beliebig oft zuhören und es noch einmal versuchen. ${switch (widget.level.guidance) {
+            BellGuidance.all => 'Beim Vorspielen schwingen alle gespielten Glocken mit.',
+            BellGuidance.firstOnly => 'Nur die erste Glocke zeigt dir den Anfang. Danach hörst du nur zu.',
+            BellGuidance.none => 'Beim Vorspielen bleiben alle Glocken still. Verlass dich auf dein Gehör.',
+          }}',
       children: [
         if (widget.previewControls) ...[
           DropdownButtonFormField<int>(
@@ -212,7 +219,7 @@ class _BellsScreenState extends State<BellsScreen> with WidgetsBindingObserver {
               labelText: 'Melodie ausprobieren',
               border: OutlineInputBorder(),
             ),
-            hint: const Text('Alle Stufen'),
+            hint: const Text('Ganzes Lied'),
             items: [
               for (var i = 0; i < bellRounds.length; i++)
                 DropdownMenuItem(
@@ -248,6 +255,7 @@ class _BellsScreenState extends State<BellsScreen> with WidgetsBindingObserver {
         ),
         Text(
           _game.current.melody.title,
+          key: const ValueKey('bell-song-title'),
           textAlign: TextAlign.center,
           style: CalendarStyle.heading.copyWith(fontSize: 25),
         ),
@@ -274,18 +282,20 @@ class _BellsScreenState extends State<BellsScreen> with WidgetsBindingObserver {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           padding: EdgeInsets.zero,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 4,
-            childAspectRatio: .7,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: _game.current.melody.bells.length > 8 ? 3 : 4,
+            childAspectRatio: _game.current.melody.bells.length > 8 ? 1.05 : .7,
             mainAxisSpacing: 12,
             crossAxisSpacing: 4,
           ),
-          itemCount: BellNote.values.length,
+          itemCount: _game.current.melody.bells.length,
           itemBuilder: (context, index) {
-            final note = BellNote.values[index];
+            final note = _game.current.melody.bells[index];
             return _IllustratedBell(
+              key: ValueKey(note),
               note: note,
               strike: _strikes[note]!,
+              resetToken: _animationEpoch,
               enabled: answering && _ready,
               wrong: phase == BellsPhase.mistake && _active == note,
               onTap: () => _tap(note),
@@ -296,25 +306,27 @@ class _BellsScreenState extends State<BellsScreen> with WidgetsBindingObserver {
         Semantics(
           label: '${_game.entered} von ${_game.current.length} Tönen richtig',
           liveRegion: true,
-          child: Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 9,
-            runSpacing: 6,
+          child: Column(
             children: [
-              for (var i = 0; i < _game.current.length; i++)
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 160),
-                  width: 12,
-                  height: 12,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: phase == BellsPhase.mistake
-                        ? const Color(0xFFCC8C77)
-                        : i < _game.entered
-                        ? CalendarStyle.green
-                        : CalendarStyle.line,
-                  ),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: _game.entered / _game.current.length,
+                  minHeight: 4,
+                  backgroundColor: CalendarStyle.line,
+                  color: phase == BellsPhase.mistake
+                      ? const Color(0xFFCC8C77)
+                      : CalendarStyle.green,
                 ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '${_game.entered} / ${_game.current.length}',
+                style: const TextStyle(
+                  color: CalendarStyle.muted,
+                  fontSize: 12,
+                ),
+              ),
             ],
           ),
         ),
@@ -360,14 +372,16 @@ class _BellsScreenState extends State<BellsScreen> with WidgetsBindingObserver {
 
 class _IllustratedBell extends StatefulWidget {
   const _IllustratedBell({
+    super.key,
     required this.note,
     required this.strike,
+    required this.resetToken,
     required this.enabled,
     required this.wrong,
     required this.onTap,
   });
   final BellNote note;
-  final int strike;
+  final int strike, resetToken;
   final bool enabled, wrong;
   final VoidCallback onTap;
   @override
@@ -383,6 +397,7 @@ class _IllustratedBellState extends State<_IllustratedBell>
   @override
   void didUpdateWidget(_IllustratedBell oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.resetToken != widget.resetToken) _swing.reset();
     if (oldWidget.strike != widget.strike) _swing.forward(from: 0);
   }
 
@@ -395,7 +410,11 @@ class _IllustratedBellState extends State<_IllustratedBell>
   @override
   Widget build(BuildContext context) => Semantics(
     label:
-        'Glocke ${widget.note == BellNote.highC ? 'hohes C' : widget.note.label}',
+        'Glocke ${switch (widget.note) {
+          BellNote.highC => 'hohes C',
+          BellNote.highD => 'hohes D',
+          _ => widget.note.label,
+        }}',
     button: true,
     enabled: widget.enabled,
     child: InkWell(

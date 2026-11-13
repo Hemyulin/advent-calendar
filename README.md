@@ -149,3 +149,13 @@ reproducible dependency resolution.
 `firmware/main.py` is the existing MicroPython entry point and currently blinks
 the Pico's onboard LED. App setup does not change the firmware. Flashing and
 future lock control will be designed separately.
+
+## Pico network configuration
+
+Copy `firmware/config.example.py` to `firmware/config.py` and fill in your Wi-Fi
+and fallback hotspot credentials. `config.py` is ignored by Git. Copy both
+`main.py` and `config.py` to the Pico's filesystem before restarting it.
+The firmware exposes `/health` with the `DoorZero` identity and falls back to a
+hotspot if home Wi-Fi is unavailable. The LED now indicates network status;
+manual LED endpoints return HTTP 410. `old_main.py` preserves the earlier LED
+server for reference and also reads credentials from the local config.

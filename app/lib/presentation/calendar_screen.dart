@@ -4,6 +4,9 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'viewport_fit.dart';
 
+import '../admin/admin_authenticator.dart';
+import '../admin/admin_pin_dialog.dart';
+import '../admin/admin_screen.dart';
 import '../challenges/games/game_catalog.dart';
 import '../challenges/games/game_preview_screen.dart';
 import '../content/calendar_day.dart';
@@ -20,8 +23,10 @@ class CalendarScreen extends StatefulWidget {
     this.progressRepository,
     this.previewAllDays = false,
     this.showGamePreview = false,
+    this.adminAuthenticator = const DevelopmentAdminAuthenticator(),
   });
 
+  final AdminAuthenticator adminAuthenticator;
   final DateTime? now;
   final ProgressRepository? progressRepository;
   final bool previewAllDays;
@@ -34,7 +39,9 @@ class CalendarScreen extends StatefulWidget {
 class _CalendarScreenState extends State<CalendarScreen>
     with WidgetsBindingObserver {
   final _scrollController = ScrollController();
-  Timer? _midnightTimer;
+  Timer? _midnightTimer, _adminTapTimer;
+  int _adminTaps = 0;
+  bool _adminOpening = false;
   Set<String> _completed = {};
   late int _selected;
   double _swipeDistance = 0;
@@ -53,6 +60,40 @@ class _CalendarScreenState extends State<CalendarScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToSelected());
   }
 
+  void _resetAdminTaps() {
+    _adminTapTimer?.cancel();
+    _adminTaps = 0;
+  }
+
+  void _tapAdminTitle() {
+    if (_adminOpening || ModalRoute.of(context)?.isCurrent == false) return;
+    if (_adminTaps == 0) {
+      _adminTapTimer = Timer(const Duration(seconds: 3), _resetAdminTaps);
+    }
+    _adminTaps++;
+    if (_adminTaps == 5) {
+      _resetAdminTaps();
+      _openAdmin();
+    }
+  }
+
+  Future<void> _openAdmin() async {
+    _adminOpening = true;
+    try {
+      final allowed = await showDialog<bool>(
+        context: context,
+        builder: (_) =>
+            AdminPinDialog(authenticator: widget.adminAuthenticator),
+      );
+      if (allowed != true || !mounted) return;
+      await Navigator.of(
+        context,
+      ).push(MaterialPageRoute<void>(builder: (_) => const AdminScreen()));
+    } finally {
+      _adminOpening = false;
+    }
+  }
+
   void _scheduleDateRefresh() {
     _midnightTimer?.cancel();
     if (widget.now != null) return;
@@ -67,6 +108,7 @@ class _CalendarScreenState extends State<CalendarScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) _resetAdminTaps();
     if (state == AppLifecycleState.resumed) {
       setState(() {});
       _scheduleDateRefresh();
@@ -123,6 +165,7 @@ class _CalendarScreenState extends State<CalendarScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _midnightTimer?.cancel();
+    _resetAdminTaps();
     _scrollController.dispose();
     super.dispose();
   }
@@ -172,11 +215,16 @@ class _CalendarScreenState extends State<CalendarScreen>
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text(
-                                'Dein Adventskalender',
-                                textAlign: TextAlign.center,
-                                style: CalendarStyle.heading.copyWith(
-                                  fontSize: 32,
+                              GestureDetector(
+                                key: const ValueKey('admin-title-entry'),
+                                behavior: HitTestBehavior.opaque,
+                                onTap: _tapAdminTitle,
+                                child: Text(
+                                  'Dein Adventskalender',
+                                  textAlign: TextAlign.center,
+                                  style: CalendarStyle.heading.copyWith(
+                                    fontSize: 32,
+                                  ),
                                 ),
                               ),
                               const SizedBox(height: 10),

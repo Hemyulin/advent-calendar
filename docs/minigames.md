@@ -47,7 +47,7 @@ To hide the menu, use `--dart-define=SHOW_GAME_PREVIEW=false`.
 | Memory | 26 attempts | 20 attempts | 15 attempts |
 | Maze | 4×4, 1 pit, 8 lives | 5×5, 2 pits, 6 lives | 6×6, 3 pits, 4 lives |
 | Chimney | 3×3, 12 s preparation, 1.5 s/tile | 4×4, 10 s preparation, 1.1 s/tile | 5×5, 10 s preparation, 0.9 s/tile |
-| Bells | Full Alle Jahre wieder, all notes shown | Full Morgen kommt der Weihnachtsmann, first note shown | Full Jingle Bells verse + refrain, audio only |
+| Bells | Carol of the Bells hook, all notes shown | Last Christmas hook, first note shown | All I Want for Christmas Is You hook, audio only |
 | Cookie cutting | Star, 6 points, 1.3 s window | Tree, 9 points, 0.8 s window | Snowflake, 12 points, 0.46 s window |
 | Workshop | 5×5, 2 presents | 7×7, 3 presents | 8×8, 4 presents |
 | Oy Vey | Slower falling objects | Standard falling objects | Faster falling objects |
@@ -102,9 +102,10 @@ All illustrations are native vector drawings; no dependencies were added.
 
 ## Weihnachtsglocken (Day 5)
 
-Listen to a complete song played on recorded chimes and repeat the note order
-at your own pace. Easy demonstrates every bell; medium only shows the first;
-hard gives no visual pitch hints and uses the longer full Jingle Bells melody.
+Listen to a recognizable 4–5 second hook played on recorded chimes and repeat
+the note order at your own pace. Easy uses simple repeated-note patterns and
+demonstrates every bell. Medium uses wider intervals and only shows the first
+bell. Hard adds a chromatic pitch and varied intervals with no visual pitch hints.
 Mistakes allow unlimited attempts; replay and repeat-listening are always
 available. See [melodies, sample sources and preview controls](bell-melodies.md).
 
@@ -235,12 +236,24 @@ held controls, lifecycle pauses, completion/replay and responsive layouts.
 
 ## Akku-Panik (Day 11)
 
-Drag the plug onto any device or tap a device to connect the single cable.
-Connecting the first device starts the round; **Los geht’s** also starts it
-unplugged. Keep the smartphone, smartwatch, tablet, headphones and laptop alive
-for 45 seconds. A green card and bolt mark the connected device. Percentages
-show remaining charge; red batteries warn below 5%. A small event icon has a
-German tooltip naming the temporary power drain. Devices never charge together.
+Drag the loose plug onto the first device to start the round. There is no
+start button and tapping devices does not change charging. Once plugged in,
+drag from the connected device to another one; unplugged devices cannot act
+as cable sources. The loose plug disappears from its initial position, and
+the cord stays hidden until dragging or charging. Keep the smartphone, smartwatch, tablet, headphones and laptop alive
+for 45 seconds. Five illustrated devices sit at slight angles on one ivory
+desk with a few crumbs. The curved cable follows
+the finger and snaps into a visible port. Charging lights and bolts mark the
+connected device; percentages remain separate from the illustrated screens.
+Red batteries warn below 5%. Devices never charge together.
+
+Events appear on the devices themselves: message cards, a training trace,
+a playing video, floating musical notes or an update bar. Faces look sleepy,
+worried, relieved or switched off. The final ten seconds bring more urgent
+expressions; a seven-segment countdown above the desk shows minutes, seconds
+and hundredths. Its forest-green digits turn muted red in the last ten seconds. All screens light up together
+before the shared victory card appears; a failed device closes its eyes.
+Reduced-motion mode removes wobbling and pulses and shows results immediately.
 
 `battery/battery_game.dart` contains the Flutter-independent model. `BatteryLevel`
 configures duration, drain, charging rate, event interval/duration/boost, initial
@@ -248,18 +261,25 @@ charge range and an optional random seed. Defaults stay within 1–10% initially
 Drain and event frequency increase throughout the round. Collapsed batteries
 lose immediately, including on the final frame; otherwise reaching 45 seconds
 wins. Seeded retries repeat initial levels/events for testing; normal retries
-randomize them. Touch switching is immediate, without a connection cooldown.
+randomize them. Switching requires a drag from the currently connected device.
+Dragging temporarily unplugs the cable. Cancelling a drag returns it to its
+previous device; a successful drop charges the new target.
 
-`battery_screen.dart` provides drag targets, accessible tap actions, visual
+`battery_screen.dart` provides plug drag targets, readouts for accessibility, visual
 charging feedback and the shared completion/retry overlays. Help, explicit pause
 and backgrounding freeze both charge and events. **Weiter** resumes without
 catching up suspended time. Completion and replay use the existing callback;
-no persistence, hardware or dependencies are added. All difficulties can be
-launched from **Spiele ausprobieren**, without changing the device date.
+no persistence, Pico calls or dependencies are added. Optional vibration gives
+a small connection click and a distinct warning below 3%, with hysteresis and
+a cooldown. Muting and vibration choices stay in place on replay. The optional
+final-countdown tick uses Flutter's system click and follows device sound
+settings. Vibration starts off; the ticking starts on. Feedback stops while
+paused or backgrounded. All difficulties can be launched from
+**Spiele ausprobieren**, without changing the device date.
 
 Balance tests exercise 100 seeds per difficulty with cable decisions every
-half-second. Additional tests cover one-cable exclusivity, event consumption,
-expiry, win/loss, bounds, drag/tap controls, lifecycle, completion and layouts.
+half-second and a 150 ms unplugged interval for each switch. Additional tests cover one-cable exclusivity, event consumption,
+expiry, win/loss, bounds, drag-only controls, lifecycle, completion and layouts.
 
 ## Motion input
 

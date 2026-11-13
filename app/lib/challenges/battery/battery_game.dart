@@ -121,6 +121,12 @@ class BatteryGame {
     connected = index;
   }
 
+  void disconnect() {
+    if (phase == BatteryPhase.ready || phase == BatteryPhase.playing) {
+      connected = null;
+    }
+  }
+
   void advance(double seconds) {
     if (phase != BatteryPhase.playing || !seconds.isFinite || seconds <= 0) {
       return;

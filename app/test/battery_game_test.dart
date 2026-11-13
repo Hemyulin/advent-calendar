@@ -29,6 +29,19 @@ void main() {
     g.connect(5);
     expect(g.connected, 3);
   });
+  test('unplugging stops charging until reconnected', () {
+    final g = BatteryGame(const BatteryLevel(seed: 1))
+      ..start()
+      ..connect(0);
+    g.advance(.1);
+    final before = g.devices[0].battery;
+    g.disconnect();
+    g.advance(.1);
+    expect(g.connected, isNull);
+    expect(g.devices[0].battery, lessThan(before));
+    g.connect(1);
+    expect(g.connected, 1);
+  });
   test(
     'unattended devices die, failure freezes all further input and time',
     () {
@@ -110,6 +123,10 @@ void main() {
           if (g.connected == null ||
               g.devices[g.connected!].battery / g.drainFor(g.connected!) >
                   g.devices[target].battery / g.drainFor(target) + 4) {
+            g.disconnect();
+            // Include a realistic brief unplugged interval for every move.
+            g.advance(.1);
+            g.advance(.05);
             g.connect(target);
             switches++;
           }

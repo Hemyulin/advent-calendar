@@ -25,7 +25,7 @@ flutter run
 
 The app displays a German Advent calendar with an illustrated door and a
 horizontal day carousel. Swipe left or right across the main door to select the
-next or previous available day; the carousel also remains independently scrollable. Days 1–10 contain playable challenges; the remaining
+next or previous available day; the carousel also remains independently scrollable. Days 1–11 contain playable challenges; the remaining
 days lead to a placeholder challenge screen.
 Each day has a festive paper door with a storybook ornament, a rotating warm
 colour palette, and fairy lights. Locked doors keep their colour and show a lock
@@ -65,9 +65,10 @@ does not complete the day. Completed tutorials can be replayed.
 Day 2 has **Paare finden** (4×4 Memory) and Day 3 **Kugellabyrinth** (one sensor-
 or touch-controlled maze per day). Day 4 has **Rettet den Weihnachtsmann!**, a rotating
 chimney-pipe puzzle with a ten-second head start.
-Day 5 has **Weihnachtsglocken**, a melody-memory game with complete versions
-of five Christmas songs. Difficulty reduces visual help from every note to the
-first note to audio only, with longer melodies on the hardest setting.
+Day 5 has **Weihnachtsglocken**, a melody-memory game using short, recognizable
+hooks from eight Christmas songs, including Carol of the Bells, Last Christmas
+and All I Want for Christmas Is You. Difficulty uses trickier pitch patterns and
+reduces visual help from every note to the first note to audio only.
 Day 6 celebrates Nikolaus with a muddy shoe to brush clean and polish.
 Day 7 has **Plätzchen ausstechen**: timed arrow inputs guide a moving pastry
 wheel around a cookie, followed by an illustrated lift out of the dough.
@@ -77,6 +78,9 @@ Day 9 has **Oy Vey, Weihnachten!**, a locally processed front-camera mouth game
 adapted from Brush Buddies. See [camera reuse, privacy and testing](docs/oy-vey.md).
 Day 10 has **Ein Glühwein zu viel**, a 32–42 second walk home with tilt balance,
 winter obstacles, calibration and held touch controls.
+Day 11 has **Akku-Panik**: keep five low-battery devices alive for 45 seconds
+with one cable, visible power-hungry events and plug-dragging controls on an illustrated
+Christmas desk. Optional vibration and a ticking final countdown add feedback.
 **Spiele ausprobieren** opens all games at configurable difficulty,
 independent of the device date and without changing daily progress. See
 [Minigame setup, controls and architecture](docs/minigames.md) for details.
@@ -101,6 +105,16 @@ motion-sensor adapter; other platforms use touch/keyboard maze controls.
 Additional platforms can be generated from `app/` with `flutter create
 --platforms=ios,web,macos,windows,linux .` when needed, on a supported host.
 
+## Administration
+
+Tap **Dein Adventskalender** five times within three seconds, then enter the
+initial development PIN **`0542`**. **Advent-Verwaltung** contains calendar,
+game testing, box and diagnostics sections. Game testing and the temporary Pico LED test are active;
+the PIN does not authorize physical unlocking. **Box-Steuerung** sends LED on/off
+commands to the configurable Pico URL (default `http://192.168.178.68`). Rebuild in
+debug/profile mode for local HTTP testing. See [admin setup and authentication
+boundary](docs/admin.md).
+
 ## App structure
 
 - `lib/main.dart`: entry point.
@@ -108,7 +122,7 @@ Additional platforms can be generated from `app/` with `flutter create
 - `lib/presentation/`: calendar screen, vector door illustration, day carousel,
   and challenge placeholder. Reduced-motion preferences are respected.
 - `lib/challenges/`: challenge identities and types (puzzles, quizzes,
-  questionnaires, interactive minigames), Day 1's tutorial, and the nine playable
+  questionnaires, interactive minigames), Day 1's tutorial, and the ten playable
   games. Pure Dart mechanics are separate from screens and motion input.
 - `lib/content/`: daily content and its association with challenge IDs.
 - `lib/progress/`: progress contract and in-memory mock implementation.

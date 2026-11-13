@@ -204,7 +204,7 @@ class _BellsScreenState extends State<BellsScreen> with WidgetsBindingObserver {
       alreadyCompleted: widget.alreadyCompleted,
       onRestart: _restart,
       instructions:
-          'Hör dir das ganze Lied an und spiele es danach nach. Dein Tempo ist egal. Du darfst beliebig oft zuhören und es noch einmal versuchen. ${switch (widget.level.guidance) {
+          'Hör dir den kurzen Liedausschnitt an und spiele ihn nach. Dein Tempo ist egal. Du darfst beliebig oft zuhören und es noch einmal versuchen. ${switch (widget.level.guidance) {
             BellGuidance.all => 'Beim Vorspielen schwingen alle gespielten Glocken mit.',
             BellGuidance.firstOnly => 'Nur die erste Glocke zeigt dir den Anfang. Danach hörst du nur zu.',
             BellGuidance.none => 'Beim Vorspielen bleiben alle Glocken still. Verlass dich auf dein Gehör.',
@@ -219,7 +219,7 @@ class _BellsScreenState extends State<BellsScreen> with WidgetsBindingObserver {
               labelText: 'Melodie ausprobieren',
               border: OutlineInputBorder(),
             ),
-            hint: const Text('Ganzes Lied'),
+            hint: const Text('Liedausschnitt wählen'),
             items: [
               for (var i = 0; i < bellRounds.length; i++)
                 DropdownMenuItem(

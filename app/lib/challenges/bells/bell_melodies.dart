@@ -2,6 +2,7 @@
 enum BellNote {
   c('C', 'c5', 72),
   d('D', 'd5', 74),
+  dSharp('Dis', 'ds5', 75),
   e('E', 'e5', 76),
   f('F', 'f5', 77),
   fSharp('Fis', 'fs5', 78),
@@ -56,7 +57,17 @@ const jingleBells = [
   BellNote.a,
   BellNote.bFlat,
   BellNote.highC,
-  BellNote.highD,
+];
+
+const popBells = [
+  BellNote.c,
+  BellNote.dSharp,
+  BellNote.e,
+  BellNote.fSharp,
+  BellNote.g,
+  BellNote.a,
+  BellNote.h,
+  BellNote.highC,
 ];
 
 class MelodyNote {
@@ -98,82 +109,67 @@ List<MelodyNote> _phrase(
   );
 }
 
-List<MelodyNote> _morgenOpening() => [
-  ..._phrase('c c g g a a g', [1, 1, 1, 1, 1, 1, 2]),
-  ..._phrase('f f e e d c', [1, 1, 1, 1, 2, 2]),
-];
-List<MelodyNote> _klingRefrain() => [
-  ..._phrase('g e f g a g a g', [2, 1, 1, .5, .5, .5, .5, 2]),
-  ..._phrase('f d g e', [2, 1, 1, 4]),
-];
-List<MelodyNote> _tannenOpening() => [
-  ..._phrase('f f f g', [.75, .25, 1, 1]),
-  ..._phrase('a a a a', [.75, .25, 1.5, .5]),
-  ..._phrase('g a bFlat e', [.5, .5, 1, 1]),
-];
-List<MelodyNote> _jingleChorusOpening() => [
-  ..._phrase('a a a a a a', [.5, .5, 1, .5, .5, 1]),
-  ..._phrase('a highC f g a', [.5, .5, .75, .25, 2]),
-  ..._phrase('bFlat bFlat bFlat bFlat', [.5, .5, .75, .25]),
-  ..._phrase('bFlat a a a a', [.5, .5, .5, .25, .25]),
-];
-
-// Complete verse melodies, checked against the published public-domain scores.
-// Jingle Bells includes both the verse and full refrain, in F major.
-// Sources and transpositions: docs/bell-melodies.md.
+// Curated, complete musical phrases: never a verse or a full-song playback.
+// Keep the familiar opening/refrain and its real rhythm, rather than arbitrary
+// note-count truncation. Source transpositions: docs/bell-melodies.md.
 final bellMelodies = [
   BellMelody('morgen', 'Morgen kommt der Weihnachtsmann', [
-    ..._morgenOpening(),
-    ..._phrase('g g f f e e d', [1, 1, 1, 1, 1, 1, 2]),
-    ..._phrase('g g f f e e d', [1, 1, 1, 1, 1, 1, 2]),
-    ..._morgenOpening(),
+    ..._phrase('c c g g a a g', [1, 1, 1, 1, 1, 1, 2]),
   ]),
   BellMelody('alle', 'Alle Jahre wieder', [
     ..._phrase('g a g f e d', [1.5, .5, 1, 1, 2, 2]),
-    ..._phrase('c d e f e d', [1, .5, .5, 1, 1, 3], restAfter: 1),
-    ..._phrase('e g a g highC h a', [1, 1, 1, 1, 2, 1, 1]),
-    ..._phrase('g f e f g e', [1, .5, .5, 1, 1, 3], restAfter: 1),
   ]),
   BellMelody('tannenbaum', 'O Tannenbaum', [
-    ..._phrase('c', [1]),
-    ..._tannenOpening(),
-    ..._phrase('g f', [1, 1], restAfter: .5),
-    ..._phrase('highC', [.5]),
-    ..._phrase('highC a highD highC', [.5, .5, 1.5, .5]),
-    ..._phrase('highC bFlat bFlat bFlat', [.5, .5, 1.5, .5]),
-    ..._phrase('bFlat g highC bFlat', [.5, .5, 1.5, .5]),
-    ..._phrase('bFlat a a c', [.5, .5, 1, 1]),
-    ..._tannenOpening(),
-    ..._phrase('g f', [1, 1]),
+    ..._phrase('c f f f g a a a', [1, .75, .25, 1, 1, .75, .25, 1.5]),
   ], bells: tannenbaumBells),
+  // Start at the famous chorus, not the less recognizable verse.
   BellMelody('jingle', 'Jingle Bells', [
-    ..._phrase('c a g f', [.5, .5, .5, .5]),
-    ..._phrase('c c c', [1.5, .25, .25]),
-    ..._phrase('c a g f d', [.5, .5, .5, .5, 2]),
-    ..._phrase('d bFlat a g e', [.5, .5, .5, .5, 2]),
-    ..._phrase('highC highC bFlat g a', [.5, .5, .5, .5, 2]),
-    ..._phrase('c a g f c', [.5, .5, .5, .5, 2]),
-    ..._phrase('c a g f d d', [.5, .5, .5, .5, 1.5, .5]),
-    ..._phrase('d bFlat a g', [.5, .5, .5, .5]),
-    ..._phrase('highC highC highC highC', [.5, .5, .5, .5]),
-    ..._phrase('highD highC bFlat g f', [.5, .5, .5, .5, 1], restAfter: 1),
-    ..._jingleChorusOpening(),
-    ..._phrase('a g g a g highC', [.5, .5, .5, .5, 1, 1]),
-    ..._jingleChorusOpening(),
-    ..._phrase('highC highC bFlat g f', [.5, .5, .5, .5, 2]),
+    ..._phrase('a a a a a a a highC f g a', [
+      .5,
+      .5,
+      1,
+      .5,
+      .5,
+      1,
+      .5,
+      .5,
+      .75,
+      .25,
+      2,
+    ]),
   ], bells: jingleBells),
   BellMelody('kling', 'Kling, Glöckchen', [
-    ..._klingRefrain(),
-    ..._phrase('d d e c e d', [1, 1, 1, 1, 2, 2]),
-    ..._phrase('f f g d f e', [1, 1, 1, 1, 2, 2]),
-    ..._phrase('d d e fSharp g d', [1, 1, 1, 1, 2, 2]),
-    ..._phrase('e a g fSharp a g', [1, 1, 1, 1, 2, 2]),
-    ..._klingRefrain(),
+    ..._phrase('g e f g a g a g', [2, 1, 1, .5, .5, .5, .5, 2]),
   ], bells: klingBells),
+  // Title hook, transposed to G. Short phrase with its chromatic approach.
+  BellMelody('all-i-want', 'All I Want for Christmas Is You', [
+    ..._phrase('h a g e dSharp a h a g', [
+      .5,
+      .5,
+      .5,
+      .5,
+      .5,
+      1,
+      .5,
+      .375,
+      1.625,
+    ]),
+  ], bells: popBells),
+  // Two statements of the four-note Shchedryk motif, in D minor.
+  BellMelody('carol', 'Carol of the Bells', [
+    ..._phrase('f e f d f e f d', [1, .5, .5, 1, 1, .5, .5, 1]),
+  ]),
+  // Vocal refrain opening in G; ties are sustained rather than re-struck.
+  BellMelody('last-christmas', 'Last Christmas', [
+    MelodyNote(BellNote.h, 1.5),
+    MelodyNote(BellNote.h, 1),
+    MelodyNote(BellNote.a, .5, restBeats: .5),
+    ..._phrase('e h h highC a', [.5, .5, .5, .5, 1]),
+  ]),
 ];
 
 class BellRound {
-  /// Omit length for a complete melody. Explicit lengths support custom lessons.
+  /// Defaults to the curated hook. Explicit lengths support short custom lessons.
   const BellRound(this.melodyIndex, [this._length]);
   final int melodyIndex;
   final int? _length;
@@ -190,4 +186,7 @@ const bellRounds = [
   BellRound(2),
   BellRound(4),
   BellRound(3),
+  BellRound(6),
+  BellRound(7),
+  BellRound(5),
 ];

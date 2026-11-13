@@ -8,7 +8,7 @@ enum BellGuidance { all, firstOnly, none }
 
 class BellsLevel {
   const BellsLevel({
-    this.rounds = const [BellRound(0)],
+    this.rounds = const [BellRound(7)],
     this.beatMilliseconds = 620,
     this.guidance = BellGuidance.firstOnly,
   });
@@ -25,12 +25,12 @@ class BellsLevel {
   factory BellsLevel.forDifficulty(GameDifficulty difficulty) =>
       switch (difficulty) {
         GameDifficulty.easy => const BellsLevel(
-          rounds: [BellRound(1)],
+          rounds: [BellRound(6)],
           guidance: BellGuidance.all,
         ),
         GameDifficulty.normal => const BellsLevel(),
         GameDifficulty.hard => const BellsLevel(
-          rounds: [BellRound(3)],
+          rounds: [BellRound(5)],
           guidance: BellGuidance.none,
         ),
       };

@@ -8,50 +8,39 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test(
-    'complete score melodies, repeats, chromatic notes and rests are preserved',
+    'curated hooks keep recognizable phrases and finish within five seconds',
     () {
-      expect(bellMelodies.map((m) => m.notes.length), [40, 25, 46, 97, 48]);
-      expect(
-        bellMelodies.map(
-          (m) =>
-              m.notes.fold<double>(0, (sum, n) => sum + n.beats + n.restBeats),
-        ),
-        [48, 32, 36, 64, 64],
-      );
-      expect(
-        bellMelodies[0].notes.map((n) => n.pitch.label).join(' '),
-        'C C G G A A G F F E E D C G G F F E E D G G F F E E D C C G G A A G F F E E D C',
-      );
-      expect(
-        bellMelodies[1].notes.map((n) => n.pitch.label).join(' '),
-        'G A G F E D C D E F E D E G A G C↑ H A G F E F G E',
-      );
-      expect(bellMelodies[1].notes[11].restBeats, 1);
-      expect(bellMelodies[1].notes.last.restBeats, 1);
-      expect(
-        bellMelodies[2].notes.any((n) => n.pitch == BellNote.bFlat),
-        isTrue,
-      );
-      expect(
-        bellMelodies[2].notes.any((n) => n.pitch == BellNote.highD),
-        isTrue,
-      );
-      expect(
-        bellMelodies[4].notes.any((n) => n.pitch == BellNote.fSharp),
-        isTrue,
-      );
-      expect(bellMelodies[3].notes.take(4).map((n) => n.pitch), [
-        BellNote.c,
-        BellNote.a,
-        BellNote.g,
-        BellNote.f,
+      expect(bellMelodies.map((m) => m.notes.length), [
+        7,
+        6,
+        8,
+        11,
+        8,
+        9,
+        8,
+        8,
       ]);
-      expect(
-        bellMelodies[3].notes.skip(46).take(6).map((n) => n.pitch),
-        List.filled(6, BellNote.a),
-      );
-      expect(bellMelodies[3].notes.last.pitch, BellNote.f);
-      for (final melody in bellMelodies) {
+      final phrases = [
+        'C C G G A A G',
+        'G A G F E D',
+        'C F F F G A A A',
+        'A A A A A A A C↑ F G A',
+        'G E F G A G A G',
+        'H A G E Dis A H A G',
+        'F E F D F E F D',
+        'H H A E H H C↑ A',
+      ];
+      for (var i = 0; i < bellMelodies.length; i++) {
+        final melody = bellMelodies[i];
+        expect(melody.notes.map((n) => n.pitch.label).join(' '), phrases[i]);
+        final beats = melody.notes.fold<double>(
+          0,
+          (sum, n) => sum + n.beats + n.restBeats,
+        );
+        expect(
+          beats * const BellsLevel().beatMilliseconds,
+          lessThanOrEqualTo(5000),
+        );
         expect(
           melody.notes.every(
             (n) =>
@@ -62,25 +51,40 @@ void main() {
           isTrue,
         );
         expect(melody.bells.toSet().length, melody.bells.length);
+        expect(melody.bells.length, inInclusiveRange(6, 8));
       }
-      expect(bellMelodies.map((m) => m.bells.length), [8, 8, 8, 9, 8]);
     },
   );
-
-  test('difficulty uses full songs and decreases visual guidance', () {
+  test('difficulty uses trickier patterns, not a growing song-length ladder', () {
     final levels = GameDifficulty.values.map(BellsLevel.forDifficulty).toList();
     expect(levels.map((l) => l.guidance), BellGuidance.values);
-    expect(levels.map((l) => l.rounds.single.length), [25, 40, 97]);
-    for (final level in levels) {
-      expect(
-        level.rounds.single.length,
-        level.rounds.single.melody.notes.length,
-      );
+    expect(levels.map((l) => l.rounds.single.length), [8, 8, 9]);
+    expect(levels.map((l) => l.rounds.single.melody.id), [
+      'carol',
+      'last-christmas',
+      'all-i-want',
+    ]);
+    expect(
+      levels[1].rounds.single.notes.map((n) => n.pitch).toSet().length,
+      greaterThan(
+        levels[0].rounds.single.notes.map((n) => n.pitch).toSet().length,
+      ),
+    );
+    // The hard hook repeatedly changes direction, rather than repeating one note.
+    final hard = levels[2].rounds.single.notes;
+    var turns = 0;
+    for (var i = 2; i < hard.length; i++) {
+      if ((hard[i].pitch.midi - hard[i - 1].pitch.midi).sign !=
+          (hard[i - 1].pitch.midi - hard[i - 2].pitch.midi).sign) {
+        turns++;
+      }
     }
-    for (var index = 0; index < 100; index++) {
-      expect(levels[0].showsDemonstrationNote(index), isTrue);
-      expect(levels[1].showsDemonstrationNote(index), index == 0);
-      expect(levels[2].showsDemonstrationNote(index), isFalse);
+    expect(turns, greaterThanOrEqualTo(2));
+    expect(hard.any((n) => n.pitch == BellNote.dSharp), isTrue);
+    for (var i = 0; i < 100; i++) {
+      expect(levels[0].showsDemonstrationNote(i), isTrue);
+      expect(levels[1].showsDemonstrationNote(i), i == 0);
+      expect(levels[2].showsDemonstrationNote(i), isFalse);
     }
     for (final round in bellRounds) {
       expect(round.length, round.melody.notes.length);
@@ -134,7 +138,7 @@ void main() {
     final game = BellsGame(const BellsLevel());
     game.listen();
     game.finishListening();
-    game.tap(BellNote.c);
+    game.tap(game.current.notes.first.pitch);
     expect(game.entered, 1);
     game.listen();
     expect(game.entered, 0);
@@ -172,7 +176,7 @@ void main() {
       const BellsLevel(rounds: []),
       const BellsLevel(beatMilliseconds: 0),
       const BellsLevel(rounds: [BellRound(-1, 4)]),
-      const BellsLevel(rounds: [BellRound(9, 4)]),
+      const BellsLevel(rounds: [BellRound(99, 4)]),
       const BellsLevel(rounds: [BellRound(0, 0)]),
       const BellsLevel(rounds: [BellRound(0, 1000)]),
     ]) {

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../content/calendar_day.dart';
 import '../../presentation/challenge_screen.dart';
 import '../completion.dart';
+import '../battery/battery_game.dart';
+import '../battery/battery_screen.dart';
 import '../walk_home/walk_game.dart';
 import '../walk_home/walk_screen.dart';
 import '../oy_vey/oy_vey_game.dart';
@@ -65,6 +67,11 @@ enum Minigame {
     'Schwankend durch den Schnee nach Hause.',
     Icons.directions_walk_rounded,
   ),
+  battery(
+    'Akku-Panik',
+    'Fünf Geräte, ein Kabel. Bloß nicht ausgehen!',
+    Icons.battery_charging_full_rounded,
+  ),
   shoe(
     'Nikolausstiefel',
     'Ein schmutziger Schuh wartet auf deine Bürste.',
@@ -126,6 +133,11 @@ Widget buildMinigame(
     onComplete: onComplete,
     alreadyCompleted: alreadyCompleted,
   ),
+  Minigame.battery => BatteryScreen(
+    level: BatteryLevel.forDifficulty(difficulty),
+    onComplete: onComplete,
+    alreadyCompleted: alreadyCompleted,
+  ),
   Minigame.shoe => ShoeScreen(
     level: ShoeLevel.forDifficulty(difficulty),
     onComplete: onComplete,
@@ -151,6 +163,7 @@ Widget buildDailyChallenge(CalendarDay day, ChallengeCompletion onComplete) {
     8 => Minigame.workshop,
     9 => Minigame.oyVey,
     10 => Minigame.walkHome,
+    11 => Minigame.battery,
     _ => null,
   };
   return game == null

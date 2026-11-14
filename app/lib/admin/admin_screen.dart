@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import '../challenges/games/game_preview_screen.dart';
 import '../presentation/calendar_style.dart';
 import '../presentation/viewport_fit.dart';
-import 'pico_led_test_screen.dart';
+import 'pico_connection_screen.dart';
+import '../hardware/pico_service.dart';
 
 class AdminScreen extends StatelessWidget {
-  const AdminScreen({super.key});
+  const AdminScreen({super.key, this.picoService});
+  final PicoService? picoService;
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
@@ -37,8 +39,8 @@ class AdminScreen extends StatelessWidget {
             _section(
               context,
               title: 'Box-Steuerung',
-              description: 'Pico-Verbindung mit der LED testen.',
-              page: const PicoLedTestScreen(),
+              description: 'Pico-Verbindung und Netzwerkstatus.',
+              page: PicoConnectionScreen(service: picoService),
               icon: Icons.inventory_2_outlined,
             ),
             _section(

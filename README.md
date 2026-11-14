@@ -109,10 +109,15 @@ Additional platforms can be generated from `app/` with `flutter create
 
 Tap **Dein Adventskalender** five times within three seconds, then enter the
 initial development PIN **`0542`**. **Advent-Verwaltung** contains calendar,
-game testing, box and diagnostics sections. Game testing and the temporary Pico LED test are active;
-the PIN does not authorize physical unlocking. **Box-Steuerung** sends LED on/off
-commands to the configurable Pico URL (default `http://192.168.178.68`). Rebuild in
-debug/profile mode for local HTTP testing. See [admin setup and authentication
+game testing, box and diagnostics sections. Game testing and Pico connection monitoring are active;
+the PIN does not authorize physical unlocking. **Box-Steuerung** validates
+DoorZero through `/health`, tries home Wi-Fi and the fallback hotspot, and
+recovers automatically. Addresses are configurable with `PICO_BASE_URL` and
+`PICO_HOTSPOT_URL`. Run a debug/profile build for local HTTP. The firmware uses
+the LED as a network-status indicator, so the app has no manual LED controls.
+New daily completions send a best-effort `POST /game/completed` for a brief LED
+acknowledgement. Replays and previews do not notify; network failures never block
+game completion. This acknowledgement is separate from physical unlocking. See [admin setup and authentication
 boundary](docs/admin.md).
 
 ## App structure

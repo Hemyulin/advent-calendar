@@ -25,8 +25,9 @@ flutter run
 
 The app displays a German Advent calendar with an illustrated door and a
 horizontal day carousel. Swipe left or right across the main door to select the
-next or previous available day; the carousel also remains independently scrollable. Days 1–11 contain playable challenges; the remaining
-days lead to a placeholder challenge screen.
+next or previous available day; the carousel also remains independently scrollable. All 24 doors contain playable challenges. In **Advent-Verwaltung → Kalender
+bearbeiten**, choose a date, game and difficulty, then save. Assignments persist
+on this device; changing a game preserves that door’s completion status.
 Each day has a festive paper door with a storybook ornament, a rotating warm
 colour palette, and fairy lights. Locked doors keep their colour and show a lock
 badge. All artwork is drawn in Flutter without image assets or new dependencies.
@@ -55,14 +56,18 @@ memory and resets on restart. For development
 and tests, `AdventCalendarApp(now: DateTime(2026, 12, 8))` provides a fixed date;
 the normal entry point uses the actual device date with the preview override above.
 
-Day 1 contains the one-button tutorial **„Dein erster Weihnachtszauber“**:
-go to the calendar, tap **„Überraschung öffnen“**, and watch the illustrated
-present unwrap. The opening is simulated; no physical lock or sound is triggered.
-Completion is recorded through the progress repository after the reveal and
-updates the calendar checkmark on return. Leaving before the reveal finishes
-does not complete the day. Completed tutorials can be replayed.
+Day 1 starts with **Paare finden** on easy difficulty. Every win saves progress
+and shows an illustrated gift above the game. Tap the gift to lift its lid and
+reveal the reward. Replays and development previews can reveal the gift without
+reopening the physical box. Old present-only calendar assignments migrate to
+easy Memory.
 
-Day 2 has **Paare finden** (4×4 Memory) and Day 3 **Kugellabyrinth** (one sensor-
+The shared gift action is separate from game completion and the Pico LED
+acknowledgement. A future authorized `LockGateway` can open the box on this tap;
+the current firmware has no unlock endpoint, so the app explicitly reports that
+the physical box is not configured. No unlock request is invented or sent.
+
+Day 2 has **Plätzchen ausstechen** on easy difficulty and Day 3 **Kugellabyrinth** (one sensor-
 or touch-controlled maze per day). Day 4 has **Rettet den Weihnachtsmann!**, a rotating
 chimney-pipe puzzle with a ten-second head start.
 Day 5 has **Weihnachtsglocken**, a melody-memory game using short, recognizable
@@ -127,22 +132,26 @@ boundary](docs/admin.md).
 - `lib/presentation/`: calendar screen, vector door illustration, day carousel,
   and challenge placeholder. Reduced-motion preferences are respected.
 - `lib/challenges/`: challenge identities and types (puzzles, quizzes,
-  questionnaires, interactive minigames), Day 1's tutorial, and the ten playable
+  questionnaires, interactive minigames), shared gift rewards, and the ten playable
   games. Pure Dart mechanics are separate from screens and motion input.
-- `lib/content/`: daily content and its association with challenge IDs.
+- `lib/content/`: daily content, editable calendar assignments and local storage.
 - `lib/progress/`: progress contract and in-memory mock implementation.
 - `lib/hardware/`: lock communication contract. A future Wi-Fi adapter for the
   Pico W will implement `LockGateway` here.
 
-Daily assignments use local configuration and sample progress. The app does not
-persist progress or communicate with lock hardware yet. There is no Wi-Fi protocol
-or lock adapter at this stage. Future application
-flows can coordinate progress and the lock through their interfaces without
-coupling challenge logic to hardware.
+Daily assignments are stored locally; progress still uses the in-memory sample
+repository. `PicoService` verifies connectivity and acknowledges new completions
+over Wi-Fi. Physical unlocking is not implemented yet. Game logic stays
+independent of hardware.
 
 Runtime dependencies are Flutter, its SDK localization package, and
 `audioplayers` for offline recorded bell sounds, plus the same `camera` and
-`mediapipe_face_mesh` packages used by Brush Buddies for local mouth tracking.
+`mediapipe_face_mesh` packages used by Brush Buddies for local mouth tracking,
+and `shared_preferences` for saved calendar assignments.
+
+**Box öffnen** appears in the admin box controls but remains disabled: the Pico
+firmware has no unlock endpoint yet. Physical unlocking requires a dedicated
+command and device authorization, independently of the development admin PIN.
 The bundled face runtime raises Android minimum SDK to 24. Audio credits, melody sources
 and preview controls are documented in [Weihnachtsglocken](docs/bell-melodies.md).
 Typography uses platform serif fallbacks without network font downloads. Development uses

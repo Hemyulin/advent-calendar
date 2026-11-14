@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:advent_calendar/challenges/challenge_completion_handler.dart';
 import 'package:advent_calendar/hardware/pico_service.dart';
+import 'package:advent_calendar/hardware/lock_gateway.dart';
+import 'package:advent_calendar/challenges/gift_reward.dart';
 import 'package:advent_calendar/progress/progress_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -25,8 +27,81 @@ class Progress implements ProgressRepository {
   }
 }
 
+class TestLock implements LockGateway {
+  TestLock(this.action);
+  final Future<void> Function() action;
+  int calls = 0;
+  @override
+  Future<void> unlock() {
+    calls++;
+    return action();
+  }
+}
+
 Future<void> flush() => Future<void>.delayed(Duration.zero);
 void main() {
+  test(
+    'only a newly solved door can request its gift; repeated taps and replay never unlock twice',
+    () async {
+      final progress = Progress();
+      final lock = TestLock(() async {});
+      final handler = ChallengeCompletionHandler(
+        progress: progress,
+        pico: null,
+        lockGateway: lock,
+      );
+      expect(await handler.openGift('day-1'), GiftOpenResult.replay);
+      expect(lock.calls, 0);
+      await handler.complete('day-1');
+      expect(lock.calls, 0);
+      final results = await Future.wait([
+        handler.openGift('day-1'),
+        handler.openGift('day-1'),
+      ]);
+      expect(results, contains(GiftOpenResult.boxOpened));
+      expect(lock.calls, 1);
+      await handler.complete('day-1');
+      expect(await handler.openGift('day-1'), GiftOpenResult.replay);
+      final reopened = ChallengeCompletionHandler(
+        progress: progress,
+        pico: null,
+        lockGateway: lock,
+      );
+      await reopened.complete('day-1');
+      expect(await reopened.openGift('day-1'), GiftOpenResult.replay);
+      expect(lock.calls, 1);
+    },
+  );
+
+  test('missing endpoint opens only the virtual gift', () async {
+    final handler = ChallengeCompletionHandler(
+      progress: Progress(),
+      pico: null,
+    );
+    await handler.complete('day-1');
+    expect(await handler.openGift('day-1'), GiftOpenResult.notConfigured);
+  });
+
+  test(
+    'failed or ambiguous box actions never retry and do not undo progress',
+    () async {
+      final progress = Progress();
+      final lock = TestLock(
+        () async => throw TimeoutException('unknown outcome'),
+      );
+      final handler = ChallengeCompletionHandler(
+        progress: progress,
+        pico: null,
+        lockGateway: lock,
+      );
+      await handler.complete('day-1');
+      expect(await handler.openGift('day-1'), GiftOpenResult.unconfirmed);
+      expect(await handler.openGift('day-1'), GiftOpenResult.replay);
+      expect(lock.calls, 1);
+      expect(progress.completed, {'day-1'});
+    },
+  );
+
   test(
     'unavailable hardware configuration does not prevent saving completion',
     () async {

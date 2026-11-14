@@ -1,4 +1,6 @@
 import 'package:advent_calendar/app.dart';
+import 'package:advent_calendar/challenges/memory/memory_screen.dart';
+import 'package:advent_calendar/challenges/bells/bells_screen.dart';
 import 'package:advent_calendar/presentation/challenge_screen.dart';
 import 'package:advent_calendar/presentation/illustrated_door.dart';
 import 'package:flutter/material.dart';
@@ -51,7 +53,7 @@ void main() {
     );
     await tester.tap(find.byType(IllustratedDoor));
     await tester.pumpAndSettle();
-    expect(find.text('Türchen 24'), findsOneWidget);
+    expect(find.byType(BellsScreen), findsOneWidget);
   });
 
   testWidgets(
@@ -72,7 +74,7 @@ void main() {
       );
       await tester.tap(find.byType(IllustratedDoor));
       await tester.pumpAndSettle();
-      expect(find.byType(ChallengeScreen), findsOneWidget);
+      expect(find.byType(MemoryScreen), findsOneWidget);
       await tester.tap(find.byType(BackButton));
       await tester.pumpAndSettle();
       expect(
@@ -81,7 +83,7 @@ void main() {
       );
       await tester.tap(find.byType(IllustratedDoor));
       await tester.pumpAndSettle();
-      expect(find.text('Türchen 12'), findsOneWidget);
+      expect(find.byType(MemoryScreen), findsOneWidget);
     },
   );
 
@@ -93,18 +95,16 @@ void main() {
     await tester.tap(find.byType(IllustratedDoor));
     await tester.pump();
     await tester.pump();
-    expect(find.byType(ChallengeScreen), findsOneWidget);
+    expect(find.byType(MemoryScreen), findsOneWidget);
     await tester.pumpAndSettle();
   });
 
-  testWidgets('today opens a German placeholder and can return', (
-    tester,
-  ) async {
+  testWidgets('today opens its assigned game and can return', (tester) async {
     await start(tester, DateTime(2026, 12, 12));
     expect(find.text('Heute'), findsOneWidget);
     await tester.tap(find.byType(IllustratedDoor));
     await tester.pumpAndSettle();
-    expect(find.text('Türchen 12'), findsOneWidget);
+    expect(find.byType(MemoryScreen), findsOneWidget);
     expect(find.byTooltip('Zurück'), findsOneWidget);
     await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
@@ -120,7 +120,7 @@ void main() {
     expect(find.text('2. Dezember'), findsOneWidget);
     await tester.tap(find.byType(IllustratedDoor));
     await tester.pumpAndSettle();
-    expect(find.text('Paare finden'), findsOneWidget);
+    expect(find.text('Plätzchen ausstechen'), findsOneWidget);
     await tester.ensureVisible(find.byType(BackButton));
     await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
@@ -144,7 +144,7 @@ void main() {
     expect(find.bySemanticsLabel('24. Dezember, Heute'), findsOneWidget);
     await tester.tap(find.byType(IllustratedDoor));
     await tester.pumpAndSettle();
-    expect(find.text('Türchen 24'), findsOneWidget);
+    expect(find.byType(BellsScreen), findsOneWidget);
   });
 
   testWidgets(
@@ -164,7 +164,7 @@ void main() {
       );
       await tester.tap(find.byType(IllustratedDoor));
       await tester.pumpAndSettle();
-      expect(find.byType(ChallengeScreen), findsOneWidget);
+      expect(find.byType(MemoryScreen), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );

@@ -10,8 +10,11 @@ import '../admin/admin_screen.dart';
 import '../challenges/challenge_completion_handler.dart';
 import '../hardware/pico_service.dart';
 import '../challenges/games/game_catalog.dart';
+import '../challenges/games/gift_reward_scope.dart';
+import '../hardware/lock_gateway.dart';
 import '../challenges/games/game_preview_screen.dart';
 import '../content/calendar_day.dart';
+import '../content/calendar_schedule.dart';
 import '../progress/mock_progress_repository.dart';
 import '../progress/progress_repository.dart';
 import 'calendar_style.dart';
@@ -24,6 +27,8 @@ class CalendarScreen extends StatefulWidget {
     this.now,
     this.progressRepository,
     this.picoService,
+    this.schedule,
+    this.lockGateway,
     this.previewAllDays = false,
     this.showGamePreview = false,
     this.adminAuthenticator = const DevelopmentAdminAuthenticator(),
@@ -33,6 +38,8 @@ class CalendarScreen extends StatefulWidget {
   final DateTime? now;
   final ProgressRepository? progressRepository;
   final PicoService? picoService;
+  final CalendarSchedule? schedule;
+  final LockGateway? lockGateway;
   final bool previewAllDays;
   final bool showGamePreview;
 
@@ -50,6 +57,7 @@ class _CalendarScreenState extends State<CalendarScreen>
   late int _selected;
   double _swipeDistance = 0;
   late final ProgressRepository _progressRepository;
+  late final CalendarSchedule _schedule;
   late final PicoService? _picoService;
   late final ChallengeCompletionHandler _completionHandler;
 
@@ -58,6 +66,7 @@ class _CalendarScreenState extends State<CalendarScreen>
   @override
   void initState() {
     super.initState();
+    _schedule = widget.schedule ?? CalendarSchedule();
     _progressRepository = widget.progressRepository ?? MockProgressRepository();
     try {
       _picoService = widget.picoService ?? PicoService();
@@ -68,6 +77,7 @@ class _CalendarScreenState extends State<CalendarScreen>
     _completionHandler = ChallengeCompletionHandler(
       progress: _progressRepository,
       pico: _picoService,
+      lockGateway: widget.lockGateway,
     );
     WidgetsBinding.instance.addObserver(this);
     _scheduleDateRefresh();
@@ -104,7 +114,8 @@ class _CalendarScreenState extends State<CalendarScreen>
       if (allowed != true || !mounted) return;
       await Navigator.of(context).push(
         MaterialPageRoute<void>(
-          builder: (_) => AdminScreen(picoService: _picoService),
+          builder: (_) =>
+              AdminScreen(picoService: _picoService, schedule: _schedule),
         ),
       );
     } finally {
@@ -185,6 +196,7 @@ class _CalendarScreenState extends State<CalendarScreen>
     _midnightTimer?.cancel();
     _resetAdminTaps();
     _scrollController.dispose();
+    if (widget.schedule == null) _schedule.dispose();
     if (widget.picoService == null) _picoService?.dispose();
     super.dispose();
   }
@@ -299,18 +311,30 @@ class _CalendarScreenState extends State<CalendarScreen>
                                     onTap: day.isAvailable
                                         ? () async {
                                             if (_selected != day.number) return;
+                                            await _schedule.ready;
+                                            if (!context.mounted) return;
                                             await Navigator.of(context).push(
                                               MaterialPageRoute<void>(
-                                                builder: (_) =>
-                                                    buildDailyChallenge(
-                                                      day,
-                                                      () => _completionHandler
-                                                          .complete(
+                                                builder: (_) => GiftRewardScope(
+                                                  openGift: () =>
+                                                      _completionHandler
+                                                          .openGift(
                                                             day
                                                                 .content
                                                                 .challengeId,
                                                           ),
-                                                    ),
+                                                  child: buildDailyChallenge(
+                                                    day,
+                                                    () => _completionHandler
+                                                        .complete(
+                                                          day
+                                                              .content
+                                                              .challengeId,
+                                                        ),
+                                                    assignment: _schedule
+                                                        .forDay(day.number),
+                                                  ),
+                                                ),
                                               ),
                                             );
                                             if (mounted) await _loadProgress();

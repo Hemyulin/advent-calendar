@@ -6,7 +6,6 @@ import 'package:advent_calendar/challenges/maze/maze_screen.dart';
 import 'package:advent_calendar/challenges/maze/tilt_source.dart';
 import 'package:advent_calendar/challenges/memory/memory_screen.dart';
 import 'package:advent_calendar/challenges/shoe/shoe_screen.dart';
-import 'package:advent_calendar/challenges/tutorial/first_day_screen.dart';
 import 'package:advent_calendar/content/calendar_day.dart';
 import 'package:advent_calendar/presentation/challenge_screen.dart';
 import 'package:flutter/material.dart';
@@ -55,7 +54,6 @@ void main() {
         MemoryScreen(onComplete: () async {}),
         MazeScreen(tiltSource: _NoTilt(), onComplete: () async {}),
         ShoeScreen(onComplete: () async {}),
-        FirstDayScreen(onComplete: () async {}),
         ChallengeScreen(day: calendarDays(DateTime(2026, 12, 8), {})[7]),
       ];
       for (final page in pages) {

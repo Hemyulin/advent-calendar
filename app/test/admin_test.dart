@@ -149,7 +149,7 @@ void main() {
     expect(find.byType(CalendarScreen), findsOneWidget);
   });
   testWidgets(
-    'admin sections reuse preview, while planned sections expose no controls',
+    'admin opens the calendar editor, reuses preview and keeps diagnostics planned',
     (t) async {
       await t.pumpWidget(app());
       await t.pumpAndSettle();
@@ -173,7 +173,13 @@ void main() {
       await t.pumpAndSettle();
       await t.tap(find.byType(BackButton));
       await t.pumpAndSettle();
-      for (final title in ['Kalender bearbeiten', 'Diagnose & Fortschritt']) {
+      await t.tap(find.text('Kalender bearbeiten'));
+      await t.pumpAndSettle();
+      expect(find.byKey(const ValueKey('edit-day-24')), findsOneWidget);
+      expect(find.text('Speichern'), findsOneWidget);
+      await t.tap(find.byType(BackButton));
+      await t.pumpAndSettle();
+      for (final title in ['Diagnose & Fortschritt']) {
         await t.tap(find.text(title));
         await t.pumpAndSettle();
         expect(

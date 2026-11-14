@@ -3,10 +3,13 @@ import '../challenges/games/game_preview_screen.dart';
 import '../presentation/calendar_style.dart';
 import '../presentation/viewport_fit.dart';
 import 'pico_connection_screen.dart';
+import 'calendar_editor_screen.dart';
+import '../content/calendar_schedule.dart';
 import '../hardware/pico_service.dart';
 
 class AdminScreen extends StatelessWidget {
-  const AdminScreen({super.key, this.picoService});
+  const AdminScreen({super.key, this.picoService, required this.schedule});
+  final CalendarSchedule schedule;
   final PicoService? picoService;
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -28,6 +31,7 @@ class AdminScreen extends StatelessWidget {
               title: 'Kalender bearbeiten',
               description: 'Spiele und Schwierigkeit pro Dezembertag.',
               icon: Icons.calendar_month_outlined,
+              page: CalendarEditorScreen(schedule: schedule),
             ),
             _section(
               context,

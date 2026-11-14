@@ -20,7 +20,7 @@ commercial song recordings are included.
 | Kling, Glöckchen | [Score](https://github.com/jollyjinx/kinder-wollen-singen/blob/main/books/weihnachtslieder/kling_gloeckchen_voices.ly), D → C major | G E F G A G A G | 8 |
 | All I Want for Christmas Is You | [Melody reference](https://www.lucioimbriglio.it/wp-content/uploads/2019/12/All-I-want-for-Christmas-is-you-spartito.pdf), short title hook in G, note durations scaled uniformly for bell playback | H A G E Dis A H A G | 9 |
 | Carol of the Bells | [Shchedryk motif reference](https://www.stantons.com/scores/C/M/2/2/7/0/cfn-cm2270.pdf), two statements transposed from G minor to D minor | F E F D F E F D | 8 |
-| Last Christmas | [Vocal melody preview](https://playournotes.com/en/sheet-music/last-christmas/1706/notes-and-tablature-for-guitar-melody-line.pdf), opening refrain transposed from D to G; ties sustained, ornamental grace notes omitted | H H A E H H C↑ A | 8 |
+| Last Christmas | [Vocal melody preview](https://playournotes.com/en/sheet-music/last-christmas/1706/notes-and-tablature-for-guitar-melody-line.pdf), short refrain with a C-sharp penultimate note; ties sustained, ornamental grace notes omitted | H H A E H H Cis↑ A | 8 |
 
 The modern song credits are Mariah Carey / Walter Afanasieff and George Michael.
 Carol of the Bells uses Mykola Leontovych's Shchedryk motif. References were
@@ -55,8 +55,8 @@ hook, with optional shorter prefixes for custom lessons and tests.
 ## Audio and separation
 
 Each melody uses eight ordered bells; unused bells remain as distractors. The
-twelve-file WAV library supports C5–D6, with D-sharp added for the Mariah
-hook alongside the existing F-sharp and B-flat. German labels distinguish H and B.
+thirteen-file WAV library supports C5–D6, with D-sharp added for the Mariah
+hook and high C-sharp for Last Christmas, alongside F-sharp and B-flat. German labels distinguish H and B.
 Recorded VSCO 2 CE glockenspiel chimes provide natural attack and decay, repitched
 by at most three semitones. See [asset sources](../app/assets/audio/bells/SOURCES.md)
 and [CC0 license](../app/assets/audio/bells/LICENSE-VSCO.txt).

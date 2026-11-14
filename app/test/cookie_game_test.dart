@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:advent_calendar/challenges/cookies/cookie_game.dart';
 import 'package:advent_calendar/challenges/games/difficulty.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,7 +10,7 @@ void main() {
         .map(CookieLevel.forDifficulty)
         .toList();
     expect(levels.map((l) => l.shape), CookieShape.values);
-    expect(levels.map((l) => l.checkpoints), [6, 9, 12]);
+    expect(levels.map((l) => l.checkpoints), [10, 14, 18]);
     for (var i = 0; i < 2; i++) {
       expect(levels[i].speed, lessThan(levels[i + 1].speed));
       expect(
@@ -41,20 +43,31 @@ void main() {
     },
   );
 
-  test('every checkpoint direction follows the actual outline tangent', () {
-    for (final difficulty in GameDifficulty.values) {
-      final game = CookieGame(CookieLevel.forDifficulty(difficulty));
-      for (final checkpoint in game.checkpoints) {
-        final tangent = game.outline.tangentAt(checkpoint.fraction);
-        expect(
-          checkpoint.direction,
-          tangent.x.abs() > tangent.y.abs()
-              ? (tangent.x > 0 ? CutDirection.right : CutDirection.left)
-              : (tangent.y > 0 ? CutDirection.down : CutDirection.up),
-        );
-      }
-    }
-  });
+  test(
+    'directions are randomized independently of shape and remain stable',
+    () {
+      List<CutDirection> directions(CookieGame game) =>
+          game.checkpoints.map((point) => point.direction).toList();
+      final a = CookieGame(const CookieLevel(), random: math.Random(42));
+      final b = CookieGame(
+        const CookieLevel(shape: CookieShape.star),
+        random: math.Random(42),
+      );
+      final c = CookieGame(const CookieLevel(), random: math.Random(43));
+      final original = directions(a);
+      expect(directions(b), original);
+      expect(directions(c), isNot(original));
+      expect(original.toSet(), CutDirection.values.toSet());
+      a.start();
+      a.advance(a.secondsToTarget);
+      a.press(CutDirection.values.firstWhere((d) => d != a.target!.direction));
+      a.advance(.6);
+      expect(
+        directions(a),
+        original,
+      ); // Recovery does not change visible arrows.
+    },
+  );
 
   test(
     'every level is winnable and requires every checkpoint plus the final cut',

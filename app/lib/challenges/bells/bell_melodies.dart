@@ -11,6 +11,7 @@ enum BellNote {
   bFlat('B', 'bb5', 82),
   h('H', 'b5', 83),
   highC('C↑', 'c6', 84),
+  highCSharp('Cis↑', 'cs6', 85),
   highD('D↑', 'd6', 86);
 
   const BellNote(this.label, this.asset, this.midi);
@@ -68,6 +69,17 @@ const popBells = [
   BellNote.a,
   BellNote.h,
   BellNote.highC,
+];
+
+const lastChristmasBells = [
+  BellNote.c,
+  BellNote.d,
+  BellNote.e,
+  BellNote.fSharp,
+  BellNote.g,
+  BellNote.a,
+  BellNote.h,
+  BellNote.highCSharp,
 ];
 
 class MelodyNote {
@@ -159,13 +171,13 @@ final bellMelodies = [
   BellMelody('carol', 'Carol of the Bells', [
     ..._phrase('f e f d f e f d', [1, .5, .5, 1, 1, .5, .5, 1]),
   ]),
-  // Vocal refrain opening in G; ties are sustained rather than re-struck.
+  // Vocal refrain hook with C-sharp before the final A; tied notes sustain.
   BellMelody('last-christmas', 'Last Christmas', [
     MelodyNote(BellNote.h, 1.5),
     MelodyNote(BellNote.h, 1),
     MelodyNote(BellNote.a, .5, restBeats: .5),
-    ..._phrase('e h h highC a', [.5, .5, .5, .5, 1]),
-  ]),
+    ..._phrase('e h h highCSharp a', [.5, .5, .5, .5, 1]),
+  ], bells: lastChristmasBells),
 ];
 
 class BellRound {

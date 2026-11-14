@@ -22,45 +22,17 @@ class MouthObservation {
       gapRatio <= 1;
 }
 
-enum CalibrationStep { closed, open, ready }
-
-/// Closed/open calibration and hysteresis are independent of the camera backend.
-class MouthCalibration {
-  CalibrationStep step = CalibrationStep.closed;
-  final List<double> _samples = [];
-  double closedRatio = 0, openRatio = 0;
+/// Position smoothing only. No opening threshold or calibration is required.
+class MouthTracker {
   MouthObservation? mouth;
-  bool isOpen = false;
-  double amount = 0;
-  int get samples => _samples.length;
-
-  void reset() {
-    step = CalibrationStep.closed;
-    _samples.clear();
-    closedRatio = 0;
-    openRatio = 0;
-    lost();
-  }
-
-  void lost() {
-    mouth = null;
-    isOpen = false;
-    amount = 0;
-    _samples.clear();
-  }
-
-  double _median(List<double> values) {
-    final sorted = List<double>.of(values)..sort();
-    return sorted[sorted.length ~/ 2];
-  }
-
+  void reset() => mouth = null;
+  void lost() => mouth = null;
   void update(MouthObservation? next) {
     if (next == null || !next.valid) {
       lost();
       return;
     }
     final old = mouth;
-    // Same response used by Brush Buddies for its tracked mouth bounds.
     const response = .62;
     mouth = old == null
         ? next
@@ -68,44 +40,8 @@ class MouthCalibration {
             x: old.x + (next.x - old.x) * response,
             y: old.y + (next.y - old.y) * response,
             width: old.width + (next.width - old.width) * response,
-            gapRatio: old.gapRatio + (next.gapRatio - old.gapRatio) * response,
+            gapRatio: next.gapRatio,
           );
-    if (step == CalibrationStep.closed) {
-      if (next.gapRatio > .12) {
-        _samples.clear();
-        return;
-      }
-      _samples.add(next.gapRatio);
-      if (_samples.length > 20) _samples.removeAt(0);
-      if (_samples.length == 20 &&
-          _samples.reduce(math.max) - _samples.reduce(math.min) < .035) {
-        closedRatio = _median(_samples);
-        _samples.clear();
-        step = CalibrationStep.open;
-      }
-    } else if (step == CalibrationStep.open) {
-      if (next.gapRatio < closedRatio + .08) {
-        _samples.clear();
-        return;
-      }
-      _samples.add(next.gapRatio);
-      if (_samples.length > 12) _samples.removeAt(0);
-      if (_samples.length == 12 &&
-          _samples.reduce(math.max) - _samples.reduce(math.min) < .06) {
-        openRatio = _median(_samples);
-        _samples.clear();
-        step = CalibrationStep.ready;
-      }
-    }
-    if (step == CalibrationStep.ready) {
-      amount = ((mouth!.gapRatio - closedRatio) / (openRatio - closedRatio))
-          .clamp(0.0, 1.0);
-      if (!isOpen && amount >= .55) {
-        isOpen = true;
-      } else if (isOpen && amount <= .3) {
-        isOpen = false;
-      }
-    }
   }
 }
 

@@ -28,7 +28,7 @@ void main() {
         'G E F G A G A G',
         'H A G E Dis A H A G',
         'F E F D F E F D',
-        'H H A E H H C↑ A',
+        'H H A E H H Cis↑ A',
       ];
       for (var i = 0; i < bellMelodies.length; i++) {
         final melody = bellMelodies[i];

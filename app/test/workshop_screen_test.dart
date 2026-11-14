@@ -47,7 +47,7 @@ void main() {
       expect(completions, 1);
       await tester.tap(find.text('Noch einmal spielen'));
       await tester.pumpAndSettle();
-      expect(find.text('0 / 2 Geschenke · 0 Züge'), findsOneWidget);
+      expect(find.text('0 / 2 Geschenke'), findsOneWidget);
       expect(find.byTooltip('Bereits geschafft'), findsOneWidget);
       expect(completions, 1);
       expect(
@@ -75,13 +75,13 @@ void main() {
     for (final letter in 'UURRD'.split('')) {
       await move(tester, letter);
     }
-    expect(find.text('1 / 2 Geschenke · 5 Züge'), findsOneWidget);
+    expect(find.text('1 / 2 Geschenke'), findsOneWidget);
     await tester.tap(find.text('Rückgängig'));
     await tester.pumpAndSettle();
-    expect(find.text('0 / 2 Geschenke · 4 Züge'), findsOneWidget);
+    expect(find.text('0 / 2 Geschenke'), findsOneWidget);
     await tester.tap(find.byTooltip('Neu starten'));
     await tester.pumpAndSettle();
-    expect(find.text('0 / 2 Geschenke · 0 Züge'), findsOneWidget);
+    expect(find.text('0 / 2 Geschenke'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
@@ -102,13 +102,13 @@ void main() {
         const Offset(0, -180),
       );
       await tester.pumpAndSettle();
-      expect(find.text('0 / 2 Geschenke · 1 Zug'), findsOneWidget);
+      expect(find.text('0 / 2 Geschenke'), findsOneWidget);
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft); // Wall.
       await tester.pumpAndSettle();
-      expect(find.text('0 / 2 Geschenke · 1 Zug'), findsOneWidget);
+      expect(find.text('0 / 2 Geschenke'), findsOneWidget);
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.pumpAndSettle();
-      expect(find.text('0 / 2 Geschenke · 2 Züge'), findsOneWidget);
+      expect(find.text('0 / 2 Geschenke'), findsOneWidget);
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );

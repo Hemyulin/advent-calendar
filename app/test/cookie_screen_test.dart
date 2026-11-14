@@ -13,6 +13,13 @@ const fastLevel = CookieLevel(
   checkpoints: 1,
   timingWindowSeconds: 1,
 );
+CookieGame currentGame(WidgetTester tester) {
+  final dynamic painter = tester
+      .widget<CustomPaint>(find.byKey(const ValueKey('cookie-board')))
+      .painter;
+  return painter.game as CookieGame;
+}
+
 Future<void> frames(WidgetTester tester, double seconds) async {
   for (var i = 0; i < (seconds / .05).ceil(); i++) {
     await tester.pump(const Duration(milliseconds: 50));
@@ -44,7 +51,7 @@ void main() {
       await start(tester);
       await frames(tester, 2);
       expect(find.text('Jetzt!'), findsOneWidget);
-      final direction = CookieGame(fastLevel).target!.direction;
+      final direction = currentGame(tester).target!.direction;
       final gesture = await tester.startGesture(
         tester.getCenter(find.byKey(ValueKey('cookie-${direction.name}'))),
       );
@@ -135,7 +142,7 @@ void main() {
     await tester.pumpAndSettle();
     await start(tester);
     await frames(tester, 2);
-    final direction = CookieGame(fastLevel).target!.direction;
+    final direction = currentGame(tester).target!.direction;
     final key = switch (direction) {
       CutDirection.up => LogicalKeyboardKey.arrowUp,
       CutDirection.down => LogicalKeyboardKey.arrowDown,
@@ -197,7 +204,6 @@ void main() {
       'swipe cuts in time before release, once per gesture at $difficulty',
       (tester) async {
         final level = CookieLevel.forDifficulty(difficulty);
-        final reference = CookieGame(level);
         await tester.pumpWidget(
           MaterialApp(
             home: CookieScreen(level: level, onComplete: () async {}),
@@ -205,17 +211,19 @@ void main() {
         );
         await tester.pumpAndSettle();
         await start(tester);
-        await frames(tester, reference.target!.fraction / level.speed);
+        final reference = currentGame(tester);
+        final target = reference.target!;
+        await frames(tester, target.fraction / level.speed);
         final gesture = await tester.startGesture(
           tester.getCenter(find.byKey(const ValueKey('cookie-board'))),
         );
-        await gesture.moveBy(swipeVector(reference.target!.direction));
+        await gesture.moveBy(swipeVector(target.direction));
         await tester.pump();
         expect(
           find.text('1 / ${level.checkpoints} · 0 / 3 Fehler'),
           findsOneWidget,
         );
-        await gesture.moveBy(swipeVector(reference.target!.direction));
+        await gesture.moveBy(swipeVector(target.direction));
         await tester.pump();
         expect(
           find.text('1 / ${level.checkpoints} · 0 / 3 Fehler'),
@@ -253,7 +261,7 @@ void main() {
     await tester.pumpAndSettle();
     await start(tester);
     await frames(tester, 2);
-    final direction = CookieGame(fastLevel).target!.direction;
+    final direction = currentGame(tester).target!.direction;
     await tester.drag(
       find.byKey(const ValueKey('cookie-board')),
       -swipeVector(direction),

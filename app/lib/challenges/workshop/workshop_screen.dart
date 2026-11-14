@@ -111,10 +111,7 @@ class _WorkshopScreenState extends State<WorkshopScreen> {
       instructions:
           'Schiebe alle Geschenke auf die goldenen Plätze. Wische über die Werkstatt oder nutze die Pfeile. Du kannst immer nur ein Geschenk schieben, niemals ziehen. Holzkisten versperren den Weg. Mit Rückgängig nimmst du Züge zurück; oben kannst du neu beginnen.',
       children: [
-        GameStats(
-          text:
-              '${_game.placed} / ${_game.presents.length} Geschenke · ${_game.moves} ${_game.moves == 1 ? 'Zug' : 'Züge'}',
-        ),
+        GameStats(text: '${_game.placed} / ${_game.presents.length} Geschenke'),
         Semantics(
           label:
               'Werkstatt. Wichtel in Reihe ${_game.elf ~/ _game.level.size + 1}, Spalte ${_game.elf % _game.level.size + 1}. ${_game.placed} Geschenke am Ziel.',

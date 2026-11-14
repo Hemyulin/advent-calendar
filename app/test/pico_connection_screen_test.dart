@@ -31,6 +31,18 @@ void main() {
     expect(find.text('Verbunden'), findsOneWidget);
     expect(find.text('LED einschalten'), findsNothing);
     expect(find.text('LED ausschalten'), findsNothing);
+    expect(
+      t
+          .widget<FilledButton>(
+            find.ancestor(
+              of: find.text('Box öffnen'),
+              matching: find.byWidgetPredicate((w) => w is FilledButton),
+            ),
+          )
+          .onPressed,
+      isNull,
+    );
+    expect(find.textContaining('Firmware unterstützt'), findsOneWidget);
     await t.pump(const Duration(seconds: 15));
     expect(paths, ['/health', '/health']);
     await t.pumpWidget(const SizedBox());

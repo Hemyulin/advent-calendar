@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import '../../presentation/calendar_style.dart';
 import '../../presentation/viewport_fit.dart';
 import '../completion.dart';
+import '../gift_reward.dart';
+import 'gift_art.dart';
+import 'gift_reward_scope.dart';
 
 class GameScaffold extends StatelessWidget {
   const GameScaffold({
@@ -176,7 +179,56 @@ class CompletionPanel extends StatefulWidget {
   State<CompletionPanel> createState() => _CompletionPanelState();
 }
 
-class _CompletionPanelState extends State<CompletionPanel> {
+class _CompletionPanelState extends State<CompletionPanel>
+    with SingleTickerProviderStateMixin {
+  late final _giftAnimation = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  );
+  bool _opening = false, _opened = false;
+  GiftOpenResult? _giftResult;
+
+  Future<void> _openGift() async {
+    if (!_saved || _opening || _opened) return;
+    final open = GiftRewardScope.maybeOf(context)?.openGift;
+    setState(() => _opening = true);
+    // Hardware feedback and the visual reveal run independently. The shared
+    // handler bounds the request and never repeats an uncertain physical action.
+    final result = _requestGift(open);
+    try {
+      if (MediaQuery.disableAnimationsOf(context)) {
+        _giftAnimation.value = 1;
+      } else {
+        await _giftAnimation.forward().orCancel;
+      }
+      final feedback = await result;
+      if (!mounted) return;
+      setState(() {
+        _opening = false;
+        _opened = true;
+        _giftResult = feedback;
+      });
+    } on TickerCanceled {
+      // An intentional gift tap is not repeated when leaving during the reveal.
+    }
+  }
+
+  Future<GiftOpenResult> _requestGift(
+    Future<GiftOpenResult> Function()? open,
+  ) async {
+    try {
+      return open == null ? GiftOpenResult.preview : await open();
+    } catch (_) {
+      return GiftOpenResult.unconfirmed;
+    }
+  }
+
+  @override
+  void dispose() {
+    _giftAnimation.dispose();
+    super.dispose();
+  }
+
   bool _saving = false;
   bool _saved = false;
   bool _failed = false;
@@ -213,25 +265,57 @@ class _CompletionPanelState extends State<CompletionPanel> {
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        TweenAnimationBuilder<double>(
-          duration: MediaQuery.disableAnimationsOf(context)
-              ? Duration.zero
-              : const Duration(milliseconds: 450),
-          tween: Tween(begin: 0.7, end: 1),
-          builder: (_, value, child) =>
-              Transform.scale(scale: value, child: child),
-          child: const Icon(
-            Icons.check_circle_outline_rounded,
-            color: CalendarStyle.green,
-            size: 42,
+        Semantics(
+          button: true,
+          enabled: _saved && !_opening && !_opened,
+          label: _opened ? 'Geschenk geöffnet' : 'Geschenk öffnen',
+          child: Tooltip(
+            message: _opened ? 'Geschenk geöffnet' : 'Geschenk öffnen',
+            child: InkResponse(
+              key: const ValueKey('completion-gift'),
+              onTap: _saved && !_opening && !_opened ? _openGift : null,
+              radius: 86,
+              child: ExcludeSemantics(
+                child: SizedBox(
+                  width: 180,
+                  height: 174,
+                  child: AnimatedBuilder(
+                    animation: _giftAnimation,
+                    builder: (_, _) => CustomPaint(
+                      painter: GiftPainter(progress: _giftAnimation.value),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
-        const SizedBox(height: 12),
         Text('Geschafft!', style: CalendarStyle.heading.copyWith(fontSize: 28)),
         const SizedBox(height: 8),
         Text(widget.message, textAlign: TextAlign.center),
         if (widget.details != null) widget.details!,
         const SizedBox(height: 12),
+        if (_saved)
+          Semantics(
+            liveRegion: true,
+            child: Text(
+              _opening
+                  ? 'Öffnet …'
+                  : !_opened
+                  ? 'Tippe auf dein Geschenk.'
+                  : switch (_giftResult) {
+                      GiftOpenResult.boxOpened => 'Die Box ist offen!',
+                      GiftOpenResult.notConfigured =>
+                        'Geschenk geöffnet. Die Box ist noch nicht eingerichtet.',
+                      GiftOpenResult.unconfirmed =>
+                        'Geschenk geöffnet. Die Box hat das Öffnen nicht bestätigt.',
+                      GiftOpenResult.preview => 'Geschenk geöffnet · Vorschau',
+                      _ => 'Geschenk geöffnet.',
+                    },
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: CalendarStyle.green),
+            ),
+          ),
         if (_saving)
           Semantics(
             label: 'Fortschritt wird gespeichert',
@@ -248,12 +332,12 @@ class _CompletionPanelState extends State<CompletionPanel> {
           TextButton(onPressed: _save, child: const Text('Erneut speichern')),
         const SizedBox(height: 12),
         OutlinedButton(
-          onPressed: _saved ? widget.onReplay : null,
+          onPressed: _saved && !_opening ? widget.onReplay : null,
           child: const Text('Noch einmal spielen'),
         ),
         const SizedBox(height: 8),
         FilledButton(
-          onPressed: () => Navigator.pop(context),
+          onPressed: _opening ? null : () => Navigator.pop(context),
           child: const Text('Zurück zum Kalender'),
         ),
       ],

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'support/memory_driver.dart';
 import 'package:advent_calendar/admin/admin_screen.dart';
 import 'package:advent_calendar/admin/pico_connection_screen.dart';
 import 'package:advent_calendar/challenges/memory/memory_screen.dart';
@@ -41,7 +42,7 @@ void main() {
       await t.pumpAndSettle();
       await t.tap(find.byType(IllustratedDoor));
       await t.pumpAndSettle();
-      await t.tap(find.text('Überraschung öffnen'));
+      await solveVisibleMemory(t);
       await t.pumpAndSettle();
       expect(find.text('Geschafft!'), findsOneWidget);
       expect(posts, 1);
@@ -51,7 +52,7 @@ void main() {
       expect(t.widget<OutlinedButton>(replay).onPressed, isNotNull);
       await t.tap(replay);
       await t.pumpAndSettle();
-      await t.tap(find.text('Überraschung öffnen'));
+      await solveVisibleMemory(t);
       await t.pumpAndSettle();
       expect(posts, 1);
       pending.complete(const PicoResponse(204));

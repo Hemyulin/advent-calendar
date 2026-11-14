@@ -13,11 +13,16 @@ again; nothing is saved as an authenticated session.
 
 The initial screen provides these sections:
 
-- **Kalender bearbeiten**: structure for future game/difficulty assignments.
+- **Kalender bearbeiten**: select any of the 24 dates, choose a game and difficulty,
+  then **Speichern**. All doors have playable defaults. Day 1 starts with the
+  easy Memory, day 2 with easy cookie cutting, and day 6 with Nikolaus; both can be reassigned. Changes persist on
+  this device using shared preferences, independently of completion state.
+  Editing a completed door keeps its completion; replay uses the new assignment.
 - **Spiele testen**: reuses `GamePreviewScreen`, with all games and difficulty
   settings, regardless of device date or homepage preview visibility. Preview
   completions do not change calendar progress.
-- **Box-Steuerung**: verified Pico health and automatic recovery; no manual hardware actions.
+- **Box-Steuerung**: verified Pico health and automatic recovery; **Box öffnen** is
+  visible but disabled until firmware provides an authorized unlock endpoint.
 - **Diagnose & Fortschritt**: structure only, no completion overrides yet.
 
 `lib/admin/admin_authenticator.dart` isolates the authentication interface and
@@ -115,3 +120,7 @@ completion, without delaying replay or changing an already saved result.
 Tests cover concurrent/repeated callbacks, completed replays, preview isolation,
 storage failure, offline completion, POST failure/timeout, non-blocking result
 and replay controls, shared manager ownership, and actual empty native HTTP POSTs.
+
+Saved v1 calendars migrate the old default of classic Memory on day 2 to easy
+cookie cutting. Other games and difficulty overrides remain unchanged. New v2
+assignments can explicitly choose Memory on day 2 again.

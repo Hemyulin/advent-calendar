@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:advent_calendar/app.dart';
-import 'package:advent_calendar/presentation/challenge_screen.dart';
 import 'package:advent_calendar/challenges/games/game_catalog.dart';
 import 'package:advent_calendar/challenges/games/game_widgets.dart';
 import 'package:advent_calendar/challenges/games/game_preview_screen.dart';
@@ -279,9 +278,9 @@ void main() {
   test('daily games receive the same completion interface', () {
     Future<void> complete() async {}
     final days = calendarDays(DateTime(2026, 12, 12), {});
-    expect(buildDailyChallenge(days[11], complete), isA<ChallengeScreen>());
+    expect(buildDailyChallenge(days[11], complete), isA<MemoryScreen>());
     expect(
-      (buildDailyChallenge(days[1], complete) as MemoryScreen).onComplete,
+      (buildDailyChallenge(days[0], complete) as MemoryScreen).onComplete,
       same(complete),
     );
     expect(

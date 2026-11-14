@@ -1,11 +1,13 @@
 # Minigames
 
-Day 1 is the one-button tutorial. The following daily assignments are defined in
-`app/lib/challenges/games/game_catalog.dart`:
+Day 1 starts with easy Memory. The following daily assignments are defined in
+`app/lib/content/calendar_schedule.dart` (editable in **Advent-Verwaltung →
+Kalender bearbeiten**):
 
 | Day | Game | Default difficulty |
 | --- | --- | --- |
-| 2 | Paare finden | Klassisch |
+| 1 | Paare finden | Leicht |
+| 2 | Plätzchen ausstechen | Leicht |
 | 3 | Kugellabyrinth | Klassisch |
 | 4 | Rettet den Weihnachtsmann! | Klassisch |
 | 5 | Weihnachtsglocken | Klassisch |
@@ -15,10 +17,24 @@ Day 1 is the one-button tutorial. The following daily assignments are defined in
 | 9 | Oy Vey, Weihnachten! | Klassisch |
 | 10 | Ein Glühwein zu viel | Klassisch |
 | 11 | Akku-Panik | Klassisch |
+| 12 | Paare finden | Klassisch |
+| 13 | Kugellabyrinth | Klassisch |
+| 14 | Rettet den Weihnachtsmann! | Klassisch |
+| 15 | Weihnachtsglocken | Klassisch |
+| 16 | Plätzchen ausstechen | Klassisch |
+| 17 | Wichtelwerkstatt | Klassisch |
+| 18 | Ein Glühwein zu viel | Klassisch |
+| 19 | Akku-Panik | Klassisch |
+| 20 | Kugellabyrinth | Knifflig |
+| 21 | Paare finden | Knifflig |
+| 22 | Plätzchen ausstechen | Knifflig |
+| 23 | Rettet den Weihnachtsmann! | Knifflig |
+| 24 | Weihnachtsglocken | Knifflig |
 
-All other days keep their placeholders. The sample repository still marks days
+Game and difficulty assignments persist locally. The sample progress repository still marks days
 3 and 5 as complete so replay can be tried. Progress stays in memory and resets
-with an app restart; this change does not introduce persistence or hardware calls.
+with an app restart; calendar assignments are stored separately and do not reset
+completion state or send hardware commands.
 
 ## Development preview
 
@@ -329,8 +345,9 @@ Success and failure cards use `GameResultLayer`: a foreground card over a dimmed
 input-blocked game, including the app bar. The card contains replay/retry and
 **Zurück zum Kalender** controls. Result content also fits the viewport and does
 not require a swipe to reach its buttons. Background controls are excluded from
-interaction while the result is visible. Day 1 uses this same result layer while
-retaining its existing completion-write flow.
+interaction while the result is visible. All victories show a tappable illustrated
+gift. The shared lid-lift animation runs on tap, with reduced-motion support.
+Saving progress happens on victory; tapping the gift is a separate reward action.
 
 ## Completion and separation
 
@@ -355,3 +372,25 @@ replay, save retry, preview isolation and small-screen layouts with large text.
 Chimney tests traverse 400 seeded solutions across all supported grid sizes,
 check reciprocal ports and boundary failures, timing and live repairs, completion,
 replay, paused help, daily routing, preview and fixed-screen layouts.
+
+
+## Gift and box handoff
+
+`CompletionPanel` shows the shared gift after every win, with no changes inside
+individual games. `GiftRewardScope` supplies a daily reward action from the
+calendar route; absent that scope, standalone tests and development previews
+reveal a virtual gift only. A gift cannot be tapped while progress is saving or
+if saving failed. Once saved, repeated taps start only one reveal.
+
+`ChallengeCompletionHandler.openGift` is separate from its completion LED
+acknowledgement. Only a newly completed door can request physical opening;
+replays reveal the virtual gift without another command. An authorized
+`LockGateway` must be supplied separately; the development admin PIN never
+authorizes the device. No production gateway exists yet, since firmware has no
+unlock endpoint. The app reports this rather than claiming the box opened.
+
+A future gateway call is bounded to three seconds. Failure or an uncertain outcome
+keeps the game complete and is not automatically retried. The UI confirms physical
+opening only after the gateway succeeds. Leaving mid-reveal does not resend the
+command. Calendar assignments saved with the retired `tutorial` identifier load
+as easy Memory without clearing completion state.

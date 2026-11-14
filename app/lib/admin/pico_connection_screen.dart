@@ -165,6 +165,20 @@ class _PicoConnectionScreenState extends State<PicoConnectionScreen>
                   style: TextStyle(color: CalendarStyle.muted, fontSize: 13),
                 ),
               ],
+              const SizedBox(height: 24),
+              FilledButton.icon(
+                // No unlock endpoint or device authorization exists yet.
+                // The development admin PIN never grants hardware authority.
+                onPressed: null,
+                icon: const Icon(Icons.lock_open_rounded),
+                label: const Text('Box öffnen'),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Noch nicht verfügbar. Die Pico-Firmware unterstützt das Öffnen noch nicht.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: CalendarStyle.muted, fontSize: 13),
+              ),
             ],
           ),
         ),

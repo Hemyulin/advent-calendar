@@ -213,10 +213,9 @@ void paintFestiveObject(
 }
 
 class OyVeyPainter extends CustomPainter {
-  OyVeyPainter(this.game, this.mouth, this.amount, {required this.visible});
+  OyVeyPainter(this.game, this.mouth, {required this.visible});
   final OyVeyGame game;
   final CatchMouth? mouth;
-  final double amount;
   final bool visible;
   @override
   void paint(Canvas canvas, Size size) {
@@ -265,7 +264,7 @@ class OyVeyPainter extends CustomPainter {
       Rect.fromCenter(
         center: Offset(x, y),
         width: w * 2,
-        height: math.max(3, opening * 2 * (m.open ? 1 : .12)),
+        height: math.max(3, opening * 2),
       ),
       p..color = const Color(0xFF584436),
     );
@@ -273,7 +272,7 @@ class OyVeyPainter extends CustomPainter {
       Rect.fromCenter(
         center: Offset(x, y),
         width: w * 2,
-        height: math.max(3, opening * 2 * (m.open ? 1 : .12)),
+        height: math.max(3, opening * 2),
       ),
       p
         ..style = PaintingStyle.stroke

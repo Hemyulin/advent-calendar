@@ -31,7 +31,7 @@ for midi, name in [(72, 'C5'), (79, 'G5'), (84, 'C6')]:
     first = next((i for i, v in enumerate(frames) if abs(v) > .002), 0)
     sources[midi] = (rate, frames[max(0, first - int(rate * .003)):])
 
-for midi, name in [(72,'c5'), (74,'d5'), (75,'ds5'), (76,'e5'), (77,'f5'), (78,'fs5'), (79,'g5'), (81,'a5'), (82,'bb5'), (83,'b5'), (84,'c6'), (86,'d6')]:
+for midi, name in [(72,'c5'), (74,'d5'), (75,'ds5'), (76,'e5'), (77,'f5'), (78,'fs5'), (79,'g5'), (81,'a5'), (82,'bb5'), (83,'b5'), (84,'c6'), (85,'cs6'), (86,'d6')]:
     source_midi = min(sources, key=lambda n: abs(n-midi))
     rate, frames = sources[source_midi]
     ratio = 2 ** ((midi - source_midi) / 12)
@@ -60,7 +60,7 @@ License: CC0 1.0 Universal (full text in LICENSE-VSCO.txt).
 Credit: Versilian Studios / Sam Gossner and VSCO contributors.
 
 These are recorded glockenspiel chimes, repitched by at most three semitones
-for the per-song C5–D6 bell sets, including D-sharp, F-sharp and B-flat. Mono 32 kHz PCM, trimmed leading silence,
+for the per-song C5–D6 bell sets, including C-sharp, D-sharp, F-sharp and B-flat. Mono 32 kHz PCM, trimmed leading silence,
 2.4-second maximum decay, gentle edge fades, normalized to 0.65 peak.
 Regenerate with `python3 app/tool/prepare_bells.py` (network required).
 No recording or network access is needed at runtime.

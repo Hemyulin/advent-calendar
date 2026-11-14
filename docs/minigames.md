@@ -145,12 +145,13 @@ The finished biscuit lifts from the dough before the shared completion overlay
 appears. Replay keeps the day's saved completion.
 
 `CookieLevel` configures shape, perimeter fractions per second, checkpoint count,
-full timing-window duration and mistake limit. Defaults are star / 0.035 / 6 /
-1.3 s, tree / 0.05 / 9 / 0.8 s and snowflake / 0.075 / 12 / 0.46 s, all with a
+full timing-window duration and mistake limit. Defaults are star / 0.035 / 10 /
+1.3 s, tree / 0.05 / 14 / 0.8 s and snowflake / 0.075 / 18 / 0.46 s, all with a
 three-mistake limit. Windows must not overlap neighbouring checkpoints.
 `CookieOutline` provides the same polygon, arc lengths, positions and tangents to
-the pure Dart rules and native drawing code. Directions follow the dominant
-component of the tangent at each checkpoint. No randomness or engine is needed.
+the pure Dart rules and native drawing code. Arrow directions are randomized independently of the outline on every new
+attempt and stay fixed during recovery. A seeded random source can be injected
+for repeatable tests. No engine is needed.
 
 **Spiele ausprobieren** exposes all three shapes through the existing difficulty
 selector. Help and backgrounding pause timing; **Weiter** explicitly resumes,
@@ -159,7 +160,7 @@ so returning never costs a missed window. Long stalled frames are capped at
 rotation and skips the lift animation. All UI remains German and fits without
 vertical scrolling. No new dependencies, assets, audio or hardware calls.
 
-Tests cover outline closure and sampling, tangent directions, all-level solvability,
+Tests cover outline closure and sampling, randomized directions, all-level solvability,
 exact timing boundaries, early/wrong/missed inputs, recovery, custom limits,
 immediate pointer-down input, keyboard control, lift-before-save ordering,
 completion/replay, pause/resume and every difficulty at small/large text sizes.
@@ -196,12 +197,13 @@ small-screen layouts with enlarged text. No dependencies or hardware calls added
 
 ## Oy Vey, Weihnachten! (Day 9)
 
-The mirrored front camera drives a sack at the calibrated mouth. Catch 15
-Hanukkah objects while open and avoid swallowing three Christmas objects.
-Tracking loss pauses gameplay. Local capture, frame conversion and face-mesh
+The mirrored front camera drives a sack at the mouth position. Catch 15
+Hanukkah objects and avoid swallowing three Christmas objects; opening the mouth
+is unnecessary. Tracking loss hides the sack while objects keep falling, and
+collection resumes automatically when the face returns. Local capture, frame conversion and face-mesh
 processing adapt Brush Buddies; game rules remain independent. The preview
 includes an explicitly labelled camera-free test driver. See
-[reuse, calibration, privacy and device testing](oy-vey.md) for details.
+[reuse, position tracking, privacy and device testing](oy-vey.md) for details.
 
 ## Ein Glühwein zu viel (Day 10)
 

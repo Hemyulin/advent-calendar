@@ -32,14 +32,10 @@ class _OyVeyScreenState extends State<OyVeyScreen>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late final MouthCamera _camera;
   late OyVeyGame _game;
-  final _calibration = MouthCalibration();
+  final _tracker = MouthTracker();
   late final Ticker _ticker;
   Duration? _previous;
-  bool _testMode = false,
-      _testOpen = false,
-      _started = false,
-      _paused = false,
-      _tracking = false;
+  bool _testMode = false, _started = false, _paused = false, _tracking = false;
   bool _foreground = true;
   Timer? _frameWatchdog;
   double _testX = .5, _testY = .68;
@@ -72,26 +68,24 @@ class _OyVeyScreenState extends State<OyVeyScreen>
   double get _aspect => _testMode ? .75 : _camera.aspectRatio;
   CatchMouth? get _mouth {
     if (_testMode) {
-      return CatchMouth(_testX, _testY, .11, _testOpen, halfHeight: .022);
+      return CatchMouth(_testX, _testY, .11, halfHeight: .022);
     }
-    final mouth = _calibration.mouth;
+    final mouth = _tracker.mouth;
     if (!_tracking || mouth == null) return null;
     return CatchMouth(
       mouth.x,
       mouth.y,
       (mouth.width * .8).clamp(.07, .17),
-      _calibration.isOpen,
-      halfHeight: .01 + _calibration.amount * .012,
+      halfHeight: .022,
     );
   }
 
-  bool get _canPlay =>
-      _testMode || (_tracking && _calibration.step == CalibrationStep.ready);
+  bool get _canPlay => _testMode || _tracking;
   void _onCamera() {
     if (!mounted || _testMode) return;
     final observation = _camera.observation;
     setState(() {
-      _calibration.update(observation);
+      _tracker.update(observation);
       _tracking =
           observation?.valid == true && _camera.state == MouthCameraState.ready;
       _frameWatchdog?.cancel();
@@ -100,13 +94,19 @@ class _OyVeyScreenState extends State<OyVeyScreen>
           if (mounted && !_testMode) {
             setState(() {
               _tracking = false;
-              _calibration.lost();
-              _pause();
+              _tracker.lost();
+              _game.resetTracking();
             });
           }
         });
-      } else if (_started) {
-        _pause();
+      } else {
+        _game.resetTracking();
+        if (_started &&
+            !_game.won &&
+            !_game.lost &&
+            _camera.state != MouthCameraState.ready) {
+          _pause();
+        }
       }
     });
   }
@@ -115,7 +115,7 @@ class _OyVeyScreenState extends State<OyVeyScreen>
     _paused = _started;
     _ticker.stop();
     _previous = null;
-    _game.pauseTracking();
+    _game.resetTracking();
   }
 
   @override
@@ -134,7 +134,7 @@ class _OyVeyScreenState extends State<OyVeyScreen>
     if (!_foreground) {
       setState(() {
         _pause();
-        _calibration.reset();
+        _tracker.reset();
         _tracking = false;
       });
       if (!_testMode) unawaited(_camera.stop());
@@ -142,7 +142,7 @@ class _OyVeyScreenState extends State<OyVeyScreen>
   }
 
   Future<void> _startCamera() async {
-    _calibration.reset();
+    _tracker.reset();
     _tracking = false;
     await _camera.start();
   }
@@ -153,7 +153,7 @@ class _OyVeyScreenState extends State<OyVeyScreen>
       _started = true;
       _paused = false;
       _previous = null;
-      _game.pauseTracking();
+      _game.resetTracking();
     });
     if (!_ticker.isActive) _ticker.start();
   }
@@ -165,7 +165,6 @@ class _OyVeyScreenState extends State<OyVeyScreen>
       _started = false;
       _paused = false;
       _previous = null;
-      _testOpen = false;
     });
     if (!_testMode) unawaited(_startCamera());
   }
@@ -174,7 +173,6 @@ class _OyVeyScreenState extends State<OyVeyScreen>
     unawaited(_camera.stop());
     setState(() {
       _testMode = true;
-      _testOpen = false;
       _tracking = true;
       _started = false;
       _paused = false;
@@ -207,16 +205,11 @@ class _OyVeyScreenState extends State<OyVeyScreen>
             ? (_camera.multipleFaces
                   ? 'Bitte nur ein Gesicht vor der Kamera.'
                   : 'Schau mit deinem Gesicht zur Kamera.')
-            : switch (_calibration.step) {
-                CalibrationStep.closed => 'Mund geschlossen halten',
-                CalibrationStep.open => 'Jetzt den Mund weit öffnen',
-                CalibrationStep.ready =>
-                  _paused
-                      ? 'Bereit? Weiter geht’s!'
-                      : _started
-                      ? 'Kopf bewegen · Mund auf!'
-                      : 'Bereit!',
-              },
+            : _paused
+            ? 'Bereit? Weiter geht’s!'
+            : _started
+            ? 'Kopf bewegen'
+            : 'Bereit!',
     };
   }
 
@@ -226,7 +219,7 @@ class _OyVeyScreenState extends State<OyVeyScreen>
     alreadyCompleted: widget.alreadyCompleted,
     onRestart: _restart,
     instructions:
-        'Öffne den Mund und bewege deinen Kopf, um Sufganiyot, Sevivonim und Chanukkiot zu sammeln. Meide Weihnachtsbäume, Weihnachtsmützen und Zuckerstangen. 15 richtige Objekte gewinnen, 3 Weihnachtsobjekte beenden den Versuch. Bei der Kalibrierung erst den Mund geschlossen halten, dann weit öffnen. Die Kamera bleibt lokal: Es wird nichts aufgenommen oder hochgeladen.',
+        'Bewege deinen Kopf, um Sufganiyot, Sevivonim und Chanukkiot zu sammeln. Meide Weihnachtsbäume, Weihnachtsmützen und Zuckerstangen. 15 richtige Objekte gewinnen, 3 Weihnachtsobjekte beenden den Versuch. Du musst den Mund nicht öffnen. Ohne erkanntes Gesicht fällt alles weiter; mit erkanntem Gesicht sammelst du automatisch. Die Kamera bleibt lokal: Es wird nichts aufgenommen oder hochgeladen.',
     children: [
       GameStats(
         text:
@@ -269,7 +262,6 @@ class _OyVeyScreenState extends State<OyVeyScreen>
                       painter: OyVeyPainter(
                         _game,
                         _mouth,
-                        _testMode ? (_testOpen ? 1 : 0) : _calibration.amount,
                         visible: _testMode || _tracking,
                       ),
                     ),
@@ -321,26 +313,12 @@ class _OyVeyScreenState extends State<OyVeyScreen>
       const SizedBox(height: 16),
       if (!_started || _paused) ...[
         if (_testMode || _camera.state == MouthCameraState.ready) ...[
-          if (!_canPlay && _tracking)
-            LinearProgressIndicator(
-              value:
-                  _calibration.samples /
-                  (_calibration.step == CalibrationStep.closed ? 20 : 12),
-              backgroundColor: CalendarStyle.line,
-              color: CalendarStyle.gold,
-              minHeight: 4,
-            ),
           FilledButton.icon(
             key: const ValueKey('oy-vey-play'),
             onPressed: _canPlay ? _play : null,
             icon: const Icon(Icons.play_arrow_rounded),
             label: Text(_started ? 'Weiter' : 'Los geht’s'),
           ),
-          if (!_testMode)
-            TextButton(
-              onPressed: () => setState(_calibration.reset),
-              child: const Text('Neu kalibrieren'),
-            ),
         ] else ...[
           FilledButton.icon(
             onPressed: _camera.state == MouthCameraState.loading
@@ -377,13 +355,6 @@ class _OyVeyScreenState extends State<OyVeyScreen>
       ],
       if (widget.developmentPreview && !_testMode && !_started)
         TextButton(onPressed: _test, child: const Text('Ohne Kamera testen')),
-      if (_testMode)
-        OutlinedButton.icon(
-          key: const ValueKey('oy-vey-mouth'),
-          onPressed: () => setState(() => _testOpen = !_testOpen),
-          icon: Icon(_testOpen ? Icons.close_rounded : Icons.add_rounded),
-          label: Text(_testOpen ? 'Mund schließen' : 'Mund öffnen'),
-        ),
       if (_game.won)
         CompletionPanel(
           onComplete: widget.onComplete,

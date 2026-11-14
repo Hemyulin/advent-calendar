@@ -52,21 +52,14 @@ class FakeMouthCamera extends MouthCamera {
 
 MouthObservation pose(double ratio, {double x = .5}) =>
     MouthObservation(x: x, y: .5, width: .22, gapRatio: ratio);
-Future<void> calibrate(
+Future<void> trackFace(
   WidgetTester tester,
   FakeMouthCamera camera, {
   double x = .5,
 }) async {
   await tester.tap(find.text('Kamera starten'));
   await tester.pump();
-  for (var i = 0; i < 20; i++) {
-    camera.emit(pose(.02, x: x));
-  }
-  await tester.pump();
-  expect(find.text('Jetzt den Mund weit öffnen'), findsOneWidget);
-  for (var i = 0; i < 12; i++) {
-    camera.emit(pose(.3, x: x));
-  }
+  camera.emit(pose(0, x: x));
   await tester.pump();
   expect(find.text('Bereit!'), findsOneWidget);
 }
@@ -86,7 +79,7 @@ OyVeyPainter painter(WidgetTester tester) =>
       OyVeyLevel(seed: seed, spawnSeconds: .1, startSpeed: 1),
     );
     for (var frame = 0; frame < 6; frame++) {
-      probe.advance(.1, const CatchMouth(.5, .5, .1, false));
+      probe.advance(.1, const CatchMouth(.5, .5, .1));
     }
     if (probe.objects.first.kind.correct == good) {
       return (seed, probe.objects.first.x);
@@ -97,7 +90,7 @@ OyVeyPainter painter(WidgetTester tester) =>
 
 void main() {
   testWidgets(
-    'camera requires opt-in, calibrates closed/open and completes through mouth tracking',
+    'camera requires opt-in, starts with a closed mouth and completes through position tracking',
     (tester) async {
       final camera = FakeMouthCamera();
       final spawn = firstSpawn(true);
@@ -121,11 +114,11 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(camera.starts, 0);
-      await calibrate(tester, camera, x: spawn.$2);
+      await trackFace(tester, camera, x: spawn.$2);
       await tester.tap(find.byKey(const ValueKey('oy-vey-play')));
       await tester.pump();
       for (var i = 0; i < 40 && completed == 0; i++) {
-        camera.emit(pose(.3, x: spawn.$2));
+        camera.emit(pose(0, x: spawn.$2));
         await tester.pump(const Duration(milliseconds: 50));
       }
       await tester.pumpAndSettle();
@@ -164,7 +157,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await calibrate(tester, camera, x: spawn.$2);
+    await trackFace(tester, camera, x: spawn.$2);
     await tester.tap(find.byKey(const ValueKey('oy-vey-play')));
     await tester.pump();
     for (
@@ -172,7 +165,7 @@ void main() {
       i < 40 && find.text('Fast geschafft').evaluate().isEmpty;
       i++
     ) {
-      camera.emit(pose(.3, x: spawn.$2));
+      camera.emit(pose(0, x: spawn.$2));
       await tester.pump(const Duration(milliseconds: 50));
     }
     await tester.pumpAndSettle();
@@ -181,7 +174,7 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
   testWidgets(
-    'missing/stale faces freeze the world and require a fresh frame to resume',
+    'missing and stale faces hide the sack without pausing; reacquisition resumes catches automatically',
     (tester) async {
       final camera = FakeMouthCamera();
       await tester.pumpWidget(
@@ -190,34 +183,26 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await calibrate(tester, camera);
+      await trackFace(tester, camera);
       await tester.tap(find.byKey(const ValueKey('oy-vey-play')));
       await tester.pump();
-      camera.emit(pose(.3));
+      camera.emit(pose(0));
       await tester.pump(const Duration(milliseconds: 50));
       camera.emit(null);
       await tester.pump();
       final elapsed = painter(tester).game.elapsed;
-      await tester.pump(const Duration(seconds: 3));
-      expect(painter(tester).game.elapsed, elapsed);
-      expect(
-        tester
-            .widget<FilledButton>(find.byKey(const ValueKey('oy-vey-play')))
-            .onPressed,
-        isNull,
-      );
-      camera.emit(pose(.3));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(painter(tester).game.elapsed, greaterThan(elapsed));
+      expect(painter(tester).visible, isFalse);
+      expect(find.text('Weiter'), findsNothing);
+      camera.emit(pose(0));
       await tester.pump();
-      await tester.tap(find.byKey(const ValueKey('oy-vey-play')));
-      await tester.pump();
+      expect(painter(tester).visible, isTrue);
+      final tracked = painter(tester).game.elapsed;
       await tester.pump(const Duration(milliseconds: 500));
       expect(painter(tester).visible, isFalse);
-      expect(
-        tester
-            .widget<FilledButton>(find.byKey(const ValueKey('oy-vey-play')))
-            .onPressed,
-        isNull,
-      );
+      expect(painter(tester).game.elapsed, greaterThan(tracked));
+      expect(find.text('Weiter'), findsNothing);
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
@@ -259,7 +244,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await calibrate(tester, camera);
+    await trackFace(tester, camera);
     await tester.tap(find.byKey(const ValueKey('oy-vey-play')));
     await tester.pump();
     await tester.tap(find.byTooltip('Anleitung'));
@@ -295,9 +280,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(camera.starts, 0);
     expect(find.text('Vorschau ohne Kamera'), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('oy-vey-mouth')));
-    await tester.pump();
-    expect(painter(tester).mouth!.open, isTrue);
+    expect(find.byKey(const ValueKey('oy-vey-mouth')), findsNothing);
+    expect(painter(tester).mouth, isNotNull);
     final board = tester.getRect(find.byKey(const ValueKey('oy-vey-stage')));
     await tester.dragFrom(board.center, const Offset(30, -30));
     await tester.pump();

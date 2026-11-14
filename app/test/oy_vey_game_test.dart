@@ -2,7 +2,7 @@ import 'package:advent_calendar/challenges/oy_vey/mouth_tracking.dart';
 import 'package:advent_calendar/challenges/oy_vey/oy_vey_game.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-const open = CatchMouth(.5, .5, .11, true);
+const open = CatchMouth(.5, .5, .11);
 OyVeyGame game() => OyVeyGame(const OyVeyLevel(spawnSeconds: 999, seed: 1));
 FallingObject item(
   int id,
@@ -41,18 +41,14 @@ void main() {
     expect(g.mistakes, 3);
   });
   test(
-    'closed mouths swallow nothing and missed good objects are harmless',
+    'mouth position catches both kinds and missed good objects remain harmless',
     () {
       final g = game()..objects.add(item(1, FestiveObject.tree));
-      for (var i = 0; i < 100; i++) {
-        g.advance(.1, const CatchMouth(.5, .5, .11, false));
-      }
-      expect(g.mistakes, 0);
-      expect(g.collected, 0);
-      expect(g.objects, isEmpty);
+      g.advance(.01, const CatchMouth(.5, .5, .11));
+      expect(g.mistakes, 1);
       g.objects.add(item(2, FestiveObject.sufganiyah, x: .9, y: 1.1));
       g.advance(.1, open);
-      expect(g.mistakes, 0);
+      expect(g.collected, 0);
       expect(g.objects, isEmpty);
     },
   );
@@ -71,18 +67,18 @@ void main() {
     'head movement is swept, while loss/reacquisition never teleports catches',
     () {
       final g = game();
-      g.advance(.01, const CatchMouth(.2, .5, .07, true));
+      g.advance(.01, const CatchMouth(.2, .5, .07));
       g.objects.add(item(1, FestiveObject.sufganiyah));
-      g.advance(.01, const CatchMouth(.8, .5, .07, true));
+      g.advance(.01, const CatchMouth(.8, .5, .07));
       expect(g.collected, 1);
       final paused = game();
-      paused.advance(.01, const CatchMouth(.2, .5, .07, true));
+      paused.advance(.01, const CatchMouth(.2, .5, .07));
       paused.objects.add(item(1, FestiveObject.tree));
       final elapsed = paused.elapsed;
       paused.advance(100, null);
-      expect(paused.elapsed, elapsed);
-      expect(paused.objects.single.y, .5);
-      paused.advance(.01, const CatchMouth(.8, .5, .07, true));
+      expect(paused.elapsed, greaterThan(elapsed));
+      expect(paused.objects.single.y, greaterThan(.5));
+      paused.advance(.01, const CatchMouth(.8, .5, .07));
       expect(paused.mistakes, 0);
     },
   );
@@ -91,8 +87,8 @@ void main() {
         b = OyVeyGame(const OyVeyLevel(seed: 7));
     final speed = a.speed, interval = a.spawnInterval;
     for (var i = 0; i < 100; i++) {
-      a.advance(.1, const CatchMouth(.5, .8, .1, false));
-      b.advance(.1, const CatchMouth(.5, .8, .1, false));
+      a.advance(.1, const CatchMouth(.5, .8, .1));
+      b.advance(.1, const CatchMouth(.5, .8, .1));
     }
     expect(a.objects.map((o) => o.kind), b.objects.map((o) => o.kind));
     expect(a.objects.map((o) => o.x), b.objects.map((o) => o.x));
@@ -101,13 +97,13 @@ void main() {
     expect(a.spawnInterval, lessThan(interval));
   });
   test(
-    'invalid timing and mouth coordinates do not progress the simulation',
+    'invalid timing is ignored but missing mouth positions do not freeze the world',
     () {
       final g = game();
       g.advance(double.nan, open);
       g.advance(-1, open);
-      g.advance(1, const CatchMouth(double.nan, .5, .1, true));
-      expect(g.elapsed, 0);
+      g.advance(1, const CatchMouth(double.nan, .5, .1));
+      expect(g.elapsed, closeTo(.1, 1e-9));
       expect(g.objects, isEmpty);
       expect(() => OyVeyGame(const OyVeyLevel(target: 0)), throwsArgumentError);
     },
@@ -144,44 +140,33 @@ void main() {
       isNull,
     );
   });
-  test('calibration requires stable closed and distinctly open samples', () {
-    final c = MouthCalibration();
-    for (var i = 0; i < 25; i++) {
-      c.update(pose(.3));
-    }
-    expect(c.step, CalibrationStep.closed);
+  test('position tracking is immediately ready for any mouth opening', () {
+    final tracker = MouthTracker();
+    tracker.update(pose(0));
+    expect(tracker.mouth, isNotNull);
+    tracker.update(pose(.9, x: .8));
+    expect(tracker.mouth!.x, inExclusiveRange(.5, .8));
+    tracker.update(null);
+    expect(tracker.mouth, isNull);
+    tracker.update(pose(0, x: .8));
+    expect(tracker.mouth!.x, .8);
+    tracker.reset();
+    expect(tracker.mouth, isNull);
+  });
+  test('objects keep spawning, falling and expiring without tracking', () {
+    final g = OyVeyGame(const OyVeyLevel(spawnSeconds: .1));
     for (var i = 0; i < 20; i++) {
-      c.update(pose(.02));
+      g.advance(.1, null);
     }
-    expect(c.step, CalibrationStep.open);
-    for (var i = 0; i < 20; i++) {
-      c.update(pose(.06));
+    expect(g.elapsed, closeTo(2, 1e-9));
+    expect(g.objects.length, greaterThan(1));
+    expect(g.objects.first.y, greaterThan(0));
+    expect(g.collected, 0);
+    expect(g.mistakes, 0);
+    final oldId = g.objects.first.id;
+    for (var i = 0; i < 100; i++) {
+      g.advance(.1, null);
     }
-    expect(c.step, CalibrationStep.open);
-    for (var i = 0; i < 12; i++) {
-      c.update(pose(.3));
-    }
-    expect(c.step, CalibrationStep.ready);
-    expect(c.isOpen, isTrue);
-    for (var i = 0; i < 12; i++) {
-      c.update(pose(.15));
-    }
-    expect(c.isOpen, isTrue);
-    for (var i = 0; i < 12; i++) {
-      c.update(pose(.02));
-    }
-    expect(c.isOpen, isFalse);
-    for (var i = 0; i < 12; i++) {
-      c.update(pose(.15));
-    }
-    expect(c.isOpen, isFalse);
-    c.update(null);
-    expect(c.mouth, isNull);
-    expect(c.isOpen, isFalse);
-    expect(c.step, CalibrationStep.ready);
-    c.update(pose(.3, x: .8));
-    expect(c.mouth!.x, .8);
-    c.reset();
-    expect(c.step, CalibrationStep.closed);
+    expect(g.objects.any((o) => o.id == oldId), isFalse);
   });
 }

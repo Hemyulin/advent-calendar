@@ -16,15 +16,8 @@ enum FestiveObject {
 }
 
 class CatchMouth {
-  const CatchMouth(
-    this.x,
-    this.y,
-    this.halfWidth,
-    this.open, {
-    this.halfHeight = .018,
-  });
+  const CatchMouth(this.x, this.y, this.halfWidth, {this.halfHeight = .018});
   final double x, y, halfWidth, halfHeight;
-  final bool open;
   bool get valid =>
       [x, y, halfWidth, halfHeight].every((v) => v.isFinite) &&
       x >= 0 &&
@@ -76,8 +69,8 @@ class OyVeyLevel {
       };
 }
 
-/// Pure local simulation: only an open sack catches items. Tracking loss freezes
-/// the complete world and clears the sweep anchor before movement resumes.
+/// Position-only collection. Missing tracking disables catches but objects keep
+/// falling; reacquisition starts a fresh collision sweep.
 class OyVeyGame {
   OyVeyGame(this.level, {math.Random? random})
     : _random = random ?? math.Random(level.seed) {
@@ -106,7 +99,7 @@ class OyVeyGame {
       (1 + math.min(.75, collected / level.target * .6 + elapsed / 180));
   double get spawnInterval =>
       math.max(.5, level.spawnSeconds * (1 - collected / level.target * .3));
-  void pauseTracking() => _previous = null;
+  void resetTracking() => _previous = null;
 
   void advance(double seconds, CatchMouth? mouth, {double aspectRatio = .75}) {
     if (won ||
@@ -117,10 +110,8 @@ class OyVeyGame {
         aspectRatio <= 0) {
       return;
     }
-    if (mouth == null || !mouth.valid) {
-      pauseTracking();
-      return;
-    }
+    if (mouth != null && !mouth.valid) mouth = null;
+    if (mouth == null) resetTracking();
     final dt = math.min(seconds, .1);
     final before = _previous ?? mouth;
     elapsed += dt;
@@ -143,7 +134,8 @@ class OyVeyGame {
     for (final object in objects.toList()) {
       final oldY = object.y;
       object.y += speed * dt;
-      if (mouth.open && _intersects(object, oldY, before, mouth, aspectRatio)) {
+      if (mouth != null &&
+          _intersects(object, oldY, before!, mouth, aspectRatio)) {
         objects.remove(object);
         if (object.kind.correct) {
           collected++;

@@ -116,7 +116,7 @@ class CookieLevel {
   const CookieLevel({
     this.shape = CookieShape.tree,
     this.speed = .05,
-    this.checkpoints = 9,
+    this.checkpoints = 14,
     this.timingWindowSeconds = .8,
     this.mistakeLimit = 3,
   });
@@ -134,14 +134,14 @@ class CookieLevel {
         GameDifficulty.easy => const CookieLevel(
           shape: CookieShape.star,
           speed: .035,
-          checkpoints: 6,
+          checkpoints: 10,
           timingWindowSeconds: 1.3,
         ),
         GameDifficulty.normal => const CookieLevel(),
         GameDifficulty.hard => const CookieLevel(
           shape: CookieShape.snowflake,
           speed: .075,
-          checkpoints: 12,
+          checkpoints: 18,
           timingWindowSeconds: .46,
         ),
       };
@@ -156,7 +156,7 @@ class CutCheckpoint {
 /// Each checkpoint must be cut correctly. A mistake briefly pauses the cutter,
 /// then retries the same checkpoint; earlier successful cuts remain intact.
 class CookieGame {
-  CookieGame(this.level) {
+  CookieGame(this.level, {math.Random? random}) {
     if (!level.speed.isFinite ||
         level.speed <= 0 ||
         level.speed > .5 ||
@@ -170,14 +170,15 @@ class CookieGame {
       throw ArgumentError('Invalid cookie level');
     }
     outline = CookieOutline.forShape(level.shape);
+    // Fresh directions for each attempt, independent of the outline tangent.
+    final directions = random ?? math.Random();
     checkpoints = List.unmodifiable(
       List.generate(level.checkpoints, (i) {
         final fraction = (i + 1) / (level.checkpoints + 1);
-        final tangent = outline.tangentAt(fraction);
-        final direction = tangent.x.abs() > tangent.y.abs()
-            ? (tangent.x > 0 ? CutDirection.right : CutDirection.left)
-            : (tangent.y > 0 ? CutDirection.down : CutDirection.up);
-        return CutCheckpoint(fraction, direction);
+        return CutCheckpoint(
+          fraction,
+          CutDirection.values[directions.nextInt(CutDirection.values.length)],
+        );
       }),
     );
   }

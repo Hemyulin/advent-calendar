@@ -32,16 +32,28 @@ mode = "connecting"
 server = None
 last_ap_retry = time.ticks_ms()
 last_led_update = time.ticks_ms()
+victory_until = None
 
 # ==========================================
 # LED STATUS
 # ==========================================
 
+
 def update_led():
-    global last_led_update
+    global last_led_update, victory_until
 
     now = time.ticks_ms()
 
+    # Victory animation takes priority over normal status.
+    if victory_until is not None:
+        if time.ticks_diff(victory_until, now) > 0:
+            # Five flashes per second.
+            led.value((now // 100) % 2)
+            return
+
+        victory_until = None
+
+    # Resume normal status indication.
     if mode == "connected":
         led.on()
         return
@@ -57,6 +69,7 @@ def update_led():
     if time.ticks_diff(now, last_led_update) >= interval:
         led.value(1 - led.value())
         last_led_update = now
+
 
 
 # ==========================================
@@ -217,9 +230,11 @@ def send_response(client, status, data):
     client.sendall(headers.encode() + body)
 
 
-def handle_request(client):
-    client.settimeout(2)
 
+def handle_request(client):
+    global victory_until
+
+    client.settimeout(2)
     request = client.recv(1024)
 
     if not request:
@@ -240,6 +255,23 @@ def handle_request(client):
         )
         return
 
+    # Game completion acknowledgement
+    if method == "POST" and path == "/game/completed":
+        victory_until = time.ticks_add(
+            time.ticks_ms(), 1000
+        )
+
+        send_response(
+            client,
+            "200 OK",
+            {
+                "success": True,
+                "message": "Victory acknowledged"
+            }
+        )
+        return
+
+    # All other endpoints require GET
     if method != "GET":
         send_response(
             client,
@@ -248,6 +280,7 @@ def handle_request(client):
         )
         return
 
+    # Device status
     if path in ("/", "/health", "/status"):
 
         if mode == "connected":
@@ -284,6 +317,7 @@ def handle_request(client):
             "404 Not Found",
             {"error": "Unknown endpoint"}
         )
+
 
 
 # ==========================================

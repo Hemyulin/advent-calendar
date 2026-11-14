@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:advent_calendar/admin/admin_authenticator.dart';
 import 'package:advent_calendar/admin/admin_pin_dialog.dart';
 import 'package:advent_calendar/admin/admin_screen.dart';
-import 'package:advent_calendar/admin/pico_led_test_screen.dart';
+import 'package:advent_calendar/admin/pico_connection_screen.dart';
 import 'package:advent_calendar/challenges/games/game_preview_screen.dart';
 import 'package:advent_calendar/challenges/memory/memory_screen.dart';
 import 'package:advent_calendar/presentation/calendar_screen.dart';
@@ -186,9 +186,9 @@ void main() {
       }
       await t.tap(find.text('Box-Steuerung'));
       await t.pumpAndSettle();
-      expect(find.byType(PicoLedTestScreen), findsOneWidget);
-      expect(find.text('LED einschalten'), findsOneWidget);
-      expect(find.text('Noch nicht geprüft'), findsOneWidget);
+      expect(find.byType(PicoConnectionScreen), findsOneWidget);
+      expect(find.text('Pico W · Verbindung'), findsOneWidget);
+      expect(find.text('Nicht verbunden'), findsOneWidget);
       await t.tap(find.byType(BackButton));
       await t.pumpAndSettle();
       await t.tap(find.byType(BackButton));

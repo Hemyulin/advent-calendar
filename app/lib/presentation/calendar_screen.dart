@@ -7,6 +7,8 @@ import 'viewport_fit.dart';
 import '../admin/admin_authenticator.dart';
 import '../admin/admin_pin_dialog.dart';
 import '../admin/admin_screen.dart';
+import '../challenges/challenge_completion_handler.dart';
+import '../hardware/pico_service.dart';
 import '../challenges/games/game_catalog.dart';
 import '../challenges/games/game_preview_screen.dart';
 import '../content/calendar_day.dart';
@@ -21,6 +23,7 @@ class CalendarScreen extends StatefulWidget {
     super.key,
     this.now,
     this.progressRepository,
+    this.picoService,
     this.previewAllDays = false,
     this.showGamePreview = false,
     this.adminAuthenticator = const DevelopmentAdminAuthenticator(),
@@ -29,6 +32,7 @@ class CalendarScreen extends StatefulWidget {
   final AdminAuthenticator adminAuthenticator;
   final DateTime? now;
   final ProgressRepository? progressRepository;
+  final PicoService? picoService;
   final bool previewAllDays;
   final bool showGamePreview;
 
@@ -46,6 +50,8 @@ class _CalendarScreenState extends State<CalendarScreen>
   late int _selected;
   double _swipeDistance = 0;
   late final ProgressRepository _progressRepository;
+  late final PicoService? _picoService;
+  late final ChallengeCompletionHandler _completionHandler;
 
   DateTime get _now => widget.now ?? DateTime.now();
 
@@ -53,6 +59,16 @@ class _CalendarScreenState extends State<CalendarScreen>
   void initState() {
     super.initState();
     _progressRepository = widget.progressRepository ?? MockProgressRepository();
+    try {
+      _picoService = widget.picoService ?? PicoService();
+    } catch (_) {
+      // Optional hardware configuration must not prevent calendar/game use.
+      _picoService = null;
+    }
+    _completionHandler = ChallengeCompletionHandler(
+      progress: _progressRepository,
+      pico: _picoService,
+    );
     WidgetsBinding.instance.addObserver(this);
     _scheduleDateRefresh();
     _selected = _now.month < 12 ? 1 : math.min(_now.day, 24);
@@ -86,9 +102,11 @@ class _CalendarScreenState extends State<CalendarScreen>
             AdminPinDialog(authenticator: widget.adminAuthenticator),
       );
       if (allowed != true || !mounted) return;
-      await Navigator.of(
-        context,
-      ).push(MaterialPageRoute<void>(builder: (_) => const AdminScreen()));
+      await Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => AdminScreen(picoService: _picoService),
+        ),
+      );
     } finally {
       _adminOpening = false;
     }
@@ -167,6 +185,7 @@ class _CalendarScreenState extends State<CalendarScreen>
     _midnightTimer?.cancel();
     _resetAdminTaps();
     _scrollController.dispose();
+    if (widget.picoService == null) _picoService?.dispose();
     super.dispose();
   }
 
@@ -285,8 +304,8 @@ class _CalendarScreenState extends State<CalendarScreen>
                                                 builder: (_) =>
                                                     buildDailyChallenge(
                                                       day,
-                                                      () => _progressRepository
-                                                          .markCompleted(
+                                                      () => _completionHandler
+                                                          .complete(
                                                             day
                                                                 .content
                                                                 .challengeId,

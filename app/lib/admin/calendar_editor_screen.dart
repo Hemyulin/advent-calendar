@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../challenges/games/difficulty.dart';
 import '../challenges/games/game_kind.dart';
 import '../content/calendar_schedule.dart';
+import '../challenges/seasonal/game_skin.dart';
+import '../challenges/bells/bell_melodies.dart';
 import '../presentation/calendar_style.dart';
 import '../presentation/viewport_fit.dart';
 
@@ -16,6 +18,8 @@ class _CalendarEditorScreenState extends State<CalendarEditorScreen> {
   int _day = 1;
   String _game = 'memory';
   GameDifficulty _difficulty = GameDifficulty.easy;
+  GameSkin _skin = GameSkin.christmas;
+  String? _melodyId;
   bool _saving = false;
   String? _message;
 
@@ -31,6 +35,8 @@ class _CalendarEditorScreenState extends State<CalendarEditorScreen> {
     final assignment = widget.schedule.forDay(_day);
     _game = assignment.game.name;
     _difficulty = assignment.difficulty;
+    _skin = assignment.skin;
+    _melodyId = assignment.melodyId;
     _message = widget.schedule.error;
   }
 
@@ -42,7 +48,12 @@ class _CalendarEditorScreenState extends State<CalendarEditorScreen> {
     try {
       await widget.schedule.assign(
         _day,
-        DayAssignment(Minigame.values.byName(_game), _difficulty),
+        DayAssignment.themed(
+          Minigame.values.byName(_game),
+          _difficulty,
+          skin: _skin,
+          melodyId: _melodyId,
+        ),
       );
       if (mounted) setState(() => _message = 'Gespeichert.');
     } catch (_) {
@@ -131,6 +142,12 @@ class _CalendarEditorScreenState extends State<CalendarEditorScreen> {
                         ? null
                         : (value) => setState(() {
                             _game = value!;
+                            _melodyId = null;
+                            if (!supportsHanukkah(
+                              Minigame.values.byName(_game),
+                            )) {
+                              _skin = GameSkin.christmas;
+                            }
                             _message = null;
                           }),
                   ),
@@ -156,6 +173,61 @@ class _CalendarEditorScreenState extends State<CalendarEditorScreen> {
                             _message = null;
                           }),
                   ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<GameSkin>(
+                    key: ValueKey('skin-$_day-${_skin.name}'),
+                    initialValue: _skin,
+                    isExpanded: true,
+                    decoration: const InputDecoration(labelText: 'Gestaltung'),
+                    items: const [
+                      DropdownMenuItem(
+                        value: GameSkin.christmas,
+                        child: Text('Weihnachten'),
+                      ),
+                      DropdownMenuItem(
+                        value: GameSkin.hanukkah,
+                        child: Text('Chanukka'),
+                      ),
+                    ],
+                    onChanged:
+                        _saving ||
+                            !supportsHanukkah(Minigame.values.byName(_game))
+                        ? null
+                        : (value) => setState(() {
+                            _skin = value!;
+                            _melodyId = null;
+                            _message = null;
+                          }),
+                  ),
+                  if (_game == 'bells') ...[
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      key: ValueKey('melody-$_day-${_skin.name}'),
+                      initialValue: _melodyId ?? '',
+                      isExpanded: true,
+                      decoration: const InputDecoration(labelText: 'Melodie'),
+                      items: [
+                        const DropdownMenuItem(
+                          value: '',
+                          child: Text('Nach Schwierigkeit'),
+                        ),
+                        for (var i = 0; i < bellMelodies.length; i++)
+                          if ((i >= 8) == (_skin == GameSkin.hanukkah))
+                            DropdownMenuItem(
+                              value: bellMelodies[i].id,
+                              child: Text(
+                                bellMelodies[i].title,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                      ],
+                      onChanged: _saving
+                          ? null
+                          : (value) => setState(
+                              () => _melodyId = value == '' ? null : value,
+                            ),
+                    ),
+                  ],
                   const SizedBox(height: 20),
                   FilledButton.icon(
                     onPressed: _saving ? null : _save,

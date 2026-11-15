@@ -39,6 +39,9 @@ class MemoryGame {
   int? first;
   int? second;
   int attemptsUsed = 0;
+  int knownPairMistakes = 0;
+  final Set<int> _seen = {};
+  int? _expectedTwin;
 
   Set<int> get matched => Set.unmodifiable(_matched);
   int get attemptsLeft => level.attempts - attemptsUsed;
@@ -58,8 +61,14 @@ class MemoryGame {
       return false;
     }
     if (first == null) {
+      final twins = _seen.where(
+        (i) => i != index && cards[i] == cards[index] && !_matched.contains(i),
+      );
+      _expectedTwin = twins.isEmpty ? null : twins.first;
       first = index;
     } else {
+      if (_expectedTwin != null && index != _expectedTwin) knownPairMistakes++;
+      _expectedTwin = null;
       second = index;
       attemptsUsed++;
       if (cards[first!] == cards[second!]) {
@@ -67,6 +76,7 @@ class MemoryGame {
         first = second = null;
       }
     }
+    _seen.add(index);
     return true;
   }
 

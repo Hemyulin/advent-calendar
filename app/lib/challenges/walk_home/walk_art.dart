@@ -1,3 +1,5 @@
+import '../seasonal/game_skin_scope.dart';
+import '../seasonal/hanukkah_art.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../presentation/calendar_style.dart';
@@ -42,11 +44,12 @@ class WinterStreetPainter extends CustomPainter {
     this.ending, {
     required this.reducedMotion,
     this.nightMode = true,
+    this.hanukkah = false,
   });
   final WalkGame game;
   final double ending;
   final bool reducedMotion;
-  final bool nightMode;
+  final bool nightMode, hanukkah;
   @override
   void paint(Canvas canvas, Size size) {
     final p = Paint();
@@ -279,7 +282,7 @@ class WinterStreetPainter extends CustomPainter {
     final rect = Rect.fromLTWH(w / 2 - width / 2, base - height, width, height);
     canvas.drawRRect(
       RRect.fromRectAndRadius(rect, const Radius.circular(5)),
-      p..color = const Color(0xFFBD9680),
+      p..color = hanukkah ? const Color(0xFFBACAD0) : const Color(0xFFBD9680),
     );
     canvas.drawPath(
       Path()
@@ -329,6 +332,32 @@ class WinterStreetPainter extends CustomPainter {
       ),
       p..color = const Color(0xFFF9E5B5).withValues(alpha: .6),
     );
+    if (hanukkah) {
+      canvas.save();
+      final diameter = width * .22;
+      canvas.translate(w / 2 - diameter / 2, rect.top - height * .38);
+      StarOfDavidPainter(
+        color: nightMode ? const Color(0xFFFFE5A0) : hanukkahBlue,
+      ).paint(canvas, Size.square(diameter));
+      canvas.restore();
+      final sign = TextPainter(
+        text: TextSpan(
+          text: 'Synagoge',
+          style: TextStyle(
+            fontSize: 10 * scale,
+            fontFamily: 'sans-serif',
+            color: hanukkahBlue,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      sign.paint(
+        canvas,
+        Offset(w / 2 - sign.width / 2, rect.top + height * .06),
+      );
+      sign.dispose();
+    }
   }
 
   void _obstacle(Canvas canvas, Offset foot, double scale, StreetObstacle o) {
@@ -613,6 +642,23 @@ class WinterStreetPainter extends CustomPainter {
           ..moveTo(side * 7, -78)
           ..quadraticBezierTo(side * 13, -65, side * 11 + hairSway, -51),
         p,
+      );
+    }
+
+    if (hanukkah) {
+      canvas.drawOval(
+        const Rect.fromLTWH(-12, -85, 24, 12),
+        Paint()..color = hanukkahBlue,
+      );
+      canvas.drawArc(
+        const Rect.fromLTWH(-9, -83, 18, 8),
+        math.pi,
+        math.pi,
+        false,
+        Paint()
+          ..color = const Color(0xFF99B4CA)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1,
       );
     }
     canvas.restore();

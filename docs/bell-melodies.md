@@ -1,7 +1,7 @@
 # Weihnachtsglocken: recognizable hooks and listening guidance
 
-Every melody is a curated musical phrase, lasting about 4–5 seconds at the
-standard tempo. Neither normal play nor the preview plays entire verses or
+Every melody is a curated musical phrase. Christmas hooks last about 4–5 seconds
+at the standard tempo; the slightly longer Maoz Tzur hook lasts about 10 seconds. Neither normal play nor the preview plays entire verses or
 songs. Jingle Bells starts at the familiar chorus, rather than the verse.
 The stored data contains only these hooks, so repeat-listening cannot
 accidentally fall back to a full-song version.
@@ -70,3 +70,9 @@ Screens remain fixed, without vertical scrolling.
 Tests check exact hook sequences, maximum demonstration duration, musical
 complexity across difficulties, bell coverage, complete hook playback and
 repeat-listening, guidance, audio failures, completion/replay and layouts.
+
+## Chanukka additions
+
+Three traditional hooks join the existing eight songs: Sevivon (easy, six notes),
+Maoz Tzur (classic, fifteen notes), and Hanerot Halalu (hard, twelve notes).
+See [source scores, transpositions, guidance and verification](hanukkah.md#music-data-and-verification).

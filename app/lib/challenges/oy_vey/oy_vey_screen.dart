@@ -1,3 +1,4 @@
+import '../../achievements/run_facts.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -68,15 +69,14 @@ class _OyVeyScreenState extends State<OyVeyScreen>
   double get _aspect => _testMode ? .75 : _camera.aspectRatio;
   CatchMouth? get _mouth {
     if (_testMode) {
-      return CatchMouth(_testX, _testY, .11, halfHeight: .022);
+      return CatchMouth(_testX, _testY, .052, halfHeight: .012);
     }
     final mouth = _tracker.mouth;
     if (!_tracking || mouth == null) return null;
-    return CatchMouth(
-      mouth.x,
-      mouth.y,
-      (mouth.width * .8).clamp(.07, .17),
-      halfHeight: .022,
+    return CatchMouth.fromHeadPosition(
+      x: mouth.x,
+      y: mouth.y,
+      mouthWidth: mouth.width,
     );
   }
 
@@ -219,7 +219,7 @@ class _OyVeyScreenState extends State<OyVeyScreen>
     alreadyCompleted: widget.alreadyCompleted,
     onRestart: _restart,
     instructions:
-        'Bewege deinen Kopf, um Sufganiyot, Sevivonim und Chanukkiot zu sammeln. Meide Weihnachtsbäume, Weihnachtsmützen und Zuckerstangen. 15 richtige Objekte gewinnen, 3 Weihnachtsobjekte beenden den Versuch. Du musst den Mund nicht öffnen. Ohne erkanntes Gesicht fällt alles weiter; mit erkanntem Gesicht sammelst du automatisch. Die Kamera bleibt lokal: Es wird nichts aufgenommen oder hochgeladen.',
+        'Lenke den Sack mit kleinen Kopfbewegungen. Sammle Sufganiyot, Sevivonim und Chanukkiot. Meide Weihnachtsbäume, Weihnachtsmützen und Zuckerstangen. 15 richtige Objekte gewinnen, 3 Weihnachtsobjekte beenden den Versuch. Du musst den Mund nicht öffnen. Ohne erkanntes Gesicht fällt alles weiter; mit erkanntem Gesicht sammelst du automatisch. Die Kamera bleibt lokal: Es wird nichts aufgenommen oder hochgeladen.',
     children: [
       GameStats(
         text:
@@ -357,6 +357,14 @@ class _OyVeyScreenState extends State<OyVeyScreen>
         TextButton(onPressed: _test, child: const Text('Ohne Kamera testen')),
       if (_game.won)
         CompletionPanel(
+          facts: RunFacts(
+            feats: {
+              if (_game.mistakes == 0) RunFeat.cleanOyVey,
+              if (_game.mistakes == 0 &&
+                  _game.menorahsCollected == _game.collected)
+                RunFeat.onlyMenorahs,
+            },
+          ),
           onComplete: widget.onComplete,
           onReplay: _restart,
           message: 'Mazel tov! Alles eingesammelt!',

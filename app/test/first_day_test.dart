@@ -26,15 +26,12 @@ void main() {
     expect(await progress.completedChallengeIds(), isEmpty);
 
     await solveVisibleMemory(tester);
-    expect(find.text('Geschafft!'), findsOneWidget);
+    expect(find.byKey(const ValueKey('completion-gift')), findsOneWidget);
     expect(await progress.completedChallengeIds(), {'day-1'});
-    expect(find.text('Tippe auf dein Geschenk.'), findsOneWidget);
+    expect(find.text('Zum Öffnen tippen'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('completion-gift')));
     await tester.pumpAndSettle();
-    expect(
-      find.text('Geschenk geöffnet. Die Box ist noch nicht eingerichtet.'),
-      findsOneWidget,
-    );
+    expect(find.text('Die Box ist noch nicht eingerichtet.'), findsOneWidget);
     await tester.tap(find.text('Zurück zum Kalender'));
     await tester.pumpAndSettle();
     expect(

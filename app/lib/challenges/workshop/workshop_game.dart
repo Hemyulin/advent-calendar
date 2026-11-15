@@ -14,7 +14,15 @@ enum WorkshopDirection {
 /// Handcrafted Sokoban boards. # wall, . target, $ present, @ elf.
 /// * and + allow a present or the elf to start on a target in reusable levels.
 class WorkshopLevel {
-  WorkshopLevel(List<String> rows) {
+  /// Verified shortest solutions use 18 / 38 / 65 moves. The bonus leaves
+  /// only 2 / 2 / 3 spare moves; undo still permits correcting a plan.
+  static const bonusMoveLimits = {
+    GameDifficulty.easy: 20,
+    GameDifficulty.normal: 40,
+    GameDifficulty.hard: 68,
+  };
+
+  WorkshopLevel(List<String> rows, {this.bonusMoveLimit}) {
     if (rows.length < 3 || rows.any((row) => row.length != rows.length)) {
       throw ArgumentError('The workshop must be a square grid');
     }
@@ -48,6 +56,7 @@ class WorkshopLevel {
     presents = List.unmodifiable(boxCells);
     start = players.single;
   }
+  final int? bonusMoveLimit;
   late final int size, start;
   late final Set<int> walls, targets;
   late final List<int> presents;
@@ -55,31 +64,32 @@ class WorkshopLevel {
   factory WorkshopLevel.forDifficulty(GameDifficulty difficulty) =>
       switch (difficulty) {
         GameDifficulty.easy => WorkshopLevel(const [
-          '#####',
-          '# . #',
-          r'# $$#',
-          '#@ .#',
-          '#####',
-        ]),
+          '######',
+          '# .  #',
+          r'#  $@#',
+          r'# #$ #',
+          '#  . #',
+          '######',
+        ], bonusMoveLimit: bonusMoveLimits[difficulty]),
         GameDifficulty.normal => WorkshopLevel(const [
           '#######',
-          '#. # .#',
-          r'# $ $ #',
-          '# #@  #',
-          r'# $ # #',
-          '#  .  #',
+          '#..#  #',
+          r'#. #$ #',
+          '#     #',
+          r'#$ #$ #',
+          '#@    #',
           '#######',
-        ]),
+        ], bonusMoveLimit: bonusMoveLimits[difficulty]),
         GameDifficulty.hard => WorkshopLevel(const [
           '########',
-          '#. #  .#',
-          r'# $ $  #',
-          '# #@#  #',
-          r'#  $ $ #',
+          '#..#   #',
+          r'#..# $ #',
+          r'#  $@$ #',
           '#  #   #',
-          '#.    .#',
+          r'#  # $ #',
+          '#      #',
           '########',
-        ]),
+        ], bonusMoveLimit: bonusMoveLimits[difficulty]),
       };
 }
 

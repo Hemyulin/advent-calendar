@@ -178,6 +178,74 @@ final bellMelodies = [
     MelodyNote(BellNote.a, .5, restBeats: .5),
     ..._phrase('e h h highCSharp a', [.5, .5, .5, .5, 1]),
   ], bells: lastChristmasBells),
+  BellMelody('sevivon', 'Sevivon, sov sov sov', [
+    ..._phrase('d d e f f e', [.5, .5, 1, .5, .5, 1]),
+  ]),
+  // First two phrases, transposed D -> F so the low fifth fits our samples.
+  BellMelody(
+    'maoz-tzur',
+    'Maoz Tzur',
+    [
+      ..._phrase('f c f bFlat a g f highC highD g a bFlat a g f', [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        1,
+        1,
+        1,
+        .5,
+        .5,
+        1,
+        1,
+        2,
+      ]),
+    ],
+    bells: [
+      BellNote.c,
+      BellNote.d,
+      BellNote.f,
+      BellNote.g,
+      BellNote.a,
+      BellNote.bFlat,
+      BellNote.highC,
+      BellNote.highD,
+    ],
+  ),
+  // The repeated, leaping refrain figure (score beats 20–28), in D major.
+  BellMelody(
+    'hanerot',
+    'Hanerot Halalu',
+    [
+      ..._phrase('a highD fSharp g a a a highD fSharp g a a', [
+        .5,
+        .5,
+        .5,
+        .5,
+        1.5,
+        .5,
+        .5,
+        .5,
+        .5,
+        .5,
+        1.5,
+        .5,
+      ]),
+    ],
+    bells: [
+      BellNote.d,
+      BellNote.e,
+      BellNote.fSharp,
+      BellNote.g,
+      BellNote.a,
+      BellNote.h,
+      BellNote.highCSharp,
+      BellNote.highD,
+    ],
+  ),
 ];
 
 class BellRound {
@@ -201,4 +269,7 @@ const bellRounds = [
   BellRound(6),
   BellRound(7),
   BellRound(5),
+  BellRound(8),
+  BellRound(9),
+  BellRound(10),
 ];

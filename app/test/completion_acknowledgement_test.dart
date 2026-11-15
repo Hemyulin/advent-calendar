@@ -44,12 +44,12 @@ void main() {
       await t.pumpAndSettle();
       await solveVisibleMemory(t);
       await t.pumpAndSettle();
-      expect(find.text('Geschafft!'), findsOneWidget);
+      expect(find.byKey(const ValueKey('completion-gift')), findsOneWidget);
       expect(posts, 1);
       expect(pending.isCompleted, isFalse);
       expect(await progress.completedChallengeIds(), contains('day-1'));
-      final replay = find.widgetWithText(OutlinedButton, 'Noch einmal spielen');
-      expect(t.widget<OutlinedButton>(replay).onPressed, isNotNull);
+      final replay = find.byKey(const ValueKey('completion-replay'));
+      expect(t.widget<TextButton>(replay).onPressed, isNotNull);
       await t.tap(replay);
       await t.pumpAndSettle();
       await solveVisibleMemory(t);

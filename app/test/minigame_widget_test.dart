@@ -1,3 +1,4 @@
+import 'support/game_configuration.dart';
 import 'dart:async';
 
 import 'package:advent_calendar/app.dart';
@@ -72,7 +73,7 @@ void main() {
         ),
       );
       await solveMemory(tester, level);
-      expect(find.text('Geschafft!'), findsOneWidget);
+      expect(find.byKey(const ValueKey('completion-gift')), findsOneWidget);
       expect(await repository.completedChallengeIds(), {'day-2'});
       await tapVisible(tester, find.text('Noch einmal spielen'));
       expect(find.text('0 / 8 Paare · 8 Versuche'), findsOneWidget);
@@ -148,13 +149,13 @@ void main() {
         await tester.pump(const Duration(milliseconds: 16));
       }
       await tester.pumpAndSettle();
-      expect(find.text('Geschafft!'), findsOneWidget);
+      expect(find.byKey(const ValueKey('completion-gift')), findsOneWidget);
       expect(completed, 1);
       expect(find.text('Nächstes Labyrinth'), findsNothing);
       await tester.tap(find.text('Noch einmal spielen'));
       await tester.pumpAndSettle();
       expect(find.text('6 Leben'), findsOneWidget);
-      expect(find.text('Geschafft!'), findsNothing);
+      expect(find.byKey(const ValueKey('completion-gift')), findsNothing);
       expect(completed, 1);
       await tester.pumpWidget(const SizedBox.shrink());
       expect(source.controller.hasListener, isFalse);
@@ -265,9 +266,7 @@ void main() {
       expect(find.text('Speichern fehlgeschlagen.'), findsNothing);
       expect(
         tester
-            .widget<OutlinedButton>(
-              find.widgetWithText(OutlinedButton, 'Noch einmal spielen'),
-            )
+            .widget<TextButton>(find.byKey(const ValueKey('completion-replay')))
             .onPressed,
         isNotNull,
       );
@@ -278,13 +277,18 @@ void main() {
   test('daily games receive the same completion interface', () {
     Future<void> complete() async {}
     final days = calendarDays(DateTime(2026, 12, 12), {});
-    expect(buildDailyChallenge(days[11], complete), isA<MemoryScreen>());
     expect(
-      (buildDailyChallenge(days[0], complete) as MemoryScreen).onComplete,
+      configuredGame(buildDailyChallenge(days[15], complete)),
+      isA<MemoryScreen>(),
+    );
+    expect(
+      (configuredGame(buildDailyChallenge(days[0], complete)) as MemoryScreen)
+          .onComplete,
       same(complete),
     );
     expect(
-      (buildDailyChallenge(days[2], complete) as MazeScreen).onComplete,
+      (configuredGame(buildDailyChallenge(days[2], complete)) as MazeScreen)
+          .onComplete,
       same(complete),
     );
   });

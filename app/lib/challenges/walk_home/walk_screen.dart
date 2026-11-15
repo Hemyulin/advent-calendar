@@ -1,3 +1,5 @@
+import '../seasonal/game_skin_scope.dart';
+import '../../achievements/run_facts.dart';
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
@@ -246,11 +248,13 @@ class _WalkScreenState extends State<WalkScreen>
         return KeyEventResult.handled;
       },
       child: GameScaffold(
-        title: 'Ein Glühwein zu viel',
+        title: GameSkinScope.isHanukkah(context)
+            ? 'Ein Kiddusch-Wein zu viel'
+            : 'Ein Glühwein zu viel',
         alreadyCompleted: widget.alreadyCompleted,
         onRestart: _restart,
         instructions:
-            'Bring die Figur nach Hause. Neige das Handy sanft nach links oder rechts und gleiche das Schwanken aus. Weiche Schneemännern, Fahrrädern, Mülltonnen und schlafenden Feiernden aus. Eis macht die Straße rutschig. Wenn du zu lange schief stehst oder vom Weg abkommst, landest du im Schnee. Halte bei Pfeilsteuerung die Richtung gedrückt. Die Mitte kannst du neu kalibrieren.',
+            '${GameSkinScope.isHanukkah(context) ? 'Bring die Figur zur Synagoge.' : 'Bring die Figur nach Hause.'} Neige das Handy sanft nach links oder rechts und gleiche das Schwanken aus. Weiche Schneemännern, Fahrrädern, Mülltonnen und schlafenden Feiernden aus. Eis macht die Straße rutschig. Wenn du zu lange schief stehst oder vom Weg abkommst, landest du im Schnee. Halte bei Pfeilsteuerung die Richtung gedrückt. Die Mitte kannst du neu kalibrieren.',
         children: [
           GameStats(
             text:
@@ -285,6 +289,7 @@ class _WalkScreenState extends State<WalkScreen>
                         Curves.easeOutCubic.transform(_ending.value),
                         reducedMotion: MediaQuery.disableAnimationsOf(context),
                         nightMode: _nightMode,
+                        hanukkah: GameSkinScope.isHanukkah(context),
                       ),
                     ),
                   ),
@@ -395,9 +400,17 @@ class _WalkScreenState extends State<WalkScreen>
           ],
           if (_showResult && _game.phase == WalkPhase.home)
             CompletionPanel(
+              facts: RunFacts(
+                feats: {
+                  if (_game.bumps == 0) RunFeat.cleanWalk,
+                  if (_game.bumps >= 5) RunFeat.roughWalk,
+                },
+              ),
               onComplete: widget.onComplete,
               onReplay: _restart,
-              message: 'Zu Hause! Ab auf die Couch.',
+              message: GameSkinScope.isHanukkah(context)
+                  ? 'Die Synagoge ist erreicht. L’chaim!'
+                  : 'Zu Hause! Ab auf die Couch.',
             )
           else if (_showResult && _game.phase == WalkPhase.fallen)
             DefeatPanel(

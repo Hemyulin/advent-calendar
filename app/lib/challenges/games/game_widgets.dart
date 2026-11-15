@@ -3,7 +3,12 @@ import 'package:flutter/material.dart';
 import '../../presentation/calendar_style.dart';
 import '../../presentation/viewport_fit.dart';
 import '../completion.dart';
+import '../../achievements/run_facts.dart';
+import '../../achievements/achievement_scope.dart';
+import '../../achievements/achievement_store.dart';
+import '../../achievements/achievement_celebration.dart';
 import '../gift_reward.dart';
+import '../seasonal/game_skin_scope.dart';
 import 'gift_art.dart';
 import 'gift_reward_scope.dart';
 
@@ -39,6 +44,7 @@ class GameScaffold extends StatelessWidget {
                 : null,
           ),
           actions: [
+            const SkinSwitch(),
             if (alreadyCompleted)
               const Tooltip(
                 message: 'Bereits geschafft',
@@ -119,7 +125,9 @@ class GameResultLayer extends StatelessWidget {
                         namesRoute: true,
                         label: 'Spielergebnis',
                         child: Material(
-                          color: const Color(0xFFF5E6C9),
+                          color: result is CompletionPanel
+                              ? CalendarStyle.ivory
+                              : const Color(0xFFF5E6C9),
                           elevation: 18,
                           borderRadius: BorderRadius.circular(24),
                           clipBehavior: Clip.antiAlias,
@@ -170,7 +178,9 @@ class CompletionPanel extends StatefulWidget {
     required this.onReplay,
     required this.message,
     this.details,
+    this.facts = const RunFacts(),
   });
+  final RunFacts facts;
   final Widget? details;
   final ChallengeCompletion onComplete;
   final VoidCallback onReplay;
@@ -225,17 +235,27 @@ class _CompletionPanelState extends State<CompletionPanel>
 
   @override
   void dispose() {
+    _dismissCelebration?.call();
     _giftAnimation.dispose();
     super.dispose();
   }
 
+  VoidCallback? _dismissCelebration;
   bool _saving = false;
   bool _saved = false;
   bool _failed = false;
 
+  bool _saveStarted = false;
+  bool _hanukkah = false;
+  Future<List<Achievement>> Function(RunFacts)? _recordAchievements;
+
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_saveStarted) return;
+    _recordAchievements = AchievementScope.maybeOf(context)?.record;
+    _hanukkah = GameSkinScope.isHanukkah(context);
+    _saveStarted = true;
     _save();
   }
 
@@ -246,8 +266,29 @@ class _CompletionPanelState extends State<CompletionPanel>
       _failed = false;
     });
     try {
-      await widget.onComplete();
-      if (mounted) setState(() => _saved = true);
+      // Keep the won attempt's facts and writer even if the player immediately
+      // returns to the calendar while completion storage is still finishing.
+      final complete = widget.onComplete;
+      final facts = RunFacts(
+        feats: widget.facts.feats,
+        completedBellSongs: widget.facts.completedBellSongs,
+        hanukkahMode: _hanukkah,
+      );
+      final record = _recordAchievements;
+      await complete();
+      final earned = await record?.call(facts) ?? <Achievement>[];
+      if (mounted) {
+        setState(() {
+          _saved = true;
+        });
+        if (earned.isNotEmpty) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            _dismissCelebration?.call();
+            _dismissCelebration = showAchievementCelebration(context, earned);
+          });
+        }
+      }
     } catch (_) {
       if (mounted) setState(() => _failed = true);
     } finally {
@@ -256,89 +297,126 @@ class _CompletionPanelState extends State<CompletionPanel>
   }
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(22),
-    decoration: BoxDecoration(
-      color: const Color(0xFFF5E6C9),
-      borderRadius: BorderRadius.circular(22),
-    ),
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(22, 10, 22, 18),
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
+        Wrap(
+          alignment: WrapAlignment.end,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            if (_saved && !_opening) const SkinSwitch(),
+            TextButton.icon(
+              key: const ValueKey('completion-replay'),
+              onPressed: _saved && !_opening ? widget.onReplay : null,
+              icon: const Icon(Icons.replay_rounded, size: 17),
+              label: const Text(
+                'Noch einmal spielen',
+                style: TextStyle(fontSize: 12),
+              ),
+              style: TextButton.styleFrom(foregroundColor: CalendarStyle.muted),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
         Semantics(
           button: true,
           enabled: _saved && !_opening && !_opened,
           label: _opened ? 'Geschenk geöffnet' : 'Geschenk öffnen',
-          child: Tooltip(
-            message: _opened ? 'Geschenk geöffnet' : 'Geschenk öffnen',
-            child: InkResponse(
-              key: const ValueKey('completion-gift'),
-              onTap: _saved && !_opening && !_opened ? _openGift : null,
-              radius: 86,
-              child: ExcludeSemantics(
-                child: SizedBox(
-                  width: 180,
-                  height: 174,
-                  child: AnimatedBuilder(
-                    animation: _giftAnimation,
-                    builder: (_, _) => CustomPaint(
-                      painter: GiftPainter(progress: _giftAnimation.value),
+          child: InkResponse(
+            key: const ValueKey('completion-gift'),
+            onTap: _saved && !_opening && !_opened ? _openGift : null,
+            radius: 125,
+            child: ExcludeSemantics(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 240,
+                    height: 232,
+                    child: AnimatedBuilder(
+                      animation: _giftAnimation,
+                      builder: (_, _) => CustomPaint(
+                        painter: GiftPainter(progress: _giftAnimation.value),
+                      ),
                     ),
                   ),
-                ),
+                  const SizedBox(height: 12),
+                  Text(
+                    _opening
+                        ? 'Öffnet …'
+                        : _opened
+                        ? 'Geschenk geöffnet'
+                        : _saving
+                        ? 'Einen Moment …'
+                        : _failed
+                        ? 'Noch nicht gespeichert'
+                        : 'Zum Öffnen tippen',
+                    textAlign: TextAlign.center,
+                    style: CalendarStyle.heading.copyWith(fontSize: 25),
+                  ),
+                ],
               ),
             ),
           ),
         ),
-        Text('Geschafft!', style: CalendarStyle.heading.copyWith(fontSize: 28)),
-        const SizedBox(height: 8),
-        Text(widget.message, textAlign: TextAlign.center),
-        if (widget.details != null) widget.details!,
-        const SizedBox(height: 12),
-        if (_saved)
+        if (_opened) ...[
+          const SizedBox(height: 14),
+          Text(
+            widget.message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: CalendarStyle.green, fontSize: 14),
+          ),
+          const SizedBox(height: 6),
           Semantics(
             liveRegion: true,
             child: Text(
-              _opening
-                  ? 'Öffnet …'
-                  : !_opened
-                  ? 'Tippe auf dein Geschenk.'
-                  : switch (_giftResult) {
-                      GiftOpenResult.boxOpened => 'Die Box ist offen!',
-                      GiftOpenResult.notConfigured =>
-                        'Geschenk geöffnet. Die Box ist noch nicht eingerichtet.',
-                      GiftOpenResult.unconfirmed =>
-                        'Geschenk geöffnet. Die Box hat das Öffnen nicht bestätigt.',
-                      GiftOpenResult.preview => 'Geschenk geöffnet · Vorschau',
-                      _ => 'Geschenk geöffnet.',
-                    },
+              switch (_giftResult) {
+                GiftOpenResult.boxOpened => 'Die Box ist offen!',
+                GiftOpenResult.notConfigured =>
+                  'Die Box ist noch nicht eingerichtet.',
+                GiftOpenResult.unconfirmed =>
+                  'Die Box hat das Öffnen nicht bestätigt.',
+                GiftOpenResult.preview => 'Vorschau · ohne Box',
+                _ =>
+                  _hanukkah
+                      ? 'Dein Festtagsmoment gehört dir.'
+                      : 'Dein Weihnachtsmoment gehört dir.',
+              },
               textAlign: TextAlign.center,
-              style: const TextStyle(color: CalendarStyle.green),
+              style: const TextStyle(color: CalendarStyle.muted, fontSize: 13),
             ),
           ),
-        if (_saving)
+          if (widget.details != null) widget.details!,
+        ],
+        if (_saving) ...[
+          const SizedBox(height: 12),
           Semantics(
             label: 'Fortschritt wird gespeichert',
             liveRegion: true,
-            child: SizedBox(
+            child: const SizedBox(
               width: 16,
               height: 16,
               child: CircularProgressIndicator(strokeWidth: 2),
             ),
           ),
-        if (_failed)
+        ],
+        if (_failed) ...[
+          const SizedBox(height: 12),
           const Text('Speichern fehlgeschlagen.', textAlign: TextAlign.center),
-        if (_failed)
           TextButton(onPressed: _save, child: const Text('Erneut speichern')),
-        const SizedBox(height: 12),
-        OutlinedButton(
-          onPressed: _saved && !_opening ? widget.onReplay : null,
-          child: const Text('Noch einmal spielen'),
-        ),
-        const SizedBox(height: 8),
-        FilledButton(
+        ],
+        const SizedBox(height: 24),
+        TextButton.icon(
+          key: const ValueKey('completion-calendar'),
           onPressed: _opening ? null : () => Navigator.pop(context),
-          child: const Text('Zurück zum Kalender'),
+          icon: const Icon(Icons.arrow_back_rounded, size: 15),
+          label: const Text(
+            'Zurück zum Kalender',
+            style: TextStyle(fontSize: 12),
+          ),
+          style: TextButton.styleFrom(foregroundColor: CalendarStyle.muted),
         ),
       ],
     ),

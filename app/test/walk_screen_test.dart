@@ -1,3 +1,4 @@
+import 'support/game_configuration.dart';
 import 'dart:async';
 import 'package:advent_calendar/challenges/walk_home/walk_game.dart';
 import 'package:advent_calendar/challenges/walk_home/walk_screen.dart';
@@ -129,10 +130,10 @@ void main() {
     await tester.pump();
     await frames(tester, .5);
     expect(scene(tester).game.phase, WalkPhase.home);
-    expect(find.text('Geschafft!'), findsNothing);
+    expect(find.byKey(const ValueKey('completion-gift')), findsNothing);
     await tester.pump(const Duration(milliseconds: 1400));
     await tester.pumpAndSettle();
-    expect(find.text('Geschafft!'), findsOneWidget);
+    expect(find.byKey(const ValueKey('completion-gift')), findsOneWidget);
     expect(complete, 1);
     await tester.tap(find.text('Noch einmal spielen'));
     await tester.pumpAndSettle();
@@ -270,12 +271,14 @@ void main() {
     }
     await tester.pumpWidget(const SizedBox.shrink());
   });
-  test('Day 10 shares completion and replay state', () {
+  test('Day 15 shares completion and replay state', () {
     Future<void> complete() async {}
     final screen =
-        buildDailyChallenge(
-              calendarDays(DateTime(2026, 12, 24), {'day-10'})[9],
-              complete,
+        configuredGame(
+              buildDailyChallenge(
+                calendarDays(DateTime(2026, 12, 24), {'day-15'})[14],
+                complete,
+              ),
             )
             as WalkScreen;
     expect(screen.onComplete, same(complete));

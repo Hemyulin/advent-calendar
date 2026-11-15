@@ -22,18 +22,29 @@ class BellsLevel {
     BellGuidance.none => false,
   };
 
-  factory BellsLevel.forDifficulty(GameDifficulty difficulty) =>
-      switch (difficulty) {
-        GameDifficulty.easy => const BellsLevel(
-          rounds: [BellRound(6)],
-          guidance: BellGuidance.all,
-        ),
-        GameDifficulty.normal => const BellsLevel(),
-        GameDifficulty.hard => const BellsLevel(
-          rounds: [BellRound(5)],
-          guidance: BellGuidance.none,
-        ),
-      };
+  factory BellsLevel.forDifficulty(
+    GameDifficulty difficulty, {
+    bool hanukkah = false,
+  }) {
+    if (hanukkah) {
+      return BellsLevel(
+        rounds: [BellRound(8 + difficulty.index)],
+        guidance: BellGuidance.values[difficulty.index],
+        beatMilliseconds: difficulty == GameDifficulty.easy ? 700 : 620,
+      );
+    }
+    return switch (difficulty) {
+      GameDifficulty.easy => const BellsLevel(
+        rounds: [BellRound(6)],
+        guidance: BellGuidance.all,
+      ),
+      GameDifficulty.normal => const BellsLevel(),
+      GameDifficulty.hard => const BellsLevel(
+        rounds: [BellRound(5)],
+        guidance: BellGuidance.none,
+      ),
+    };
+  }
 }
 
 /// No timers or audio: only pitch order is evaluated. Attempts are unlimited.
@@ -53,6 +64,8 @@ class BellsGame {
     }
   }
   final BellsLevel level;
+  final Set<String> _completedMelodies = {};
+  Set<String> get completedMelodyIds => Set.unmodifiable(_completedMelodies);
   int round = 0;
   int entered = 0;
   BellsPhase phase = BellsPhase.ready;
@@ -88,6 +101,11 @@ class BellsGame {
     }
     entered++;
     if (entered == current.length) {
+      // A shortened tutorial can win its round without completing the song's
+      // curated hook. Only the full playable melody counts for the collection.
+      if (current.length == current.melody.notes.length) {
+        _completedMelodies.add(current.melody.id);
+      }
       phase = round == level.rounds.length - 1
           ? BellsPhase.won
           : BellsPhase.roundWon;

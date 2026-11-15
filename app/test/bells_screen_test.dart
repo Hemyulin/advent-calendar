@@ -1,3 +1,4 @@
+import 'support/game_configuration.dart';
 import 'package:advent_calendar/challenges/bells/bell_audio.dart';
 import 'package:advent_calendar/challenges/bells/bell_melodies.dart';
 import 'package:advent_calendar/challenges/bells/bells_game.dart';
@@ -78,7 +79,7 @@ void main() {
         await tester.pump(const Duration(seconds: 8)); // No input timeout.
       }
       await tester.pumpAndSettle();
-      expect(find.text('Geschafft!'), findsOneWidget);
+      expect(find.byKey(const ValueKey('completion-gift')), findsOneWidget);
       expect(completed, 1);
       await tester.tap(find.text('Noch einmal spielen'));
       await tester.pumpAndSettle();
@@ -371,10 +372,11 @@ void main() {
     },
   );
 
-  test('Day 5 receives the shared completion and replay state', () {
+  test('Day 10 receives the shared completion and replay state', () {
     Future<void> complete() async {}
-    final days = calendarDays(DateTime(2026, 12, 24), {'day-5'});
-    final screen = buildDailyChallenge(days[4], complete) as BellsScreen;
+    final days = calendarDays(DateTime(2026, 12, 24), {'day-10'});
+    final screen =
+        configuredGame(buildDailyChallenge(days[9], complete)) as BellsScreen;
     expect(screen.onComplete, same(complete));
     expect(screen.alreadyCompleted, isTrue);
   });

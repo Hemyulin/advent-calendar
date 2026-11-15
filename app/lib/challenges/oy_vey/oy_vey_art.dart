@@ -230,65 +230,142 @@ class OyVeyPainter extends CustomPainter {
       paintFestiveObject(canvas, center, radius, item.kind);
     }
     if (!visible || mouth == null) return;
-    final m = mouth!,
-        x = m.x * size.width,
-        y = m.y * size.height,
-        w = m.halfWidth * size.width;
-    final opening = m.halfHeight * size.height;
-    final p = Paint();
-    final bag = Path()
-      ..moveTo(x - w, y)
-      ..cubicTo(
-        x - w * .9,
-        y + w * .6,
-        x - w * 1.2,
-        y + w * 1.5,
-        x,
-        y + w * 1.6,
-      )
-      ..cubicTo(x + w * 1.2, y + w * 1.5, x + w * .9, y + w * .6, x + w, y)
-      ..close();
-    canvas.drawShadow(bag, Colors.black.withValues(alpha: .5), 5, false);
-    canvas.drawPath(bag, p..color = const Color(0xFFC8A76E));
-    canvas.drawPath(
-      Path()
-        ..moveTo(x - w * .65, y + w * .5)
-        ..quadraticBezierTo(x - w * .9, y + w * 1.3, x - w * .15, y + w * 1.4),
-      p
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2
-        ..color = const Color(0xFFE8D4A6),
-    );
-    p.style = PaintingStyle.fill;
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: Offset(x, y),
-        width: w * 2,
-        height: math.max(3, opening * 2),
-      ),
-      p..color = const Color(0xFF584436),
-    );
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: Offset(x, y),
-        width: w * 2,
-        height: math.max(3, opening * 2),
-      ),
-      p
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 4
-        ..color = const Color(0xFFEDD7A8),
-    );
-    canvas.drawPath(
-      Path()
-        ..moveTo(x + w * .7, y + 5)
-        ..quadraticBezierTo(x + w * 1.3, y + w * .3, x + w * .85, y + w * .55),
-      p
-        ..color = const Color(0xFF67847B)
-        ..strokeWidth = 3,
+    final m = mouth!;
+    paintCollectorSack(
+      canvas,
+      Offset(m.x * size.width, m.y * size.height),
+      m.halfWidth * size.width,
+      m.halfHeight * size.height,
     );
   }
 
   @override
   bool shouldRepaint(OyVeyPainter old) => true;
+}
+
+/// The rim is the actual collision opening. The soft, wider sack hangs below
+/// it; decoration never makes the catch area larger than the visible opening.
+void paintCollectorSack(
+  Canvas canvas,
+  Offset center,
+  double halfWidth,
+  double halfHeight,
+) {
+  canvas.save();
+  canvas.translate(center.dx, center.dy);
+  // Keep the writing legible while the narrow neck matches the catch area.
+  final scale = math.max(1.0, halfWidth / 24);
+  canvas.scale(scale);
+  final rimWidth = halfWidth / scale;
+  final rimHeight = halfHeight / scale;
+  final p = Paint()..isAntiAlias = true;
+  final bag = Path()
+    ..moveTo(-rimWidth, 0)
+    ..cubicTo(-19, 16, -35, 31, -32, 59)
+    ..cubicTo(-30, 82, 28, 86, 34, 62)
+    ..cubicTo(39, 35, 18, 15, rimWidth, 0)
+    ..close();
+  canvas.drawShadow(bag, Colors.black.withValues(alpha: .24), 3, false);
+  canvas.drawPath(bag, p..color = const Color(0xFFD8BA83));
+  final light = Path()
+    ..moveTo(-20, 14)
+    ..cubicTo(-18, 33, -31, 61, -18, 68)
+    ..cubicTo(-25, 54, -12, 28, -13, 17)
+    ..close();
+  canvas.drawPath(light, p..color = const Color(0xFFE9D3A8));
+  final seam = Path()
+    ..moveTo(24, 21)
+    ..cubicTo(39, 53, 31, 76, 5, 76);
+  canvas.drawPath(
+    seam,
+    p
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1
+      ..strokeCap = StrokeCap.round
+      ..color = const Color(0xFFB28F59),
+  );
+  canvas.drawOval(
+    Rect.fromCenter(
+      center: Offset.zero,
+      width: rimWidth * 2,
+      height: rimHeight * 2,
+    ),
+    p
+      ..style = PaintingStyle.fill
+      ..color = const Color(0xFF584436),
+  );
+  canvas.drawOval(
+    Rect.fromCenter(
+      center: Offset.zero,
+      width: rimWidth * 2,
+      height: rimHeight * 2,
+    ),
+    p
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3
+      ..color = const Color(0xFFF0DBB1),
+  );
+  final cord = Path()
+    ..moveTo(-25, 12)
+    ..quadraticBezierTo(0, 20, 24, 12)
+    ..moveTo(23, 12)
+    ..cubicTo(36, 2, 39, 21, 23, 16)
+    ..cubicTo(39, 20, 37, 32, 28, 25)
+    ..moveTo(25, 17)
+    ..lineTo(36, 37);
+  canvas.drawPath(
+    cord,
+    p
+      ..color = const Color(0xFF5C7866)
+      ..strokeWidth = 2,
+  );
+
+  void handwriting(
+    String text,
+    double y,
+    double fontSize,
+    TextDirection direction,
+  ) {
+    final label = TextPainter(
+      text: TextSpan(
+        text: text,
+        style: TextStyle(
+          color: const Color(0xFF365D67),
+          fontSize: fontSize,
+          fontFamily: 'sans-serif',
+          fontStyle: FontStyle.italic,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      textDirection: direction,
+    )..layout();
+    label.paint(canvas, Offset(-label.width / 2, y));
+    label.dispose();
+  }
+
+  canvas.save();
+  canvas.rotate(-.07);
+  handwriting('Weihnachten', 29, 8.5, TextDirection.ltr);
+  // Two wonky pen strokes cross out the original label.
+  canvas.drawPath(
+    Path()
+      ..moveTo(-28, 37)
+      ..lineTo(28, 32)
+      ..moveTo(-25, 33)
+      ..lineTo(26, 38),
+    p
+      ..color = const Color(0xFFA35248)
+      ..strokeWidth = 1.6,
+  );
+  handwriting('חנוכה', 45, 18, TextDirection.rtl);
+  canvas.drawPath(
+    Path()
+      ..moveTo(-20, 66)
+      ..quadraticBezierTo(0, 68, 22, 64),
+    p
+      ..color = const Color(0xFF365D67)
+      ..strokeWidth = 1,
+  );
+  canvas.restore();
+  canvas.restore();
 }

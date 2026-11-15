@@ -1,3 +1,6 @@
+import '../seasonal/game_skin_scope.dart';
+import '../seasonal/hanukkah_art.dart';
+import '../../achievements/run_facts.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -7,6 +10,10 @@ import '../completion.dart';
 import '../games/game_widgets.dart';
 import 'battery_art.dart';
 import 'battery_game.dart';
+
+// A displayed 3% must never hide a real dip below the achievement threshold.
+String _batteryPercentage(double value) =>
+    value > 0 && value < 1 ? '<1' : value.floor().toString();
 
 class BatteryScreen extends StatefulWidget {
   const BatteryScreen({
@@ -235,14 +242,16 @@ class _BatteryScreenState extends State<BatteryScreen>
 
   @override
   Widget build(BuildContext context) {
+    final hanukkah = GameSkinScope.isHanukkah(context);
     final terminal =
         _game.phase == BatteryPhase.won || _game.phase == BatteryPhase.lost;
     final enabled = !terminal && !_paused && _foreground;
     final reduced = MediaQuery.disableAnimationsOf(context);
     return GameScaffold(
-      title: 'Akku-Panik',
-      instructions:
-          'Ein Kabel, fünf fast leere Geräte. Zieh den Stecker auf das erste Gerät. Danach ziehst du ihn vom angeschlossenen Gerät auf ein anderes. Antippen allein steckt das Kabel nicht um. Nur dieses Gerät lädt. Halte alle Akkus ${widget.level.duration.round()} Sekunden über 0 %. Auf den Geräten siehst du, was gerade Strom frisst. Beim Ziehen ist das Kabel kurz ausgesteckt. Lässt du es daneben los, kehrt es zurück. Zum Schluss wird es hektischer. Nach einer Pause geht es erst mit „Weiter“ weiter. Vibration und Uhrenticken kannst du unten einschalten; das Ticken folgt den Systemtönen deines Handys.',
+      title: hanukkah ? 'Öl-Panik' : 'Akku-Panik',
+      instructions: hanukkah
+          ? 'Fünf Lichter, ein Ölkrug. Zieh den Krug zum ersten Licht und danach vom versorgten Licht zum nächsten. Halte alle Ölstände ${widget.level.duration.round()} Sekunden über 0 %. Luftzüge verbrauchen zusätzlich Öl.'
+          : 'Ein Kabel, fünf fast leere Geräte. Zieh den Stecker auf das erste Gerät. Danach ziehst du ihn vom angeschlossenen Gerät auf ein anderes. Antippen allein steckt das Kabel nicht um. Nur dieses Gerät lädt. Halte alle Akkus ${widget.level.duration.round()} Sekunden über 0 %. Auf den Geräten siehst du, was gerade Strom frisst. Beim Ziehen ist das Kabel kurz ausgesteckt. Lässt du es daneben los, kehrt es zurück. Zum Schluss wird es hektischer. Nach einer Pause geht es erst mit „Weiter“ weiter. Vibration und Uhrenticken kannst du unten einschalten; das Ticken folgt den Systemtönen deines Handys.',
       alreadyCompleted: widget.alreadyCompleted,
       onRestart: _restart,
       children: [
@@ -282,6 +291,16 @@ class _BatteryScreenState extends State<BatteryScreen>
                     _dragPoint ??
                     (_game.connected == null
                         ? cableDock(size)
+                        : hanukkah
+                        ? Offset(
+                            deskDeviceRect(_game.connected!, size).center.dx +
+                                (deskDeviceRect(_game.connected!, size).width *
+                                        .18)
+                                    .clamp(16.0, 26.0),
+                            deskDeviceRect(_game.connected!, size).top +
+                                deskDeviceRect(_game.connected!, size).height *
+                                    .22,
+                          )
                         : deskPort(_game.connected!, size));
                 return AnimatedBuilder(
                   animation: _ending,
@@ -332,34 +351,42 @@ class _BatteryScreenState extends State<BatteryScreen>
                               tween: Tween(end: end),
                               builder: (_, point, _) => CustomPaint(
                                 key: const ValueKey('battery-cord'),
-                                painter: CablePainter(
-                                  end: point,
-                                  connected: _game.connected != null,
-                                  dragging: _dragging,
-                                ),
+                                painter: hanukkah
+                                    ? OilSupplyPainter(
+                                        end: point,
+                                        visible:
+                                            _game.connected != null ||
+                                            _dragging,
+                                      )
+                                    : CablePainter(
+                                        end: point,
+                                        connected: _game.connected != null,
+                                        dragging: _dragging,
+                                      ),
                               ),
                             ),
                           ),
                         ),
-                        for (var i = 0; i < 5; i++)
-                          Positioned(
-                            left: deskPort(i, size).dx - 7,
-                            top: deskPort(i, size).dy - 2,
-                            width: 14,
-                            height: 4,
-                            child: IgnorePointer(
-                              child: DecoratedBox(
-                                decoration: BoxDecoration(
-                                  color: _game.connected == i
-                                      ? const Color(0xFFD7B46B)
-                                      : CalendarStyle.green.withValues(
-                                          alpha: .35,
-                                        ),
-                                  borderRadius: BorderRadius.circular(2),
+                        if (!hanukkah)
+                          for (var i = 0; i < 5; i++)
+                            Positioned(
+                              left: deskPort(i, size).dx - 7,
+                              top: deskPort(i, size).dy - 2,
+                              width: 14,
+                              height: 4,
+                              child: IgnorePointer(
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    color: _game.connected == i
+                                        ? const Color(0xFFD7B46B)
+                                        : CalendarStyle.green.withValues(
+                                            alpha: .35,
+                                          ),
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
                         Positioned.fromRect(
                           rect: sourceRect,
                           child: Draggable<int>(
@@ -379,16 +406,20 @@ class _BatteryScreenState extends State<BatteryScreen>
                               height: 48,
                             ),
                             child: Tooltip(
-                              message: source == null
+                              message: hanukkah
+                                  ? 'Ölkrug zum nächsten Licht ziehen'
+                                  : source == null
                                   ? 'Stecker zum ersten Gerät ziehen'
                                   : 'Stecker zu einem anderen Gerät ziehen',
                               child: Semantics(
-                                label: 'Ladekabel',
+                                label: hanukkah ? 'Ölkrug' : 'Ladekabel',
                                 child: Listener(
                                   behavior: HitTestBehavior.opaque,
                                   child: source == null
                                       ? CustomPaint(
-                                          painter: ChargingPlugPainter(),
+                                          painter: hanukkah
+                                              ? const OilJugPainter()
+                                              : ChargingPlugPainter(),
                                         )
                                       : const SizedBox.expand(),
                                 ),
@@ -411,9 +442,16 @@ class _BatteryScreenState extends State<BatteryScreen>
               fit: BoxFit.scaleDown,
               child: Text(
                 _game.feedbackLeft > 0
-                    ? _game.feedback
+                    ? (hanukkah
+                          ? _game.feedback.replaceAll(
+                              'Lade ich später.',
+                              'Gieße ich später.',
+                            )
+                          : _game.feedback)
                     : _game.phase == BatteryPhase.ready
-                    ? 'Stecker zum Gerät ziehen'
+                    ? (hanukkah
+                          ? 'Ölkrug zum Licht ziehen'
+                          : 'Stecker zum Gerät ziehen')
                     : '',
                 style: const TextStyle(
                   color: CalendarStyle.muted,
@@ -475,12 +513,25 @@ class _BatteryScreenState extends State<BatteryScreen>
         ),
         if (_showResult && _game.phase == BatteryPhase.won)
           CompletionPanel(
+            facts: RunFacts(
+              feats: {
+                if (_game.lowestBattery >= 3) RunFeat.safeBattery,
+                if (_game.highestBattery >= 50) RunFeat.halfCharged,
+              },
+            ),
             onComplete: widget.onComplete,
             onReplay: _restart,
-            message: 'Du hast tatsächlich mal etwas rechtzeitig geladen!',
+            message: hanukkah
+                ? 'Alle Lichter brennen noch. Ein kleines Wunder!'
+                : 'Du hast tatsächlich mal etwas rechtzeitig geladen!',
           )
         else if (_showResult && _game.phase == BatteryPhase.lost)
-          DefeatPanel(message: 'War doch noch bei 2 %!', onRetry: _restart),
+          DefeatPanel(
+            message: hanukkah
+                ? 'Da war doch noch Öl drin!'
+                : 'War doch noch bei 2 %!',
+            onRetry: _restart,
+          ),
       ],
     );
   }
@@ -503,13 +554,20 @@ class BatteryDeviceTile extends StatelessWidget {
   final double time, victory;
   @override
   Widget build(BuildContext context) {
+    final hanukkah = GameSkinScope.isHanukkah(context);
+    final name = hanukkah
+        ? 'Licht ${device.kind.index + 1}'
+        : device.kind.label;
+    final event = hanukkah
+        ? 'Ein Luftzug lässt das Licht flackern.'
+        : device.kind.eventLabel;
     final low = device.battery < 5;
     final accent = failed || low && !charging
         ? const Color(0xFFB75E53)
         : CalendarStyle.green;
     return Semantics(
       label:
-          '${device.kind.label}, ${device.battery.ceil()} Prozent${charging ? ', lädt' : ''}${device.eventLeft > 0 ? ', ${device.kind.eventLabel}' : ''}',
+          '$name, ${_batteryPercentage(device.battery)} Prozent${charging ? (hanukkah ? ', wird aufgefüllt' : ', lädt') : ''}${device.eventLeft > 0 ? ', $event' : ''}',
       child: ExcludeSemantics(
         child: Material(
           color: Colors.transparent,
@@ -533,17 +591,25 @@ class BatteryDeviceTile extends StatelessWidget {
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: CustomPaint(
-                        painter: DeviceIllustration(
-                          device.kind,
-                          low,
-                          charging,
-                          time,
-                          reducedMotion,
-                          eventActive: device.eventLeft > 0,
-                          dead: failed,
-                          victory: victory,
-                          urgent: urgent,
-                        ),
+                        painter: hanukkah
+                            ? OilCandlePainter(
+                                percent: device.battery,
+                                time: reducedMotion ? 0 : time,
+                                index: device.kind.index,
+                                filling: charging,
+                                dead: failed,
+                              )
+                            : DeviceIllustration(
+                                device.kind,
+                                low,
+                                charging,
+                                time,
+                                reducedMotion,
+                                eventActive: device.eventLeft > 0,
+                                dead: failed,
+                                victory: victory,
+                                urgent: urgent,
+                              ),
                       ),
                     ),
                   ),
@@ -558,7 +624,7 @@ class BatteryDeviceTile extends StatelessWidget {
                             child: FittedBox(
                               fit: BoxFit.scaleDown,
                               child: Text(
-                                device.kind.label,
+                                name,
                                 style: TextStyle(fontSize: 11, color: accent),
                               ),
                             ),
@@ -571,7 +637,7 @@ class BatteryDeviceTile extends StatelessWidget {
                             fit: BoxFit.scaleDown,
                             alignment: Alignment.centerRight,
                             child: Text(
-                              '${device.battery.ceil()} %',
+                              '${_batteryPercentage(device.battery)} %',
                               style: TextStyle(
                                 fontSize: 19,
                                 fontWeight: FontWeight.w600,
@@ -590,12 +656,14 @@ class BatteryDeviceTile extends StatelessWidget {
                         child: SizedBox(
                           height: 13,
                           child: CustomPaint(
-                            painter: BatteryPainter(
-                              percent: device.battery,
-                              charging: charging,
-                              time: time,
-                              reducedMotion: reducedMotion,
-                            ),
+                            painter: hanukkah
+                                ? OilLevelPainter(percent: device.battery)
+                                : BatteryPainter(
+                                    percent: device.battery,
+                                    charging: charging,
+                                    time: time,
+                                    reducedMotion: reducedMotion,
+                                  ),
                           ),
                         ),
                       ),
@@ -603,15 +671,19 @@ class BatteryDeviceTile extends StatelessWidget {
                         const SizedBox(width: 3),
                         Icon(
                           charging
-                              ? Icons.bolt_rounded
-                              : Icons.battery_alert_rounded,
+                              ? (hanukkah
+                                    ? Icons.water_drop_outlined
+                                    : Icons.bolt_rounded)
+                              : (hanukkah
+                                    ? Icons.local_fire_department_outlined
+                                    : Icons.battery_alert_rounded),
                           size: 14,
                           color: accent,
                         ),
                       ],
                       if (device.eventLeft > 0)
                         Tooltip(
-                          message: device.kind.eventLabel,
+                          message: event,
                           child: Icon(
                             Icons.bolt_rounded,
                             size: 12,

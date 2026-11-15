@@ -92,15 +92,20 @@ class LocalMouthCamera extends MouthCamera {
         await _release();
         return;
       }
+      // The compatible 2.x iOS runtime predates the upstream SME/XNNPACK
+      // fixes for recent Apple chips. Keep iOS on CPU; Android retains XNNPACK.
+      final delegate = Platform.isIOS
+          ? FaceMeshDelegate.cpu
+          : FaceMeshDelegate.xnnpack;
       _detector = await FaceDetectorProcessor.create(
-        delegate: FaceMeshDelegate.xnnpack,
+        delegate: delegate,
         maxResults: 2,
         minDetectionConfidence: .55,
         roiScaleY: 1.7,
         roiShiftY: -.2,
       );
       _mesh = await FaceMeshProcessor.create(
-        delegate: FaceMeshDelegate.xnnpack,
+        delegate: delegate,
         minDetectionConfidence: .55,
         minTrackingConfidence: .55,
       );

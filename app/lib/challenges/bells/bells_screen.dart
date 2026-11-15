@@ -1,3 +1,5 @@
+import '../seasonal/game_skin_scope.dart';
+import '../../achievements/run_facts.dart';
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -200,7 +202,9 @@ class _BellsScreenState extends State<BellsScreen> with WidgetsBindingObserver {
     final phase = _game.phase;
     final answering = phase == BellsPhase.answering;
     return GameScaffold(
-      title: 'Weihnachtsglocken',
+      title: GameSkinScope.isHanukkah(context)
+          ? 'Chanukka-Klänge'
+          : 'Weihnachtsglocken',
       alreadyCompleted: widget.alreadyCompleted,
       onRestart: _restart,
       instructions:
@@ -361,6 +365,7 @@ class _BellsScreenState extends State<BellsScreen> with WidgetsBindingObserver {
           ),
         if (phase == BellsPhase.won)
           CompletionPanel(
+            facts: RunFacts(completedBellSongs: _game.completedMelodyIds),
             onComplete: widget.onComplete,
             onReplay: _restart,
             message: 'Das klingt nach Weihnachten!',
@@ -448,7 +453,10 @@ class _IllustratedBellState extends State<_IllustratedBell>
                     angle: angle,
                     alignment: Alignment.topCenter,
                     child: CustomPaint(
-                      painter: _BellPainter(widget.note.index),
+                      painter: _BellPainter(
+                        widget.note.index,
+                        hanukkah: GameSkinScope.isHanukkah(context),
+                      ),
                       child: const SizedBox.expand(),
                     ),
                   ),
@@ -473,7 +481,8 @@ class _IllustratedBellState extends State<_IllustratedBell>
 }
 
 class _BellPainter extends CustomPainter {
-  _BellPainter(this.index);
+  _BellPainter(this.index, {this.hanukkah = false});
+  final bool hanukkah;
   final int index;
   @override
   void paint(Canvas canvas, Size size) {
@@ -495,7 +504,9 @@ class _BellPainter extends CustomPainter {
         ..color = CalendarStyle.gold,
     );
     paint.style = PaintingStyle.fill;
-    final ribbonColor = index.isEven
+    final ribbonColor = hanukkah
+        ? const Color(0xFF376C91)
+        : index.isEven
         ? CalendarStyle.green
         : const Color(0xFFB65F52);
     canvas.drawPath(
@@ -569,7 +580,12 @@ class _BellPainter extends CustomPainter {
       ..color = const Color(0xFFAA7C3F)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
-    if (index % 3 == 0) {
+    if (hanukkah) {
+      canvas.save();
+      canvas.translate(39, 70);
+      const StarOfDavidPainter().paint(canvas, const Size(22, 22));
+      canvas.restore();
+    } else if (index % 3 == 0) {
       canvas.drawPath(
         Path()
           ..moveTo(50, 69)
@@ -605,5 +621,6 @@ class _BellPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_BellPainter oldDelegate) => index != oldDelegate.index;
+  bool shouldRepaint(_BellPainter oldDelegate) =>
+      index != oldDelegate.index || hanukkah != oldDelegate.hanukkah;
 }

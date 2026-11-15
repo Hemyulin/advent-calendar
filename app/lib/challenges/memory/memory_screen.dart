@@ -1,3 +1,6 @@
+import '../seasonal/game_skin_scope.dart';
+import '../seasonal/hanukkah_art.dart';
+import '../../achievements/run_facts.dart';
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -85,101 +88,132 @@ class _MemoryScreenState extends State<MemoryScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => GameScaffold(
-    title: 'Paare finden',
-    alreadyCompleted: widget.alreadyCompleted,
-    onRestart: _restart,
-    instructions:
-        'Decke zwei Karten auf und finde alle acht Weihnachtspaare. Jedes aufgedeckte Paar zählt als Versuch.',
-    children: [
-      GameStats(
-        text: '${_game.pairsFound} / 8 Paare · ${_game.attemptsLeft} Versuche',
-      ),
-      GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 4,
-          crossAxisSpacing: 10,
-          mainAxisSpacing: 10,
+  Widget build(BuildContext context) {
+    final hanukkah = GameSkinScope.isHanukkah(context);
+    final names = hanukkah ? hanukkahMotifNames : _names;
+    return GameScaffold(
+      title: 'Paare finden',
+      alreadyCompleted: widget.alreadyCompleted,
+      onRestart: _restart,
+      instructions:
+          'Decke zwei Karten auf und finde alle acht Festtagspaare. Jedes aufgedeckte Paar zählt als Versuch.',
+      children: [
+        GameStats(
+          text:
+              '${_game.pairsFound} / 8 Paare · ${_game.attemptsLeft} Versuche',
         ),
-        itemCount: 16,
-        itemBuilder: (context, index) {
-          final visible = _game.isFaceUp(index);
-          final matched = _game.matched.contains(index);
-          return Semantics(
-            button: true,
-            onTap: !visible && !_game.won && !_game.lost && _game.second == null
-                ? () => _reveal(index)
-                : null,
-            enabled:
-                !visible && !_game.won && !_game.lost && _game.second == null,
-            label:
-                'Karte ${index + 1}, ${matched
-                    ? '${_names[_game.cards[index]]}, gefunden'
-                    : visible
-                    ? _names[_game.cards[index]]
-                    : 'verdeckt'}',
-            child: ExcludeSemantics(
-              child: InkWell(
-                key: ValueKey('memory-card-$index'),
-                onTap: () => _reveal(index),
-                borderRadius: BorderRadius.circular(14),
-                child: TweenAnimationBuilder<double>(
-                  tween: Tween(end: visible ? 1 : 0),
-                  duration: MediaQuery.disableAnimationsOf(context)
-                      ? Duration.zero
-                      : const Duration(milliseconds: 300),
-                  builder: (context, value, _) {
-                    final showFace = value >= 0.5;
-                    return Transform(
-                      alignment: Alignment.center,
-                      transform: Matrix4.identity()
-                        ..setEntry(3, 2, 0.001)
-                        ..rotateY(math.pi * (showFace ? value - 1 : value)),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: showFace
-                              ? (matched
-                                    ? const Color(0xFFE2EDDD)
-                                    : const Color(0xFFFFEBD3))
-                              : CalendarStyle.green,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
-                            color: matched
-                                ? CalendarStyle.green.withValues(alpha: 0.4)
-                                : CalendarStyle.gold.withValues(alpha: 0.5),
-                          ),
-                        ),
-                        child: Center(
-                          child: Icon(
-                            showFace
-                                ? _icons[_game.cards[index]]
-                                : Icons.ac_unit_rounded,
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 4,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+          ),
+          itemCount: 16,
+          itemBuilder: (context, index) {
+            final visible = _game.isFaceUp(index);
+            final matched = _game.matched.contains(index);
+            return Semantics(
+              button: true,
+              onTap:
+                  !visible && !_game.won && !_game.lost && _game.second == null
+                  ? () => _reveal(index)
+                  : null,
+              enabled:
+                  !visible && !_game.won && !_game.lost && _game.second == null,
+              label:
+                  'Karte ${index + 1}, ${matched
+                      ? '${names[_game.cards[index]]}, gefunden'
+                      : visible
+                      ? names[_game.cards[index]]
+                      : 'verdeckt'}',
+              child: ExcludeSemantics(
+                child: InkWell(
+                  key: ValueKey('memory-card-$index'),
+                  onTap: () => _reveal(index),
+                  borderRadius: BorderRadius.circular(14),
+                  child: TweenAnimationBuilder<double>(
+                    tween: Tween(end: visible ? 1 : 0),
+                    duration: MediaQuery.disableAnimationsOf(context)
+                        ? Duration.zero
+                        : const Duration(milliseconds: 300),
+                    builder: (context, value, _) {
+                      final showFace = value >= 0.5;
+                      return Transform(
+                        alignment: Alignment.center,
+                        transform: Matrix4.identity()
+                          ..setEntry(3, 2, 0.001)
+                          ..rotateY(math.pi * (showFace ? value - 1 : value)),
+                        child: Container(
+                          decoration: BoxDecoration(
                             color: showFace
-                                ? _colors[_game.cards[index]]
-                                : const Color(0xFFF1D49C),
-                            size: 30,
+                                ? (matched
+                                      ? const Color(0xFFE2EDDD)
+                                      : const Color(0xFFFFEBD3))
+                                : (hanukkah
+                                      ? hanukkahBlue
+                                      : CalendarStyle.green),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: matched
+                                  ? CalendarStyle.green.withValues(alpha: 0.4)
+                                  : CalendarStyle.gold.withValues(alpha: 0.5),
+                            ),
+                          ),
+                          child: Center(
+                            child: hanukkah && showFace
+                                ? SizedBox(
+                                    width: 40,
+                                    height: 40,
+                                    child: CustomPaint(
+                                      painter: HanukkahMotifPainter(
+                                        _game.cards[index],
+                                      ),
+                                    ),
+                                  )
+                                : hanukkah
+                                ? const SizedBox(
+                                    width: 30,
+                                    height: 30,
+                                    child: CustomPaint(
+                                      painter: StarOfDavidPainter(
+                                        color: hanukkahGold,
+                                      ),
+                                    ),
+                                  )
+                                : Icon(
+                                    showFace
+                                        ? _icons[_game.cards[index]]
+                                        : Icons.ac_unit_rounded,
+                                    color: showFace
+                                        ? _colors[_game.cards[index]]
+                                        : const Color(0xFFF1D49C),
+                                    size: 30,
+                                  ),
                           ),
                         ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
               ),
+            );
+          },
+        ),
+        const SizedBox(height: 20),
+        if (_game.won)
+          CompletionPanel(
+            facts: RunFacts(
+              feats: {if (_game.knownPairMistakes == 0) RunFeat.perfectMemory},
             ),
-          );
-        },
-      ),
-      const SizedBox(height: 20),
-      if (_game.won)
-        CompletionPanel(
-          onComplete: widget.onComplete,
-          onReplay: _restart,
-          message: 'Alle Paare gefunden.',
-        )
-      else if (_game.lost)
-        DefeatPanel(message: 'Versuche aufgebraucht.', onRetry: _restart),
-    ],
-  );
+            onComplete: widget.onComplete,
+            onReplay: _restart,
+            message: 'Alle Paare gefunden.',
+          )
+        else if (_game.lost)
+          DefeatPanel(message: 'Versuche aufgebraucht.', onRetry: _restart),
+      ],
+    );
+  }
 }

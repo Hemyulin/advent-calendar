@@ -74,10 +74,13 @@ the sack around the stage to test the falling game without a face or permission.
 and is unavailable in normal daily play. Preview completion never updates a day.
 
 The two new direct dependencies match Brush Buddies: `camera ^0.11.4` and pinned
-`mediapipe_face_mesh 1.3.2`. The bundled runtime requires Android API 24+ and
+`mediapipe_face_mesh 2.9.0`. The bundled runtime requires Android API 24+ and
 supports ARM64/x86_64. The existing Android target is built and tested here.
-The adapter includes the same iOS BGRA route; generating an iOS scaffold also
-requires a German NSCameraUsageDescription before use. Other platforms can use
+The iOS scaffold includes a German camera-permission description and uses the
+same BGRA route. Version 2.9.0 supplies an XCFramework with separate device and
+Apple Silicon/Intel simulator slices; the older 1.3.2 fat framework cannot link
+on an arm64 simulator. iOS selects the CPU delegate to avoid the 2.x runtime’s
+known XNNPACK/SME issues on recent Apple chips; Android retains XNNPACK. Other platforms can use
 the explicit development driver.
 
 Automated checks cover frame layouts, aspect-correct mouth geometry, position smoothing,
@@ -85,3 +88,9 @@ fast and lateral collisions, continued simulation during tracking loss, all six 
 losses, progress/replay, permissions, lifecycle and responsive layouts. A physical
 phone check is still needed for live front-camera alignment, tracking stability
 and frame latency; an emulator test driver is not a substitute for that.
+
+The iOS simulator fix was verified on iPhone 17 Pro/iOS 26.4 with a debug build
+and real native detector/mesh creation and inference on a synthetic blank frame.
+It does not replace the physical-phone tracking checks above. The compatible 2.x
+line is pinned because 3.x introduces API changes and newer releases require a
+newer Flutter/Dart toolchain. See the [upstream changes](https://pub.dev/packages/mediapipe_face_mesh/changelog).

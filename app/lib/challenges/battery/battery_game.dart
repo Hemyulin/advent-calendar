@@ -89,6 +89,8 @@ class BatteryGame {
               .toDouble(),
         ),
     ];
+    lowestBattery = devices.map((d) => d.battery).reduce(math.min);
+    highestBattery = devices.map((d) => d.battery).reduce(math.max);
     _nextEvent = level.eventInterval;
   }
   final BatteryLevel level;
@@ -97,6 +99,7 @@ class BatteryGame {
   BatteryPhase phase = BatteryPhase.ready;
   double elapsed = 0, feedbackLeft = 0;
   late double _nextEvent;
+  late double lowestBattery, highestBattery;
   int? connected, failedDevice;
   int eventCount = 0;
   String feedback = '';
@@ -147,6 +150,8 @@ class BatteryGame {
       final d = devices[i];
       final change = (connected == i ? level.charge : 0) - drainFor(i);
       d.battery = (d.battery + change * h).clamp(0.0, 100.0);
+      lowestBattery = math.min(lowestBattery, d.battery);
+      highestBattery = math.max(highestBattery, d.battery);
       d.eventLeft = math.max(0, d.eventLeft - h);
       if (d.battery <= 0 && failedDevice == null) failedDevice = i;
     }

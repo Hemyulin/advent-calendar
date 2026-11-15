@@ -1,0 +1,496 @@
+import 'dart:math' as math;
+import 'package:flutter/material.dart';
+import '../oy_vey/oy_vey_art.dart';
+import '../oy_vey/oy_vey_game.dart';
+import 'game_skin_scope.dart';
+
+const hanukkahBlue = Color(0xFF376C91);
+const hanukkahGold = Color(0xFFD9AA50);
+const hanukkahMotifNames = [
+  'Sufganiyah',
+  'Chanukkiah',
+  'Sevivon',
+  'Schekel',
+  'Ölkrug',
+  'Davidstern',
+  'Latke',
+  'Kerze',
+];
+
+class HanukkahMotifPainter extends CustomPainter {
+  const HanukkahMotifPainter(this.motif);
+  final int motif;
+  @override
+  void paint(Canvas canvas, Size size) => paintHanukkahMotif(
+    canvas,
+    Rect.fromLTWH(0, 0, size.width, size.height),
+    motif,
+  );
+  @override
+  bool shouldRepaint(HanukkahMotifPainter oldDelegate) =>
+      oldDelegate.motif != motif;
+}
+
+void paintHanukkahMotif(Canvas c, Rect rect, int motif) {
+  final center = rect.center;
+  final r = rect.shortestSide / 2;
+  if (motif < 3) {
+    paintFestiveObject(
+      c,
+      center,
+      r * .9,
+      [
+        FestiveObject.sufganiyah,
+        FestiveObject.hanukkiah,
+        FestiveObject.dreidel,
+      ][motif],
+    );
+    return;
+  }
+  c.save();
+  c.translate(center.dx, center.dy);
+  c.scale(r / 24);
+  final p = Paint()..isAntiAlias = true;
+  switch (motif) {
+    case 3:
+      c.drawCircle(Offset.zero, 21, p..color = hanukkahGold);
+      c.drawCircle(
+        Offset.zero,
+        17,
+        p
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.5
+          ..color = const Color(0xFFF9E3A8),
+      );
+      final text = TextPainter(
+        text: const TextSpan(
+          text: '₪',
+          style: TextStyle(
+            fontSize: 24,
+            fontFamily: 'sans-serif',
+            color: Color(0xFF916523),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      text.paint(c, Offset(-text.width / 2, -text.height / 2));
+      text.dispose();
+    case 4:
+      c.drawOval(
+        const Rect.fromLTWH(-18, -11, 36, 35),
+        p..color = hanukkahBlue,
+      );
+      c.drawRRect(
+        RRect.fromRectAndRadius(
+          const Rect.fromLTWH(-9, -24, 18, 19),
+          const Radius.circular(3),
+        ),
+        p,
+      );
+      c.drawOval(
+        const Rect.fromLTWH(7, -13, 21, 25),
+        p
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 5,
+      );
+      c.drawLine(
+        const Offset(-9, 4),
+        const Offset(9, 4),
+        p
+          ..color = hanukkahGold
+          ..strokeWidth = 3,
+      );
+      c.drawOval(
+        const Rect.fromLTWH(-7, -24, 14, 4),
+        p
+          ..style = PaintingStyle.fill
+          ..color = hanukkahGold,
+      );
+    case 5:
+      const StarOfDavidPainter().paint(
+        c..translate(-23, -23),
+        const Size(46, 46),
+      );
+    case 6:
+      c.drawOval(
+        const Rect.fromLTWH(-23, -16, 46, 34),
+        p..color = hanukkahGold,
+      );
+      c.drawOval(
+        const Rect.fromLTWH(-19, -13, 38, 27),
+        p..color = const Color(0xFFC58E41),
+      );
+      for (var i = 0; i < 8; i++) {
+        final a = i * 2.4;
+        final x = math.cos(a) * 13, y = math.sin(a) * 9;
+        c.drawLine(
+          Offset(x - 3, y - 2),
+          Offset(x + 3, y + 2),
+          p
+            ..color = const Color(0xFFEAC881)
+            ..strokeWidth = 2,
+        );
+      }
+    case 7:
+      paintOilCandle(
+        c,
+        const Size(48, 60),
+        origin: const Offset(-24, -32),
+        percent: 65,
+        time: 0,
+      );
+  }
+  c.restore();
+}
+
+void paintEliyahu(Canvas c, Size size) {
+  c.save();
+  c.scale(size.width / 40, size.height / 40);
+  final p = Paint()..isAntiAlias = true;
+  // Long black coat, white shirt, broad-brimmed hat and sidecurls.
+  c.drawRRect(
+    RRect.fromRectAndRadius(
+      const Rect.fromLTWH(9, 22, 22, 18),
+      const Radius.circular(3),
+    ),
+    p..color = const Color(0xFF202B32),
+  );
+  c.drawPath(
+    Path()
+      ..moveTo(15, 23)
+      ..lineTo(20, 33)
+      ..lineTo(25, 23)
+      ..close(),
+    p..color = const Color(0xFFFFF8E9),
+  );
+  c.drawLine(
+    const Offset(20, 30),
+    const Offset(20, 39),
+    p
+      ..color = const Color(0xFF60717A)
+      ..strokeWidth = .8,
+  );
+  c.drawOval(
+    const Rect.fromLTWH(11, 12, 18, 19),
+    p..color = const Color(0xFFE5C2A0),
+  );
+  c.drawPath(
+    Path()
+      ..moveTo(11, 24)
+      ..quadraticBezierTo(20, 29, 29, 24)
+      ..quadraticBezierTo(29, 34, 20, 37)
+      ..quadraticBezierTo(11, 34, 11, 24),
+    p..color = const Color(0xFFE8E7DF),
+  );
+  c.drawRRect(
+    RRect.fromRectAndRadius(
+      const Rect.fromLTWH(11, 1, 18, 13),
+      const Radius.circular(2),
+    ),
+    p..color = const Color(0xFF17232C),
+  );
+  c.drawLine(
+    const Offset(12, 11),
+    const Offset(28, 11),
+    p
+      ..color = const Color(0xFF3B4A54)
+      ..strokeWidth = 2,
+  );
+  c.drawOval(
+    const Rect.fromLTWH(3, 12, 34, 5),
+    p
+      ..style = PaintingStyle.fill
+      ..color = const Color(0xFF17232C),
+  );
+  c.drawPath(
+    Path()
+      ..moveTo(12, 17)
+      ..cubicTo(8, 20, 14, 22, 10, 25)
+      ..quadraticBezierTo(8, 28, 12, 28)
+      ..moveTo(28, 17)
+      ..cubicTo(32, 20, 26, 22, 30, 25)
+      ..quadraticBezierTo(32, 28, 28, 28),
+    p
+      ..style = PaintingStyle.stroke
+      ..color = const Color(0xFF677074)
+      ..strokeWidth = 1.5
+      ..strokeCap = StrokeCap.round,
+  );
+  for (final x in [16.0, 24.0]) {
+    c.drawOval(
+      Rect.fromCenter(center: Offset(x, 21), width: 6, height: 4),
+      p
+        ..color = const Color(0xFF35434B)
+        ..strokeWidth = .7,
+    );
+  }
+  c.drawLine(const Offset(19, 21), const Offset(21, 21), p);
+  c.drawCircle(const Offset(16, 21), .7, p..style = PaintingStyle.fill);
+  c.drawCircle(const Offset(24, 21), .7, p);
+  c.restore();
+}
+
+/// A fantasy workshop sprite, with leaf ears and a small round button nose.
+void paintWorkshopSprite(Canvas c, Size size) {
+  c.save();
+  c.scale(size.width / 100, size.height / 100);
+  final p = Paint();
+  c.drawOval(
+    const Rect.fromLTWH(18, 84, 64, 10),
+    p..color = const Color(0xFFD1C1A6),
+  );
+  c.drawRRect(
+    RRect.fromRectAndRadius(
+      const Rect.fromLTWH(32, 57, 37, 29),
+      const Radius.circular(10),
+    ),
+    p..color = hanukkahBlue,
+  );
+  for (final side in [-1.0, 1.0]) {
+    c.drawLine(
+      Offset(50 + side * 10, 83),
+      Offset(50 + side * 17, 89),
+      p
+        ..color = const Color(0xFF617866)
+        ..strokeWidth = 9
+        ..strokeCap = StrokeCap.round,
+    );
+    c.drawPath(
+      Path()
+        ..moveTo(50 + side * 19, 31)
+        ..quadraticBezierTo(50 + side * 43, 10, 50 + side * 37, 42)
+        ..lineTo(50 + side * 19, 49)
+        ..close(),
+      p
+        ..style = PaintingStyle.fill
+        ..color = const Color(0xFF91AB89),
+    );
+  }
+  c.drawOval(
+    const Rect.fromLTWH(25, 20, 50, 48),
+    p..color = const Color(0xFFABC19B),
+  );
+  c.drawPath(
+    Path()
+      ..moveTo(28, 26)
+      ..lineTo(47, 8)
+      ..lineTo(54, 19)
+      ..lineTo(68, 14)
+      ..lineTo(73, 31)
+      ..close(),
+    p..color = const Color(0xFF617866),
+  );
+  for (final x in [40.0, 61.0]) {
+    c.drawOval(
+      Rect.fromCenter(center: Offset(x, 40), width: 12, height: 15),
+      p..color = const Color(0xFFFFF5DE),
+    );
+    c.drawCircle(Offset(x + 1, 41), 2.5, p..color = const Color(0xFF354D41));
+  }
+  c.drawOval(
+    const Rect.fromLTWH(46, 46, 10, 7),
+    p..color = const Color(0xFF88A07C),
+  );
+  c.drawPath(
+    Path()
+      ..moveTo(39, 56)
+      ..quadraticBezierTo(51, 65, 64, 54),
+    p
+      ..style = PaintingStyle.stroke
+      ..color = const Color(0xFF354D41)
+      ..strokeWidth = 2,
+  );
+  c.drawLine(
+    const Offset(34, 72),
+    const Offset(68, 72),
+    p
+      ..color = hanukkahGold
+      ..strokeWidth = 4,
+  );
+  c.restore();
+}
+
+void paintOilCandle(
+  Canvas c,
+  Size size, {
+  Offset origin = Offset.zero,
+  required double percent,
+  required double time,
+  bool filling = false,
+  bool dead = false,
+  int index = 0,
+}) {
+  c.save();
+  final scale = math.min(size.width / 100, size.height / 110);
+  c.translate(
+    origin.dx + (size.width - 100 * scale) / 2,
+    origin.dy + (size.height - 110 * scale) / 2,
+  );
+  c.scale(scale);
+  final p = Paint()..isAntiAlias = true;
+  final color = [
+    hanukkahBlue,
+    const Color(0xFFAA8091),
+    const Color(0xFF699590),
+    const Color(0xFFC08A4A),
+    const Color(0xFF7081A1),
+  ][index % 5];
+  c.drawOval(
+    const Rect.fromLTWH(17, 96, 66, 8),
+    p..color = const Color(0xFFDAD1B9),
+  );
+  c.drawRRect(
+    RRect.fromRectAndRadius(
+      const Rect.fromLTWH(28, 42, 44, 52),
+      const Radius.circular(8),
+    ),
+    p..color = color.withValues(alpha: .2),
+  );
+  c.drawRRect(
+    RRect.fromRectAndRadius(
+      Rect.fromLTWH(
+        31,
+        91 - (percent / 100).clamp(.04, 1) * 44,
+        38,
+        (percent / 100).clamp(.04, 1) * 44,
+      ),
+      const Radius.circular(5),
+    ),
+    p..color = hanukkahGold.withValues(alpha: .85),
+  );
+  c.drawRRect(
+    RRect.fromRectAndRadius(
+      const Rect.fromLTWH(27, 42, 46, 52),
+      const Radius.circular(8),
+    ),
+    p
+      ..style = PaintingStyle.stroke
+      ..color = color
+      ..strokeWidth = 3,
+  );
+  c.drawOval(
+    const Rect.fromLTWH(25, 38, 50, 12),
+    p
+      ..style = PaintingStyle.fill
+      ..color = color,
+  );
+  c.drawLine(
+    const Offset(50, 39),
+    const Offset(50, 29),
+    p
+      ..color = const Color(0xFF60513E)
+      ..strokeWidth = 3,
+  );
+  if (!dead) {
+    final sway = math.sin(time * 7 + index) * 3;
+    c.drawPath(
+      Path()
+        ..moveTo(50, 33)
+        ..cubicTo(25, 24, 49 + sway, 5, 51 + sway, 0)
+        ..cubicTo(51 + sway, 13, 72, 26, 50, 33),
+      p..color = hanukkahGold,
+    );
+    c.drawOval(
+      const Rect.fromLTWH(44, 18, 12, 15),
+      p..color = const Color(0xFFFFE8A3),
+    );
+  }
+  if (filling) {
+    c.drawLine(
+      const Offset(77, 22),
+      const Offset(67, 43),
+      p
+        ..color = hanukkahGold
+        ..strokeWidth = 4
+        ..strokeCap = StrokeCap.round,
+    );
+  }
+  c.restore();
+}
+
+class OilCandlePainter extends CustomPainter {
+  const OilCandlePainter({
+    required this.percent,
+    required this.time,
+    required this.index,
+    this.filling = false,
+    this.dead = false,
+  });
+  final double percent, time;
+  final int index;
+  final bool filling, dead;
+  @override
+  void paint(Canvas canvas, Size size) => paintOilCandle(
+    canvas,
+    size,
+    percent: percent,
+    time: time,
+    index: index,
+    filling: filling,
+    dead: dead,
+  );
+  @override
+  bool shouldRepaint(OilCandlePainter oldDelegate) => true;
+}
+
+class OilJugPainter extends CustomPainter {
+  const OilJugPainter();
+  @override
+  void paint(Canvas canvas, Size size) => paintHanukkahMotif(
+    canvas,
+    Rect.fromLTWH(0, 0, size.width, size.height),
+    4,
+  );
+  @override
+  bool shouldRepaint(OilJugPainter oldDelegate) => false;
+}
+
+class OilSupplyPainter extends CustomPainter {
+  const OilSupplyPainter({required this.end, required this.visible});
+  final Offset end;
+  final bool visible;
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (!visible) return;
+    canvas.save();
+    canvas.translate(end.dx, end.dy - 14);
+    canvas.rotate(-.35);
+    paintHanukkahMotif(canvas, const Rect.fromLTWH(-17, -20, 34, 34), 4);
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(OilSupplyPainter oldDelegate) =>
+      end != oldDelegate.end || visible != oldDelegate.visible;
+}
+
+class OilLevelPainter extends CustomPainter {
+  const OilLevelPainter({required this.percent});
+  final double percent;
+  @override
+  void paint(Canvas canvas, Size size) {
+    final outline = RRect.fromRectAndRadius(
+      Offset.zero & size,
+      const Radius.circular(6),
+    );
+    final p = Paint()..color = hanukkahGold.withValues(alpha: .2);
+    canvas.drawRRect(outline, p);
+    canvas.save();
+    canvas.clipRRect(outline);
+    canvas.drawRect(
+      Rect.fromLTWH(
+        0,
+        0,
+        size.width * (percent / 100).clamp(.02, 1),
+        size.height,
+      ),
+      p..color = hanukkahGold,
+    );
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(OilLevelPainter oldDelegate) =>
+      percent != oldDelegate.percent;
+}

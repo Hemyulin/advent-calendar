@@ -18,7 +18,7 @@ void main() {
     () {
       for (final difficulty in GameDifficulty.values) {
         final game = WorkshopGame(WorkshopLevel.forDifficulty(difficulty));
-        expect(game.level.size, [5, 7, 8][difficulty.index]);
+        expect(game.level.size, [6, 7, 8][difficulty.index]);
         expect(game.presents.length, 2 + difficulty.index);
         expect(game.level.targets.length, game.presents.length);
         final solution = workshopSolutions[difficulty.index];
@@ -35,7 +35,7 @@ void main() {
         }
         expect(game.won, isTrue);
         expect(game.placed, game.presents.length);
-        expect(game.pushes, [2, 6, 12][difficulty.index]);
+        expect(game.pushes, [5, 13, 21][difficulty.index]);
         expect(game.moves, solution.length);
         expect(game.move(WorkshopDirection.up), isFalse);
       }
@@ -95,19 +95,20 @@ void main() {
   );
 
   test(
-    'easy level requires planning: an early goal can block the other present',
+    'easy level requires circling the wall instead of pushing a box too far',
     () {
       final game = WorkshopGame(
         WorkshopLevel.forDifficulty(GameDifficulty.easy),
       );
-      game.move(WorkshopDirection.right);
-      game.move(WorkshopDirection.up); // Prematurely fills the upper target.
-      expect(game.placed, 1);
-      expect(game.won, isFalse);
-      expect(game.undo(), isTrue);
+      expect(game.move(WorkshopDirection.left), isTrue);
+      expect(game.move(WorkshopDirection.left), isTrue);
       expect(game.placed, 0);
-      game.undo();
-      for (final letter in workshopSolutions[0].split('')) {
+      expect(game.won, isFalse);
+      // The upper present is now against the left boundary and cannot return
+      // to its target. Undo restores the planned intermediate position.
+      expect(game.presents.first % game.level.size, 1);
+      expect(game.undo(), isTrue);
+      for (final letter in workshopSolutions[0].substring(1).split('')) {
         expect(game.move(direction(letter)), isTrue);
       }
       expect(game.won, isTrue);

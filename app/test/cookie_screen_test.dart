@@ -1,3 +1,4 @@
+import 'support/game_configuration.dart';
 import 'package:advent_calendar/challenges/cookies/cookie_game.dart';
 import 'package:advent_calendar/challenges/cookies/cookie_screen.dart';
 import 'package:advent_calendar/challenges/games/difficulty.dart';
@@ -49,7 +50,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       await start(tester);
-      await frames(tester, 2);
+      await frames(tester, currentGame(tester).secondsToTarget);
       expect(find.text('Jetzt!'), findsOneWidget);
       final direction = currentGame(tester).target!.direction;
       final gesture = await tester.startGesture(
@@ -61,13 +62,16 @@ void main() {
         findsOneWidget,
       ); // Before pointer up.
       await gesture.up();
-      await frames(tester, 2.15);
+      await frames(
+        tester,
+        (1 - currentGame(tester).progress) / fastLevel.speed + .15,
+      );
       expect(find.text('Frisch ausgestochen!'), findsOneWidget);
-      expect(find.text('Geschafft!'), findsNothing);
+      expect(find.byKey(const ValueKey('completion-gift')), findsNothing);
       expect(completions, 0);
       await tester.pump(const Duration(milliseconds: 1200));
       await tester.pumpAndSettle();
-      expect(find.text('Geschafft!'), findsOneWidget);
+      expect(find.byKey(const ValueKey('completion-gift')), findsOneWidget);
       expect(completions, 1);
       await tester.tap(find.text('Noch einmal spielen'));
       await tester.pumpAndSettle();
@@ -141,7 +145,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     await start(tester);
-    await frames(tester, 2);
+    await frames(tester, currentGame(tester).secondsToTarget);
     final direction = currentGame(tester).target!.direction;
     final key = switch (direction) {
       CutDirection.up => LogicalKeyboardKey.arrowUp,
@@ -260,7 +264,7 @@ void main() {
     await tester.tap(find.byTooltip('Neu starten'));
     await tester.pumpAndSettle();
     await start(tester);
-    await frames(tester, 2);
+    await frames(tester, currentGame(tester).secondsToTarget);
     final direction = currentGame(tester).target!.direction;
     await tester.drag(
       find.byKey(const ValueKey('cookie-board')),
@@ -295,7 +299,8 @@ void main() {
   test('Day 7 shares completion and existing completion status', () {
     Future<void> complete() async {}
     final day = calendarDays(DateTime(2026, 12, 24), {'day-7'})[6];
-    final screen = buildDailyChallenge(day, complete) as CookieScreen;
+    final screen =
+        configuredGame(buildDailyChallenge(day, complete)) as CookieScreen;
     expect(screen.onComplete, same(complete));
     expect(screen.alreadyCompleted, isTrue);
   });

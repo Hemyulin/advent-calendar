@@ -9,7 +9,11 @@ void main() {
     final levels = GameDifficulty.values
         .map(CookieLevel.forDifficulty)
         .toList();
-    expect(levels.map((l) => l.shape), CookieShape.values);
+    expect(levels.map((l) => l.shape), [
+      CookieShape.star,
+      CookieShape.tree,
+      CookieShape.snowflake,
+    ]);
     expect(levels.map((l) => l.checkpoints), [10, 14, 18]);
     for (var i = 0; i < 2; i++) {
       expect(levels[i].speed, lessThan(levels[i + 1].speed));
@@ -27,7 +31,10 @@ void main() {
       for (final shape in CookieShape.values) {
         final outline = CookieOutline.forShape(shape);
         expect((outline.at(0) - outline.at(1)).length, closeTo(0, 1e-9));
-        expect(outline.totalLength, greaterThan(2));
+        expect(
+          outline.totalLength,
+          greaterThan(shape == CookieShape.israel ? 1.8 : 2),
+        );
         for (var i = 0; i < 1000; i++) {
           final p = outline.at(i / 1000);
           expect(p.x, inInclusiveRange(.05, .95));
@@ -66,6 +73,57 @@ void main() {
         directions(a),
         original,
       ); // Recovery does not change visible arrows.
+    },
+  );
+
+  test(
+    'random spacing permits clusters without empty stretches or overlapping windows',
+    () {
+      for (final difficulty in GameDifficulty.values) {
+        final level = CookieLevel.forDifficulty(difficulty);
+        final average = 1 / (level.checkpoints + 1);
+        var foundCluster = false;
+        for (var seed = 0; seed < 100; seed++) {
+          final game = CookieGame(level, random: math.Random(seed));
+          final positions = [
+            0.0,
+            ...game.checkpoints.map((c) => c.fraction),
+            1.0,
+          ];
+          final gaps = [
+            for (var i = 1; i < positions.length; i++)
+              positions[i] - positions[i - 1],
+          ];
+          for (final gap in gaps) {
+            expect(gap, greaterThan(level.speed * level.timingWindowSeconds));
+            expect(gap, lessThanOrEqualTo(average * 1.7 + 1e-10));
+          }
+          for (var i = 1; i < gaps.length - 2; i++) {
+            if (gaps[i] < average * .85 && gaps[i + 1] < average * .85) {
+              foundCluster = true; // Three nearby arrows.
+            }
+          }
+          final same = CookieGame(level, random: math.Random(seed));
+          expect(
+            same.checkpoints.map((c) => c.fraction),
+            positions.sublist(1, positions.length - 1),
+          );
+          game.start();
+          while (game.target != null) {
+            game.advance(game.secondsToTarget);
+            expect(game.press(game.target!.direction), CutInput.correct);
+          }
+          game.advance(100);
+          expect(game.phase, CookiePhase.won);
+        }
+        expect(foundCluster, isTrue, reason: difficulty.name);
+      }
+      final a = CookieGame(const CookieLevel(), random: math.Random(1));
+      final b = CookieGame(const CookieLevel(), random: math.Random(2));
+      expect(
+        a.checkpoints.map((c) => c.fraction),
+        isNot(b.checkpoints.map((c) => c.fraction)),
+      );
     },
   );
 

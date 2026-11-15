@@ -1,3 +1,4 @@
+import 'support/game_configuration.dart';
 import 'dart:convert';
 import 'package:advent_calendar/content/calendar_schedule.dart';
 import 'package:advent_calendar/content/calendar_day.dart';
@@ -26,7 +27,7 @@ void main() {
       expect(defaultAssignments[5].game, Minigame.shoe);
       for (final day in days) {
         expect(
-          buildDailyChallenge(day, () async {}),
+          configuredGame(buildDailyChallenge(day, () async {})),
           isNot(isA<ChallengeScreen>()),
         );
       }
@@ -54,12 +55,14 @@ void main() {
     Future<void> complete() async {}
     final day = calendarDays(DateTime(2026, 12, 24), {'day-1'}).first;
     final screen =
-        buildDailyChallenge(
-              day,
-              complete,
-              assignment: const DayAssignment(
-                Minigame.battery,
-                GameDifficulty.hard,
+        configuredGame(
+              buildDailyChallenge(
+                day,
+                complete,
+                assignment: const DayAssignment(
+                  Minigame.battery,
+                  GameDifficulty.hard,
+                ),
               ),
             )
             as BatteryScreen;
@@ -113,7 +116,9 @@ void main() {
     expect(schedule.forDay(1).difficulty, GameDifficulty.easy);
     final day = calendarDays(DateTime(2026, 12, 1), {}).first;
     expect(
-      buildDailyChallenge(day, () async {}, assignment: schedule.forDay(1)),
+      configuredGame(
+        buildDailyChallenge(day, () async {}, assignment: schedule.forDay(1)),
+      ),
       isA<MemoryScreen>(),
     );
     schedule.dispose();

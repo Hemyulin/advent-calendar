@@ -114,7 +114,7 @@ void main() {
         final course = MazeCourse.forDifficulty(difficulty);
         final game = MazeGame(course);
         expect(course.layouts, hasLength(1));
-        expect(game.layout.cells, 4 + difficulty.index);
+        expect(game.layout.cells, [5, 6, 8][difficulty.index]);
         game.position = game.layout.goal;
         game.advance(1 / 60, Vec2.zero);
         expect(game.won, isTrue);

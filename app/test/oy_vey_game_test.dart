@@ -14,6 +14,23 @@ MouthObservation pose(double ratio, {double x = .5}) =>
     MouthObservation(x: x, y: .55, width: .12, gapRatio: ratio);
 
 void main() {
+  test('small head movements cover the screen with a narrow sack opening', () {
+    CatchMouth head(double x, {double width = .2}) =>
+        CatchMouth.fromHeadPosition(x: x, y: .5, mouthWidth: width);
+    expect(head(.5).x, .5);
+    expect(head(.25).x, .08);
+    expect(head(.75).x, .92);
+    expect(head(.5).halfWidth, .065);
+    expect(head(.5, width: .04).halfWidth, .042);
+    expect(head(.5).valid, isTrue);
+    final g = game()..objects.add(item(1, FestiveObject.tree, x: .65));
+    g.advance(.01, head(.5));
+    expect(g.mistakes, 0, reason: 'A nearby object misses the smaller opening');
+    g.objects.add(item(2, FestiveObject.hanukkiah));
+    g.advance(.01, head(.5));
+    expect(g.collected, 1);
+  });
+
   test('15 correct objects win; each is counted once', () {
     final g = game();
     for (var i = 0; i < 15; i++) {

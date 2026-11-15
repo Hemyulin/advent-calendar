@@ -1,3 +1,4 @@
+import 'support/game_configuration.dart';
 import 'package:advent_calendar/app.dart';
 import 'package:advent_calendar/challenges/games/difficulty.dart';
 import 'package:advent_calendar/challenges/games/game_catalog.dart';
@@ -92,7 +93,8 @@ void main() {
   test('day six uses the shoe game and a boot on its calendar door', () {
     Future<void> complete() async {}
     final day = calendarDays(DateTime(2026, 12, 6), {})[5];
-    final screen = buildDailyChallenge(day, complete) as ShoeScreen;
+    final screen =
+        configuredGame(buildDailyChallenge(day, complete)) as ShoeScreen;
     expect(screen.onComplete, same(complete));
     expect(DoorDesign.forDay(6).motif, DoorMotif.boot);
   });
@@ -155,7 +157,7 @@ void main() {
       expect(await repository.completedChallengeIds(), isEmpty);
       await scrubShoe(tester);
       expect(
-        find.text('Geschafft!'),
+        find.byKey(const ValueKey('completion-gift')),
         findsOneWidget,
         reason: tester.widget<GameStats>(find.byType(GameStats)).text,
       );

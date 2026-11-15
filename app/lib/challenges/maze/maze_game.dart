@@ -25,12 +25,14 @@ class MazeLayout {
     required this.start,
     required this.goal,
     required this.pits,
+    this.candies = const [],
   });
   final int cells;
   final List<MazeWall> walls;
   final Vec2 start;
   final Vec2 goal;
   final List<Vec2> pits;
+  final List<Vec2> candies;
   double get ballRadius => 0.16 / cells;
   double get pitRadius => 0.23 / cells;
   double get pitCaptureRadius => pitRadius * 0.8;
@@ -125,6 +127,7 @@ class MazeLayout {
           )
           .length;
       var score = path.length + turns * 0.75 + min(forks, 5) * 2;
+      if (cells * cells - path.length < 3) score -= 2000;
       if (path.length < cells * cells * 0.5) score -= 1000;
       if (hazardIndices(path.reversed.toList()).length < pitCount) {
         score -= 1000;
@@ -188,12 +191,41 @@ class MazeLayout {
       final side = n.isEven ? 1.0 : -1.0;
       pits.add(center(travelRoute[index]) + normal * (step * 0.16 * side));
     }
+    // Every candy lies off the mandatory route, in a reachable side passage.
+    // Prefer the ends of deeper branches to make optional exploration worthwhile.
+    final distances = {for (final cell in route) cell: 0};
+    final queue = route.toList();
+    for (var i = 0; i < queue.length; i++) {
+      final cell = queue[i];
+      for (final neighbor in neighbors(cell)) {
+        if (passages.contains(edge(cell, neighbor)) &&
+            !distances.containsKey(neighbor)) {
+          distances[neighbor] = distances[cell]! + 1;
+          queue.add(neighbor);
+        }
+      }
+    }
+    final sideCells =
+        distances.keys.where((cell) => distances[cell]! > 0).toList()
+          ..sort((a, b) => distances[b]!.compareTo(distances[a]!));
+    final candyCells = <int>[];
+    for (final cell in sideCells) {
+      if (candyCells.every((other) => !neighbors(cell).contains(other))) {
+        candyCells.add(cell);
+      }
+      if (candyCells.length == 3) break;
+    }
+    for (final cell in sideCells) {
+      if (candyCells.length == 3) break;
+      if (!candyCells.contains(cell)) candyCells.add(cell);
+    }
     return MazeLayout(
       cells: cells,
       walls: List.unmodifiable(walls),
       start: center(0),
       goal: center(cells * cells - 1),
       pits: List.unmodifiable(pits),
+      candies: List.unmodifiable(candyCells.map(center)),
     );
   }
 }
@@ -208,21 +240,21 @@ class MazeCourse {
     int seed = 1224,
   }) {
     final base = switch (difficulty) {
-      GameDifficulty.easy => 4,
-      GameDifficulty.normal => 5,
-      GameDifficulty.hard => 6,
+      GameDifficulty.easy => 5,
+      GameDifficulty.normal => 6,
+      GameDifficulty.hard => 8,
     };
     return MazeCourse(
       lives: switch (difficulty) {
-        GameDifficulty.easy => 8,
-        GameDifficulty.normal => 6,
+        GameDifficulty.easy => 6,
+        GameDifficulty.normal => 4,
         GameDifficulty.hard => 4,
       },
       layouts: [
         MazeLayout.generate(
           cells: base,
           seed: seed,
-          pitCount: difficulty.index + 1,
+          pitCount: difficulty.index + 2,
         ),
       ],
     );
@@ -240,6 +272,10 @@ class MazeGame {
   }
   final MazeCourse course;
   int falls = 0;
+  final Set<int> collectedCandy = {};
+  bool get allCandy =>
+      layout.candies.isNotEmpty &&
+      collectedCandy.length == layout.candies.length;
   bool won = false;
   late Vec2 position;
   Vec2 velocity = Vec2.zero;
@@ -274,9 +310,16 @@ class MazeGame {
         (pit) => (position - pit).length < layout.pitCaptureRadius,
       )) {
         falls++;
+        collectedCandy.clear();
         position = layout.start;
         velocity = Vec2.zero;
         break;
+      }
+      for (var candy = 0; candy < layout.candies.length; candy++) {
+        if ((position - layout.candies[candy]).length <
+            layout.ballRadius + .13 / layout.cells) {
+          collectedCandy.add(candy);
+        }
       }
       if ((position - layout.goal).length < layout.goalRadius) {
         position = layout.goal;

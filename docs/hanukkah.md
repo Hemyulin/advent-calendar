@@ -15,7 +15,7 @@ day 10 introduces **Maoz Tzur** with all demonstration bells highlighted.
 
 | Game | Chanukka appearance |
 | --- | --- |
-| Paare finden | Eight illustrated pairs: sufganiyah, chanukkiah, dreidel, shekel, oil jug, David star, latke and candle. |
+| Paare finden | Eight illustrated pairs: sufganiyah, chanukkiah, dreidel, shekel, oil jug, David star, Temple and candle. |
 | Kugellabyrinth | Existing golden ball, shekel collectibles; identical maze physics and bonus conditions. |
 | Rettet den Weihnachtsmann | Eliyahu HaNavi with a long black coat, broad-brimmed hat, sidecurls and spectacles. A plain bank facade with a clearly marked entrance replaces the fireplace. Pipe connections, route validation and rooftop exit stay the same. |
 | Wichtelwerkstatt | A mischievous leaf-eared fantasy workshop sprite; same planning puzzles and move budgets. |

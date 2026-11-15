@@ -13,7 +13,7 @@ const hanukkahMotifNames = [
   'Schekel',
   'Ölkrug',
   'Davidstern',
-  'Latke',
+  'Tempel',
   'Kerze',
 ];
 
@@ -113,25 +113,62 @@ void paintHanukkahMotif(Canvas c, Rect rect, int motif) {
         const Size(46, 46),
       );
     case 6:
-      c.drawOval(
-        const Rect.fromLTWH(-23, -16, 46, 34),
-        p..color = hanukkahGold,
+      // Jerusalem's Temple: tall central sanctuary, lower stone wings and
+      // broad approach steps. Large shapes stay readable on a memory card.
+      const stone = Color(0xFFEBD3A7);
+      const edge = Color(0xFFAD8B54);
+      c.drawRect(const Rect.fromLTWH(-20, -7, 40, 23), p..color = stone);
+      c.drawRect(
+        const Rect.fromLTWH(-20, -7, 40, 23),
+        p
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.4
+          ..color = edge,
       );
-      c.drawOval(
-        const Rect.fromLTWH(-19, -13, 38, 27),
-        p..color = const Color(0xFFC58E41),
+      c.drawRect(
+        const Rect.fromLTWH(-10, -20, 20, 36),
+        p
+          ..style = PaintingStyle.fill
+          ..color = const Color(0xFFF4E4C5),
       );
-      for (var i = 0; i < 8; i++) {
-        final a = i * 2.4;
-        final x = math.cos(a) * 13, y = math.sin(a) * 9;
-        c.drawLine(
-          Offset(x - 3, y - 2),
-          Offset(x + 3, y + 2),
-          p
-            ..color = const Color(0xFFEAC881)
-            ..strokeWidth = 2,
-        );
+      c.drawRect(
+        const Rect.fromLTWH(-10, -20, 20, 36),
+        p
+          ..style = PaintingStyle.stroke
+          ..color = edge,
+      );
+      c.drawRect(
+        const Rect.fromLTWH(-12, -22, 24, 4),
+        p
+          ..style = PaintingStyle.fill
+          ..color = hanukkahGold,
+      );
+      c.drawRect(const Rect.fromLTWH(-22, -9, 12, 3), p);
+      c.drawRect(const Rect.fromLTWH(10, -9, 12, 3), p);
+      c.drawRect(const Rect.fromLTWH(-6, -3, 12, 19), p);
+      c.drawRect(
+        const Rect.fromLTWH(-3.5, 0, 7, 16),
+        p..color = const Color(0xFF65503A),
+      );
+      for (final side in [-1.0, 1.0]) {
+        for (final y in [0.0, 7.0]) {
+          c.drawLine(
+            Offset(side * 12, y),
+            Offset(side * 18, y),
+            p
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = 1.3
+              ..color = edge,
+          );
+        }
       }
+      c.drawRect(
+        const Rect.fromLTWH(-21, 15, 42, 3),
+        p
+          ..style = PaintingStyle.fill
+          ..color = hanukkahGold,
+      );
+      c.drawRect(const Rect.fromLTWH(-24, 19, 48, 3), p..color = edge);
     case 7:
       paintOilCandle(
         c,

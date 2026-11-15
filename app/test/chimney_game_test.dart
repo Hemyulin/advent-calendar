@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'helpers/chimney_rooftop.dart';
 
 import 'package:advent_calendar/challenges/chimney/chimney_game.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -14,6 +15,90 @@ void solve(ChimneyGame game) {
 }
 
 void main() {
+  void installRoute(ChimneyGame game, List<int> route) {
+    PipeDirection direction(int from, int to) =>
+        PipeDirection.values.firstWhere(
+          (d) =>
+              from % game.level.size + d.dx == to % game.level.size &&
+              from ~/ game.level.size + d.dy == to ~/ game.level.size,
+        );
+    for (var i = 0; i < route.length; i++) {
+      final ports = {
+        i == 0 ? PipeDirection.north : direction(route[i], route[i - 1]),
+        i == route.length - 1
+            ? PipeDirection.south
+            : direction(route[i], route[i + 1]),
+      };
+      final tile = ChimneyTile(
+        ports.first.opposite == ports.last
+            ? PipeShape.straight
+            : PipeShape.corner,
+        0,
+      );
+      while (!tile.ports.containsAll(ports)) {
+        tile.turns++;
+      }
+      game.puzzle.tiles[route[i]] = tile;
+    }
+  }
+
+  test(
+    'secret success requires returning to tile zero and actually crossing the rooftop exit',
+    () {
+      final game = ChimneyGame(
+        const ChimneyLevel(
+          size: 3,
+          seed: 9,
+          preparationSeconds: 0,
+          secondsPerTile: 1,
+        ),
+      );
+      prepareRooftopLoop(game);
+      expect(game.escapedThroughRoof, isFalse);
+      game.advance(3.1);
+      expect(game.cell, 5);
+      turnPipeTo(game, 4, 3); // Reconnect the vacated junction for the return.
+      game.advance(7.8);
+      expect(game.cell, 0);
+      expect(game.outgoing, PipeDirection.north);
+      expect(game.phase, ChimneyPhase.moving);
+      expect(
+        game.escapedThroughRoof,
+        isFalse,
+        reason: 'Reaching the starting pipe is not yet leaving it',
+      );
+      game.advance(.11);
+      expect(game.phase, ChimneyPhase.won);
+      expect(game.escapedThroughRoof, isTrue);
+      game.advance(100);
+      expect(game.escapedThroughRoof, isTrue);
+    },
+  );
+
+  test(
+    'travelling upward and finishing at the fireplace does not earn the rooftop achievement',
+    () {
+      final game = ChimneyGame(
+        const ChimneyLevel(size: 3, preparationSeconds: 0, secondsPerTile: 1),
+      );
+      installRoute(game, [0, 3, 6, 7, 4, 1, 2, 5, 8]);
+      game.advance(100);
+      expect(game.phase, ChimneyPhase.won);
+      expect(game.escapedThroughRoof, isFalse);
+    },
+  );
+
+  test('exiting through another top-row pipe is still a failure', () {
+    final game = ChimneyGame(
+      const ChimneyLevel(size: 3, preparationSeconds: 0),
+    );
+    game.puzzle.tiles[0] = ChimneyTile(PipeShape.corner, 0); // north -> east
+    game.puzzle.tiles[1] = ChimneyTile(PipeShape.corner, 3); // west -> north
+    game.advance(100);
+    expect(game.phase, ChimneyPhase.lost);
+    expect(game.escapedThroughRoof, isFalse);
+  });
+
   test('hundreds of shuffled boards have an actual traversable solution', () {
     for (final size in [3, 4, 5, 6]) {
       for (var seed = 0; seed < 100; seed++) {

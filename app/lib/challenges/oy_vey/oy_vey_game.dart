@@ -17,6 +17,19 @@ enum FestiveObject {
 
 class CatchMouth {
   const CatchMouth(this.x, this.y, this.halfWidth, {this.halfHeight = .018});
+
+  /// A narrow opening and amplified horizontal steering keep dodging possible
+  /// while the player's face remains comfortably inside the camera frame.
+  factory CatchMouth.fromHeadPosition({
+    required double x,
+    required double y,
+    required double mouthWidth,
+  }) => CatchMouth(
+    (.5 + (x - .5) * 1.7).clamp(.08, .92),
+    y,
+    (mouthWidth * .35).clamp(.042, .065),
+    halfHeight: .012,
+  );
   final double x, y, halfWidth, halfHeight;
   bool get valid =>
       [x, y, halfWidth, halfHeight].every((v) => v.isFinite) &&
@@ -86,7 +99,7 @@ class OyVeyGame {
   final OyVeyLevel level;
   final math.Random _random;
   final List<FallingObject> objects = [];
-  int collected = 0, mistakes = 0;
+  int collected = 0, mistakes = 0, menorahsCollected = 0;
   double elapsed = 0, _spawn = 0;
   int _nextId = 0;
   CatchMouth? _previous;
@@ -139,6 +152,7 @@ class OyVeyGame {
         objects.remove(object);
         if (object.kind.correct) {
           collected++;
+          if (object.kind == FestiveObject.hanukkiah) menorahsCollected++;
           feedback = 'Mazel tov!';
         } else {
           mistakes++;

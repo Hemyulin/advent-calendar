@@ -75,14 +75,12 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('Geschafft!'), findsOneWidget);
+    expect(find.byKey(const ValueKey('completion-gift')), findsOneWidget);
     expect(find.textContaining('gespeichert'), findsNothing);
     expect(saves, 1);
     expect(
       tester
-          .widget<OutlinedButton>(
-            find.widgetWithText(OutlinedButton, 'Noch einmal spielen'),
-          )
+          .widget<TextButton>(find.byKey(const ValueKey('completion-replay')))
           .onPressed,
       isNotNull,
     );

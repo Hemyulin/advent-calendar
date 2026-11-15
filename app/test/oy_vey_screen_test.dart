@@ -114,15 +114,15 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(camera.starts, 0);
-      await trackFace(tester, camera, x: spawn.$2);
+      await trackFace(tester, camera, x: .5 + (spawn.$2 - .5) / 1.7);
       await tester.tap(find.byKey(const ValueKey('oy-vey-play')));
       await tester.pump();
       for (var i = 0; i < 40 && completed == 0; i++) {
-        camera.emit(pose(0, x: spawn.$2));
+        camera.emit(pose(0, x: .5 + (spawn.$2 - .5) / 1.7));
         await tester.pump(const Duration(milliseconds: 50));
       }
       await tester.pumpAndSettle();
-      expect(find.text('Geschafft!'), findsOneWidget);
+      expect(find.byKey(const ValueKey('completion-gift')), findsOneWidget);
       expect(completed, 1);
       expect(camera.stops, greaterThanOrEqualTo(1));
       await tester.tap(find.text('Noch einmal spielen'));
@@ -157,7 +157,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await trackFace(tester, camera, x: spawn.$2);
+    await trackFace(tester, camera, x: .5 + (spawn.$2 - .5) / 1.7);
     await tester.tap(find.byKey(const ValueKey('oy-vey-play')));
     await tester.pump();
     for (
@@ -165,7 +165,7 @@ void main() {
       i < 40 && find.text('Fast geschafft').evaluate().isEmpty;
       i++
     ) {
-      camera.emit(pose(0, x: spawn.$2));
+      camera.emit(pose(0, x: .5 + (spawn.$2 - .5) / 1.7));
       await tester.pump(const Duration(milliseconds: 50));
     }
     await tester.pumpAndSettle();
@@ -321,11 +321,11 @@ void main() {
       },
     );
   }
-  test('Day 9 shares the completion interface and replay state', () {
+  test('Day 4 shares the completion interface and replay state', () {
     Future<void> complete() async {}
     final screen =
         buildDailyChallenge(
-              calendarDays(DateTime(2026, 12, 24), {'day-9'})[8],
+              calendarDays(DateTime(2026, 12, 24), {'day-4'})[3],
               complete,
             )
             as OyVeyScreen;

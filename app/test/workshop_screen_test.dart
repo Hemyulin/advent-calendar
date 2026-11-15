@@ -1,3 +1,4 @@
+import 'support/game_configuration.dart';
 import 'package:advent_calendar/challenges/workshop/workshop_game.dart';
 import 'package:advent_calendar/challenges/workshop/workshop_screen.dart';
 import 'package:advent_calendar/challenges/games/game_catalog.dart';
@@ -43,7 +44,7 @@ void main() {
         await move(tester, letter);
       }
       await tester.pumpAndSettle();
-      expect(find.text('Geschafft!'), findsOneWidget);
+      expect(find.byKey(const ValueKey('completion-gift')), findsOneWidget);
       expect(completions, 1);
       await tester.tap(find.text('Noch einmal spielen'));
       await tester.pumpAndSettle();
@@ -72,7 +73,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    for (final letter in 'UURRD'.split('')) {
+    for (final letter in 'LD'.split('')) {
       await move(tester, letter);
     }
     expect(find.text('1 / 2 Geschenke'), findsOneWidget);
@@ -103,7 +104,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.text('0 / 2 Geschenke'), findsOneWidget);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft); // Wall.
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
       await tester.pumpAndSettle();
       expect(find.text('0 / 2 Geschenke'), findsOneWidget);
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
@@ -163,18 +164,20 @@ void main() {
       await tester.tap(find.text('Wichtelwerkstatt'));
       await tester.pumpAndSettle();
       final screen = tester.widget<WorkshopScreen>(find.byType(WorkshopScreen));
-      expect(screen.level!.size, [5, 7, 8][difficulty.index]);
+      expect(screen.level!.size, [6, 7, 8][difficulty.index]);
       expect(screen.level!.presents.length, 2 + difficulty.index);
     }
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
-  test('Day 8 shares completion and replay state', () {
+  test('Day 14 shares completion and replay state', () {
     Future<void> complete() async {}
     final screen =
-        buildDailyChallenge(
-              calendarDays(DateTime(2026, 12, 24), {'day-8'})[7],
-              complete,
+        configuredGame(
+              buildDailyChallenge(
+                calendarDays(DateTime(2026, 12, 24), {'day-14'})[13],
+                complete,
+              ),
             )
             as WorkshopScreen;
     expect(screen.onComplete, same(complete));

@@ -1,3 +1,6 @@
+import '../seasonal/game_skin_scope.dart';
+import '../seasonal/hanukkah_art.dart';
+import '../../achievements/run_facts.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -103,13 +106,15 @@ class _ChimneyScreenState extends State<ChimneyScreen>
 
   @override
   Widget build(BuildContext context) {
+    final hanukkah = GameSkinScope.isHanukkah(context);
+    final person = hanukkah ? 'Eliyahu HaNavi' : 'Weihnachtsmann';
     final preparing = _game.phase == ChimneyPhase.preparing;
     return GameScaffold(
-      title: 'Rettet den Weihnachtsmann!',
+      title: hanukkah ? 'Rettet Eliyahu HaNavi!' : 'Rettet den Weihnachtsmann!',
       alreadyCompleted: widget.alreadyCompleted,
       onRestart: _restart,
       instructions:
-          'Tippe auf die Rohre, um sie zu drehen. Verbinde den verschneiten Eingang mit dem Kamin. Nach ${widget.level.preparationSeconds.ceil()} Sekunden krabbelt der Weihnachtsmann los. Du kannst vor ihm weiterbauen. Das Rohr unter ihm bleibt fest.',
+          'Tippe auf die Rohre, um sie zu drehen. Verbinde den Eingang mit ${hanukkah ? 'dem Bankeingang' : 'dem Kamin'}. Nach ${widget.level.preparationSeconds.ceil()} Sekunden krabbelt $person los. Du kannst vor ihm weiterbauen. Das Rohr unter ihm bleibt fest.',
       children: [
         GameStats(
           text: preparing
@@ -117,7 +122,11 @@ class _ChimneyScreenState extends State<ChimneyScreen>
               : _game.phase == ChimneyPhase.moving
               ? 'Mach den Weg frei!'
               : _game.phase == ChimneyPhase.won
-              ? 'Am Kamin angekommen!'
+              ? (_game.escapedThroughRoof
+                    ? 'Wieder auf dem Dach!'
+                    : (hanukkah
+                          ? 'Bei der Bank angekommen!'
+                          : 'Am Kamin angekommen!'))
               : 'Hier geht’s nicht weiter',
         ),
         if (preparing)
@@ -139,6 +148,7 @@ class _ChimneyScreenState extends State<ChimneyScreen>
               top: true,
               size: widget.level.size,
               waiting: preparing,
+              hanukkah: hanukkah,
             ),
           ),
         ),
@@ -171,7 +181,7 @@ class _ChimneyScreenState extends State<ChimneyScreen>
                             _game.phase != ChimneyPhase.lost;
                         return Semantics(
                           label:
-                              'Rohr, Reihe ${index ~/ widget.level.size + 1}, Spalte ${index % widget.level.size + 1}${occupied ? ', Weihnachtsmann im Rohr' : ''}',
+                              'Rohr, Reihe ${index ~/ widget.level.size + 1}, Spalte ${index % widget.level.size + 1}${occupied ? ', $person im Rohr' : ''}',
                           button: true,
                           enabled: enabled,
                           child: GestureDetector(
@@ -215,8 +225,10 @@ class _ChimneyScreenState extends State<ChimneyScreen>
                         height: unit * .46,
                         child: IgnorePointer(
                           child: Semantics(
-                            label: 'Weihnachtsmann',
-                            child: CustomPaint(painter: _SantaPainter()),
+                            label: person,
+                            child: CustomPaint(
+                              painter: _SantaPainter(hanukkah: hanukkah),
+                            ),
                           ),
                         ),
                       ),
@@ -229,11 +241,16 @@ class _ChimneyScreenState extends State<ChimneyScreen>
         SizedBox(
           height: 72,
           child: CustomPaint(
-            painter: _ChimneyEndsPainter(top: false, size: widget.level.size),
+            painter: _ChimneyEndsPainter(
+              top: false,
+              size: widget.level.size,
+              hanukkah: hanukkah,
+            ),
           ),
         ),
-        const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        const Wrap(
+          alignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             Icon(
               Icons.touch_app_outlined,
@@ -249,9 +266,14 @@ class _ChimneyScreenState extends State<ChimneyScreen>
         ),
         if (_game.phase == ChimneyPhase.won)
           CompletionPanel(
+            facts: RunFacts(
+              feats: {if (_game.escapedThroughRoof) RunFeat.santaEscaped},
+            ),
             onComplete: widget.onComplete,
             onReplay: _restart,
-            message: 'Weihnachtsmann gerettet!',
+            message: _game.escapedThroughRoof
+                ? 'Zurück auf dem Dach – was für ein Umweg!'
+                : '$person gerettet!',
           )
         else if (_game.phase == ChimneyPhase.lost)
           DefeatPanel(message: 'Der Weg ist versperrt.', onRetry: _restart),
@@ -328,8 +350,14 @@ class _PipePainter extends CustomPainter {
 }
 
 class _SantaPainter extends CustomPainter {
+  _SantaPainter({this.hanukkah = false});
+  final bool hanukkah;
   @override
   void paint(Canvas canvas, Size size) {
+    if (hanukkah) {
+      paintEliyahu(canvas, size);
+      return;
+    }
     canvas.save();
     canvas.scale(size.width / 40, size.height / 40);
     canvas.drawCircle(
@@ -378,7 +406,8 @@ class _SantaPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_SantaPainter oldDelegate) => false;
+  bool shouldRepaint(_SantaPainter oldDelegate) =>
+      oldDelegate.hanukkah != hanukkah;
 }
 
 class _ChimneyEndsPainter extends CustomPainter {
@@ -386,8 +415,9 @@ class _ChimneyEndsPainter extends CustomPainter {
     required this.top,
     required this.size,
     this.waiting = false,
+    this.hanukkah = false,
   });
-  final bool top, waiting;
+  final bool top, waiting, hanukkah;
   final int size;
   @override
   void paint(Canvas canvas, Size bounds) {
@@ -419,7 +449,7 @@ class _ChimneyEndsPainter extends CustomPainter {
       if (waiting) {
         canvas.save();
         canvas.translate(x - 20, 0);
-        _SantaPainter().paint(canvas, const Size(40, 40));
+        _SantaPainter(hanukkah: hanukkah).paint(canvas, const Size(40, 40));
         canvas.restore();
       }
       for (final offset in [
@@ -431,6 +461,79 @@ class _ChimneyEndsPainter extends CustomPainter {
       }
     } else {
       final width = unit * .9;
+      if (hanukkah) {
+        // A plain bank facade with a clear entrance, with no fire imagery.
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(
+            Rect.fromLTWH(x - width * .5, 9, width, 43),
+            const Radius.circular(3),
+          ),
+          paint..color = const Color(0xFFD9E1DF),
+        );
+        canvas.drawPath(
+          Path()
+            ..moveTo(x - width * .58, 10)
+            ..lineTo(x, -3)
+            ..lineTo(x + width * .58, 10)
+            ..close(),
+          paint..color = hanukkahBlue,
+        );
+        canvas.drawRect(
+          Rect.fromLTWH(x - width * .24, 24, width * .48, 27),
+          paint..color = const Color(0xFF42677A),
+        );
+        canvas.drawLine(
+          Offset(x, 27),
+          Offset(x, 50),
+          paint
+            ..color = const Color(0xFFEDDBB4)
+            ..strokeWidth = 1,
+        );
+        for (final side in [-1.0, 1.0]) {
+          final px = x + side * width * .36;
+          canvas.drawRRect(
+            RRect.fromRectAndRadius(
+              Rect.fromLTWH(px - width * .055, 22, width * .11, 28),
+              const Radius.circular(1),
+            ),
+            paint..color = const Color(0xFFFFF8E9),
+          );
+          canvas.drawRect(
+            Rect.fromLTWH(px - width * .085, 21, width * .17, 3),
+            paint..color = const Color(0xFFAFBDBB),
+          );
+        }
+        final sign = TextPainter(
+          text: const TextSpan(
+            text: 'BANK',
+            style: TextStyle(
+              fontFamily: 'sans-serif',
+              fontSize: 7,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 1,
+              color: hanukkahBlue,
+            ),
+          ),
+          textDirection: TextDirection.ltr,
+        )..layout();
+        sign.paint(canvas, Offset(x - sign.width / 2, 12));
+        sign.dispose();
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(
+            Rect.fromLTWH(x - width * .56, 49, width * 1.12, 5),
+            const Radius.circular(1),
+          ),
+          paint..color = const Color(0xFFAFBDBB),
+        );
+        canvas.drawLine(
+          Offset(12, 57),
+          Offset(bounds.width - 12, 57),
+          paint
+            ..color = CalendarStyle.line
+            ..strokeWidth = 2,
+        );
+        return;
+      }
       canvas.drawRRect(
         RRect.fromRectAndRadius(
           Rect.fromLTWH(x - width / 2, 0, width, 51),
@@ -475,6 +578,7 @@ class _ChimneyEndsPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_ChimneyEndsPainter oldDelegate) =>
+      hanukkah != oldDelegate.hanukkah ||
       top != oldDelegate.top ||
       waiting != oldDelegate.waiting ||
       size != oldDelegate.size;

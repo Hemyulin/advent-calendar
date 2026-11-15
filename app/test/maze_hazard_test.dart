@@ -65,7 +65,7 @@ void main() {
             final indices = <int>[];
             expect(
               layout.pits.length,
-              difficulty.index + 1,
+              difficulty.index + 2,
               reason: '$seed $difficulty $stage',
             );
             for (final pit in layout.pits) {

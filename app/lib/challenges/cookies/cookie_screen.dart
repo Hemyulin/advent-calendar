@@ -1,3 +1,5 @@
+import '../seasonal/game_skin_scope.dart';
+import '../../achievements/run_facts.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -195,7 +197,9 @@ class _CookieScreenState extends State<CookieScreen>
         return KeyEventResult.handled;
       },
       child: GameScaffold(
-        title: 'Plätzchen ausstechen',
+        title: GameSkinScope.isHanukkah(context)
+            ? 'Chanukka-Plätzchen'
+            : 'Plätzchen ausstechen',
         alreadyCompleted: widget.alreadyCompleted,
         onRestart: _restart,
         instructions:
@@ -308,6 +312,9 @@ class _CookieScreenState extends State<CookieScreen>
             ),
           if (_showResult)
             CompletionPanel(
+              facts: RunFacts(
+                feats: {if (_game.mistakes == 0) RunFeat.perfectCookie},
+              ),
               onComplete: widget.onComplete,
               onReplay: _restart,
               message: 'Dein Plätzchen ist fertig!',

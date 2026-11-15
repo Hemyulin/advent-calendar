@@ -15,7 +15,10 @@ import '../hardware/lock_gateway.dart';
 import '../challenges/games/game_preview_screen.dart';
 import '../content/calendar_day.dart';
 import '../content/calendar_schedule.dart';
-import '../progress/mock_progress_repository.dart';
+import '../progress/local_progress_repository.dart';
+import '../achievements/achievement_store.dart';
+import '../achievements/achievement_scope.dart';
+import '../achievements/achievements_screen.dart';
 import '../progress/progress_repository.dart';
 import 'calendar_style.dart';
 import 'festive_art.dart';
@@ -29,6 +32,7 @@ class CalendarScreen extends StatefulWidget {
     this.picoService,
     this.schedule,
     this.lockGateway,
+    this.achievementStore,
     this.previewAllDays = false,
     this.showGamePreview = false,
     this.adminAuthenticator = const DevelopmentAdminAuthenticator(),
@@ -40,6 +44,7 @@ class CalendarScreen extends StatefulWidget {
   final PicoService? picoService;
   final CalendarSchedule? schedule;
   final LockGateway? lockGateway;
+  final AchievementStore? achievementStore;
   final bool previewAllDays;
   final bool showGamePreview;
 
@@ -58,6 +63,7 @@ class _CalendarScreenState extends State<CalendarScreen>
   double _swipeDistance = 0;
   late final ProgressRepository _progressRepository;
   late final CalendarSchedule _schedule;
+  late final AchievementStore _achievements;
   late final PicoService? _picoService;
   late final ChallengeCompletionHandler _completionHandler;
 
@@ -66,8 +72,10 @@ class _CalendarScreenState extends State<CalendarScreen>
   @override
   void initState() {
     super.initState();
+    _achievements = widget.achievementStore ?? AchievementStore();
     _schedule = widget.schedule ?? CalendarSchedule();
-    _progressRepository = widget.progressRepository ?? MockProgressRepository();
+    _progressRepository =
+        widget.progressRepository ?? LocalProgressRepository();
     try {
       _picoService = widget.picoService ?? PicoService();
     } catch (_) {
@@ -114,8 +122,11 @@ class _CalendarScreenState extends State<CalendarScreen>
       if (allowed != true || !mounted) return;
       await Navigator.of(context).push(
         MaterialPageRoute<void>(
-          builder: (_) =>
-              AdminScreen(picoService: _picoService, schedule: _schedule),
+          builder: (_) => AdminScreen(
+            picoService: _picoService,
+            schedule: _schedule,
+            achievements: _achievements,
+          ),
         ),
       );
     } finally {
@@ -147,6 +158,11 @@ class _CalendarScreenState extends State<CalendarScreen>
   Future<void> _loadProgress() async {
     final completed = await _progressRepository.completedChallengeIds();
     if (mounted) setState(() => _completed = completed);
+    try {
+      await _achievements.importCompletedDays(completed);
+    } catch (_) {
+      /* A later victory can retry achievement storage. */
+    }
   }
 
   void _scrollToSelected() {
@@ -197,6 +213,7 @@ class _CalendarScreenState extends State<CalendarScreen>
     _resetAdminTaps();
     _scrollController.dispose();
     if (widget.schedule == null) _schedule.dispose();
+    if (widget.achievementStore == null) _achievements.dispose();
     if (widget.picoService == null) _picoService?.dispose();
     super.dispose();
   }
@@ -259,6 +276,20 @@ class _CalendarScreenState extends State<CalendarScreen>
                                 ),
                               ),
                               const SizedBox(height: 10),
+                              IconButton(
+                                tooltip: 'Erfolge',
+                                icon: const Icon(
+                                  Icons.workspace_premium_outlined,
+                                  color: CalendarStyle.gold,
+                                ),
+                                onPressed: () => Navigator.of(context).push(
+                                  MaterialPageRoute<void>(
+                                    builder: (_) => AchievementsScreen(
+                                      store: _achievements,
+                                    ),
+                                  ),
+                                ),
+                              ),
                               if (widget.showGamePreview)
                                 IconButton(
                                   onPressed: () => Navigator.of(context).push(
@@ -315,24 +346,43 @@ class _CalendarScreenState extends State<CalendarScreen>
                                             if (!context.mounted) return;
                                             await Navigator.of(context).push(
                                               MaterialPageRoute<void>(
-                                                builder: (_) => GiftRewardScope(
-                                                  openGift: () =>
-                                                      _completionHandler
-                                                          .openGift(
+                                                builder: (_) => AchievementScope(
+                                                  record: (facts) =>
+                                                      _achievements.record(
+                                                        AchievementRun(
+                                                          day: day.number,
+                                                          game: _schedule
+                                                              .forDay(
+                                                                day.number,
+                                                              )
+                                                              .game,
+                                                          difficulty: _schedule
+                                                              .forDay(
+                                                                day.number,
+                                                              )
+                                                              .difficulty,
+                                                          facts: facts,
+                                                        ),
+                                                      ),
+                                                  child: GiftRewardScope(
+                                                    openGift: () =>
+                                                        _completionHandler
+                                                            .openGift(
+                                                              day
+                                                                  .content
+                                                                  .challengeId,
+                                                            ),
+                                                    child: buildDailyChallenge(
+                                                      day,
+                                                      () => _completionHandler
+                                                          .complete(
                                                             day
                                                                 .content
                                                                 .challengeId,
                                                           ),
-                                                  child: buildDailyChallenge(
-                                                    day,
-                                                    () => _completionHandler
-                                                        .complete(
-                                                          day
-                                                              .content
-                                                              .challengeId,
-                                                        ),
-                                                    assignment: _schedule
-                                                        .forDay(day.number),
+                                                      assignment: _schedule
+                                                          .forDay(day.number),
+                                                    ),
                                                   ),
                                                 ),
                                               ),

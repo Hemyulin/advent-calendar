@@ -3,13 +3,21 @@ import '../challenges/games/game_preview_screen.dart';
 import '../presentation/calendar_style.dart';
 import '../presentation/viewport_fit.dart';
 import 'pico_connection_screen.dart';
+import 'achievement_rewards_screen.dart';
+import '../achievements/achievement_store.dart';
 import 'calendar_editor_screen.dart';
 import '../content/calendar_schedule.dart';
 import '../hardware/pico_service.dart';
 
 class AdminScreen extends StatelessWidget {
-  const AdminScreen({super.key, this.picoService, required this.schedule});
+  const AdminScreen({
+    super.key,
+    this.picoService,
+    required this.schedule,
+    required this.achievements,
+  });
   final CalendarSchedule schedule;
+  final AchievementStore achievements;
   final PicoService? picoService;
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -46,6 +54,13 @@ class AdminScreen extends StatelessWidget {
               description: 'Pico-Verbindung und Netzwerkstatus.',
               page: PicoConnectionScreen(service: picoService),
               icon: Icons.inventory_2_outlined,
+            ),
+            _section(
+              context,
+              title: 'Erfolge & Gutscheine',
+              description: 'Die große Abschlussbelohnung festlegen.',
+              icon: Icons.workspace_premium_outlined,
+              page: AchievementRewardsScreen(store: achievements),
             ),
             _section(
               context,

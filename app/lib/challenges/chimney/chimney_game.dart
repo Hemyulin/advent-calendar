@@ -163,6 +163,8 @@ class ChimneyGame {
   double progress = 0;
   int? failedCell;
   final Set<int> visited = {};
+  bool get escapedThroughRoof =>
+      phase == ChimneyPhase.won && cell == 0 && outgoing == PipeDirection.north;
 
   bool rotate(int index) {
     if (index < 0 ||
@@ -204,7 +206,11 @@ class ChimneyGame {
       progress = min(1, progress + used / level.secondsPerTile);
       seconds -= used;
       if (progress < 1 - 1e-9) break;
-      if (cell == puzzle.tiles.length - 1 && outgoing == PipeDirection.south) {
+      final reachedFireplace =
+          cell == puzzle.tiles.length - 1 && outgoing == PipeDirection.south;
+      final returnedToRoof =
+          cell == 0 && outgoing == PipeDirection.north && visited.length > 1;
+      if (reachedFireplace || returnedToRoof) {
         phase = ChimneyPhase.won;
         break;
       }

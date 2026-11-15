@@ -1,3 +1,4 @@
+import 'support/game_configuration.dart';
 import 'package:advent_calendar/challenges/battery/battery_screen.dart';
 import 'package:advent_calendar/challenges/battery/battery_game.dart';
 import 'package:advent_calendar/challenges/games/difficulty.dart';
@@ -267,7 +268,7 @@ void main() {
       await t.pump(const Duration(milliseconds: 400));
       expect(saves, 0);
       expect(tabletArt().victory, greaterThan(0));
-      expect(find.text('Geschafft!'), findsNothing);
+      expect(find.byKey(const ValueKey('completion-gift')), findsNothing);
       await t.pumpAndSettle();
       expect(saves, 1);
       await t.pumpWidget(const SizedBox());
@@ -397,6 +398,8 @@ void main() {
       await connect(t, 0);
       await frames(t, .5);
       await t.pumpAndSettle();
+      await t.tap(find.byKey(const ValueKey('completion-gift')));
+      await t.pumpAndSettle();
       expect(
         find.text('Du hast tatsächlich mal etwas rechtzeitig geladen!'),
         findsOneWidget,
@@ -447,15 +450,17 @@ void main() {
       },
     );
   }
-  test('day 11 uses shared completion and difficulty factories', () {
+  test('day 8 uses shared completion and difficulty factories', () {
     Future<void> complete() async {}
-    final days = calendarDays(DateTime(2026, 12, 11), {'day-11'});
-    final screen = buildDailyChallenge(days[10], complete) as BatteryScreen;
+    final days = calendarDays(DateTime(2026, 12, 8), {'day-8'});
+    final screen =
+        configuredGame(buildDailyChallenge(days[7], complete)) as BatteryScreen;
     expect(screen.onComplete, same(complete));
     expect(screen.alreadyCompleted, isTrue);
     for (final d in GameDifficulty.values) {
       final preview =
-          buildMinigame(Minigame.battery, d, complete) as BatteryScreen;
+          configuredGame(buildMinigame(Minigame.battery, d, complete))
+              as BatteryScreen;
       expect(preview.level.drain, BatteryLevel.forDifficulty(d).drain);
     }
   });

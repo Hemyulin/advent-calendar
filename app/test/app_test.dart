@@ -1,4 +1,5 @@
 import 'package:advent_calendar/app.dart';
+import 'package:advent_calendar/progress/mock_progress_repository.dart';
 import 'package:advent_calendar/challenges/memory/memory_screen.dart';
 import 'package:advent_calendar/challenges/bells/bells_screen.dart';
 import 'package:advent_calendar/presentation/challenge_screen.dart';
@@ -9,7 +10,11 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   Future<void> start(WidgetTester tester, DateTime date) async {
     await tester.pumpWidget(
-      AdventCalendarApp(now: date, previewAllDays: false),
+      AdventCalendarApp(
+        now: date,
+        previewAllDays: false,
+        progressRepository: MockProgressRepository(),
+      ),
     );
     await tester.pumpAndSettle();
   }
@@ -59,7 +64,7 @@ void main() {
   testWidgets(
     'door swings before navigation, ignores repeated taps, and resets',
     (tester) async {
-      await start(tester, DateTime(2026, 12, 12));
+      await start(tester, DateTime(2026, 12, 16));
       await tester.tap(find.byType(IllustratedDoor));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
@@ -91,7 +96,7 @@ void main() {
     tester.platformDispatcher.accessibilityFeaturesTestValue =
         FakeAccessibilityFeatures(disableAnimations: true);
     addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
-    await start(tester, DateTime(2026, 12, 12));
+    await start(tester, DateTime(2026, 12, 16));
     await tester.tap(find.byType(IllustratedDoor));
     await tester.pump();
     await tester.pump();
@@ -100,7 +105,7 @@ void main() {
   });
 
   testWidgets('today opens its assigned game and can return', (tester) async {
-    await start(tester, DateTime(2026, 12, 12));
+    await start(tester, DateTime(2026, 12, 16));
     expect(find.text('Heute'), findsOneWidget);
     await tester.tap(find.byType(IllustratedDoor));
     await tester.pumpAndSettle();
@@ -156,7 +161,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-      await start(tester, DateTime(2026, 12, 12));
+      await start(tester, DateTime(2026, 12, 16));
       expect(tester.takeException(), isNull);
       expect(
         tester.getRect(find.byType(IllustratedDoor)).bottom,

@@ -15,7 +15,7 @@ The initial screen provides these sections:
 
 - **Kalender bearbeiten**: select any of the 24 dates, choose a game and difficulty,
   then **Speichern**. All doors have playable defaults. Day 1 starts with the
-  easy Memory, day 2 with easy cookie cutting, and day 6 with Nikolaus; both can be reassigned. Changes persist on
+  easy Memory, day 2 with easy cookie cutting, and day 6 with Nikolaus; all can be reassigned. Changes persist on
   this device using shared preferences, independently of completion state.
   Editing a completed door keeps its completion; replay uses the new assignment.
 - **Spiele testen**: reuses `GamePreviewScreen`, with all games and difficulty
@@ -23,6 +23,9 @@ The initial screen provides these sections:
   completions do not change calendar progress.
 - **Box-Steuerung**: verified Pico health and automatic recovery; **Box öffnen** is
   visible but disabled until firmware provides an authorized unlock endpoint.
+- **Erfolge & Gutscheine**: configure the single hidden reward for earning all
+  16 achievements. Individual badges cannot have vouchers. Leave the text empty
+  until the final surprise has been chosen.
 - **Diagnose & Fortschritt**: structure only, no completion overrides yet.
 
 `lib/admin/admin_authenticator.dart` isolates the authentication interface and
@@ -124,3 +127,8 @@ and replay controls, shared manager ownership, and actual empty native HTTP POST
 Saved v1 calendars migrate the old default of classic Memory on day 2 to easy
 cookie cutting. Other games and difficulty overrides remain unchanged. New v2
 assignments can explicitly choose Memory on day 2 again.
+
+Calendar assignments now include appearance and an optional bell melody. The
+calendar defaults to the curated per-door sequence, with no date-based skin
+switching. Schema v3 stores only explicit overrides; v2 snapshots upgrade old
+defaults while retaining distinct custom edits. See [the full sequence](minigames.md).

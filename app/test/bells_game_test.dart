@@ -7,54 +7,55 @@ import 'package:advent_calendar/challenges/games/difficulty.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test(
-    'curated hooks keep recognizable phrases and finish within five seconds',
-    () {
-      expect(bellMelodies.map((m) => m.notes.length), [
-        7,
-        6,
-        8,
-        11,
-        8,
-        9,
-        8,
-        8,
-      ]);
-      final phrases = [
-        'C C G G A A G',
-        'G A G F E D',
-        'C F F F G A A A',
-        'A A A A A A A C↑ F G A',
-        'G E F G A G A G',
-        'H A G E Dis A H A G',
-        'F E F D F E F D',
-        'H H A E H H Cis↑ A',
-      ];
-      for (var i = 0; i < bellMelodies.length; i++) {
-        final melody = bellMelodies[i];
-        expect(melody.notes.map((n) => n.pitch.label).join(' '), phrases[i]);
-        final beats = melody.notes.fold<double>(
-          0,
-          (sum, n) => sum + n.beats + n.restBeats,
-        );
-        expect(
-          beats * const BellsLevel().beatMilliseconds,
-          lessThanOrEqualTo(5000),
-        );
-        expect(
-          melody.notes.every(
-            (n) =>
-                melody.bells.contains(n.pitch) &&
-                n.beats > 0 &&
-                n.restBeats >= 0,
-          ),
-          isTrue,
-        );
-        expect(melody.bells.toSet().length, melody.bells.length);
-        expect(melody.bells.length, inInclusiveRange(6, 8));
-      }
-    },
-  );
+  test('curated hooks keep recognizable phrases and remain short', () {
+    expect(bellMelodies.map((m) => m.notes.length), [
+      7,
+      6,
+      8,
+      11,
+      8,
+      9,
+      8,
+      8,
+      6,
+      15,
+      12,
+    ]);
+    final phrases = [
+      'C C G G A A G',
+      'G A G F E D',
+      'C F F F G A A A',
+      'A A A A A A A C↑ F G A',
+      'G E F G A G A G',
+      'H A G E Dis A H A G',
+      'F E F D F E F D',
+      'H H A E H H Cis↑ A',
+      'D D E F F E',
+      'F C F B A G F C↑ D↑ G A B A G F',
+      'A D↑ Fis G A A A D↑ Fis G A A',
+    ];
+    for (var i = 0; i < bellMelodies.length; i++) {
+      final melody = bellMelodies[i];
+      expect(melody.notes.map((n) => n.pitch.label).join(' '), phrases[i]);
+      final beats = melody.notes.fold<double>(
+        0,
+        (sum, n) => sum + n.beats + n.restBeats,
+      );
+      expect(
+        beats * const BellsLevel().beatMilliseconds,
+        lessThanOrEqualTo(i < 8 ? 5000 : 11000),
+      );
+      expect(
+        melody.notes.every(
+          (n) =>
+              melody.bells.contains(n.pitch) && n.beats > 0 && n.restBeats >= 0,
+        ),
+        isTrue,
+      );
+      expect(melody.bells.toSet().length, melody.bells.length);
+      expect(melody.bells.length, inInclusiveRange(6, 8));
+    }
+  });
   test('difficulty uses trickier patterns, not a growing song-length ladder', () {
     final levels = GameDifficulty.values.map(BellsLevel.forDifficulty).toList();
     expect(levels.map((l) => l.guidance), BellGuidance.values);

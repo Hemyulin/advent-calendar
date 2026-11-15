@@ -2,6 +2,8 @@ import 'dart:math';
 
 import '../games/difficulty.dart';
 
+enum CleaningSurface { boot, coin }
+
 enum ShoePhase { cleaning, polishing, finished }
 
 class ShoePoint {
@@ -37,6 +39,9 @@ bool insideShoe(ShoePoint point) {
   return inside;
 }
 
+bool insideCoin(ShoePoint point) =>
+    pow((point.x - .5) / .35, 2) + pow((point.y - .5) / (.35 / .86), 2) <= 1;
+
 class ShoeLevel {
   const ShoeLevel({
     this.columns = 11,
@@ -44,23 +49,40 @@ class ShoeLevel {
     this.brushRadius = 0.095,
     this.toughness = 1.25,
     this.seed = 1206,
+    this.surface = CleaningSurface.boot,
   });
-  factory ShoeLevel.forDifficulty(GameDifficulty difficulty) =>
-      switch (difficulty) {
-        GameDifficulty.easy => const ShoeLevel(
-          columns: 9,
-          rows: 8,
-          brushRadius: 0.12,
-          toughness: 0.85,
-        ),
-        GameDifficulty.normal => const ShoeLevel(),
-        GameDifficulty.hard => const ShoeLevel(
-          columns: 13,
-          rows: 12,
-          brushRadius: 0.08,
-          toughness: 1.6,
-        ),
-      };
+  factory ShoeLevel.forDifficulty(
+    GameDifficulty difficulty, {
+    bool hanukkah = false,
+  }) {
+    if (hanukkah) {
+      final base = ShoeLevel.forDifficulty(difficulty);
+      return ShoeLevel(
+        columns: base.columns,
+        rows: base.rows,
+        brushRadius: base.brushRadius,
+        toughness: base.toughness,
+        seed: base.seed,
+        surface: CleaningSurface.coin,
+      );
+    }
+    return switch (difficulty) {
+      GameDifficulty.easy => const ShoeLevel(
+        columns: 9,
+        rows: 8,
+        brushRadius: 0.12,
+        toughness: 0.85,
+      ),
+      GameDifficulty.normal => const ShoeLevel(),
+      GameDifficulty.hard => const ShoeLevel(
+        columns: 13,
+        rows: 12,
+        brushRadius: 0.08,
+        toughness: 1.6,
+      ),
+    };
+  }
+  final CleaningSurface surface;
   final int columns, rows, seed;
   final double brushRadius, toughness;
 }
@@ -87,7 +109,7 @@ class ShoeGame {
     _patches = [
       for (var y = 0; y < level.rows; y++)
         for (var x = 0; x < level.columns; x++)
-          if (insideShoe(
+          if ((level.surface == CleaningSurface.coin ? insideCoin : insideShoe)(
             ShoePoint((x + 0.5) / level.columns, (y + 0.5) / level.rows),
           ))
             ShoePatch(

@@ -56,7 +56,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(
         tester.widget<CookieScreen>(find.byType(CookieScreen)).level.shape,
-        CookieShape.snowflake,
+        CookieShape.israel,
       );
       await tester.pumpWidget(const SizedBox.shrink());
     },

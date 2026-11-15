@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:advent_calendar/challenges/games/game_widgets.dart';
 import 'package:advent_calendar/challenges/games/gift_reward_scope.dart';
 import 'package:advent_calendar/challenges/gift_reward.dart';
+import 'package:advent_calendar/achievements/achievement_scope.dart';
+import 'package:advent_calendar/achievements/run_facts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -24,6 +26,78 @@ void main() {
           : GiftRewardScope(openGift: open, child: child),
     );
   }
+
+  testWidgets(
+    'leaving the result during a save still records the won attempt',
+    (tester) async {
+      final saving = Completer<void>();
+      var records = 0;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: AchievementScope(
+            record: (facts) async {
+              expect(facts.feats, contains(RunFeat.perfectCookie));
+              records++;
+              return [];
+            },
+            child: Scaffold(
+              body: CompletionPanel(
+                facts: const RunFacts(feats: {RunFeat.perfectCookie}),
+                onComplete: () => saving.future,
+                onReplay: () {},
+                message: 'Fertig!',
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pumpWidget(const SizedBox.shrink());
+      saving.complete();
+      await tester.pumpAndSettle();
+      expect(records, 1);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'gift and opening instruction are the primary action; navigation stays secondary',
+    (tester) async {
+      var opens = 0;
+      await tester.pumpWidget(
+        panel(
+          save: () async {},
+          open: () async {
+            opens++;
+            return GiftOpenResult.boxOpened;
+          },
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Zum Öffnen tippen'), findsOneWidget);
+      expect(find.text('Alle Paare gefunden.'), findsNothing);
+      expect(find.text('Geschafft!'), findsNothing);
+      expect(find.byType(FilledButton), findsNothing);
+      expect(find.byType(OutlinedButton), findsNothing);
+      final gift = tester.getRect(
+        find.byKey(const ValueKey('completion-gift')),
+      );
+      final replay = tester.getRect(
+        find.byKey(const ValueKey('completion-replay')),
+      );
+      final calendar = tester.getRect(
+        find.byKey(const ValueKey('completion-calendar')),
+      );
+      expect(gift.height, greaterThan(replay.height * 3));
+      expect(replay.center.dy, lessThan(gift.center.dy));
+      expect(calendar.center.dy, greaterThan(gift.center.dy));
+      await tester.tap(find.text('Zum Öffnen tippen'));
+      await tester.pumpAndSettle();
+      expect(opens, 1);
+      expect(find.text('Alle Paare gefunden.'), findsOneWidget);
+      expect(find.text('Geschenk geöffnet'), findsOneWidget);
+    },
+  );
 
   testWidgets(
     'winning saves immediately but box opens only on a gift tap, once',
@@ -91,12 +165,12 @@ void main() {
       await tester.pump();
       await tester.tap(find.byKey(const ValueKey('completion-gift')));
       await tester.pump(const Duration(seconds: 1));
-      expect(find.text('Geschenk geöffnet · Vorschau'), findsNothing);
+      expect(find.text('Vorschau · ohne Box'), findsNothing);
       save.complete();
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('completion-gift')));
       await tester.pumpAndSettle();
-      expect(find.text('Geschenk geöffnet · Vorschau'), findsOneWidget);
+      expect(find.text('Vorschau · ohne Box'), findsOneWidget);
     },
   );
 
@@ -109,10 +183,10 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('completion-gift')));
     await tester.pumpAndSettle();
-    expect(find.text('Geschafft!'), findsOneWidget);
+    expect(find.byKey(const ValueKey('completion-gift')), findsOneWidget);
     expect(find.text('Die Box ist offen!'), findsNothing);
     expect(
-      find.text('Geschenk geöffnet. Die Box hat das Öffnen nicht bestätigt.'),
+      find.text('Die Box hat das Öffnen nicht bestätigt.'),
       findsOneWidget,
     );
   });
@@ -127,6 +201,6 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('completion-gift')));
     await tester.pump();
-    expect(find.text('Geschenk geöffnet · Vorschau'), findsOneWidget);
+    expect(find.text('Vorschau · ohne Box'), findsOneWidget);
   });
 }

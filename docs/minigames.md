@@ -4,37 +4,43 @@ Day 1 starts with easy Memory. The following daily assignments are defined in
 `app/lib/content/calendar_schedule.dart` (editable in **Advent-Verwaltung →
 Kalender bearbeiten**):
 
-| Day | Game | Default difficulty |
-| --- | --- | --- |
-| 1 | Paare finden | Leicht |
-| 2 | Plätzchen ausstechen | Leicht |
-| 3 | Kugellabyrinth | Klassisch |
-| 4 | Rettet den Weihnachtsmann! | Klassisch |
-| 5 | Weihnachtsglocken | Klassisch |
-| 6 | Nikolausstiefel | Klassisch |
-| 7 | Plätzchen ausstechen | Klassisch |
-| 8 | Wichtelwerkstatt | Klassisch |
-| 9 | Oy Vey, Weihnachten! | Klassisch |
-| 10 | Ein Glühwein zu viel | Klassisch |
-| 11 | Akku-Panik | Klassisch |
-| 12 | Paare finden | Klassisch |
-| 13 | Kugellabyrinth | Klassisch |
-| 14 | Rettet den Weihnachtsmann! | Klassisch |
-| 15 | Weihnachtsglocken | Klassisch |
-| 16 | Plätzchen ausstechen | Klassisch |
-| 17 | Wichtelwerkstatt | Klassisch |
-| 18 | Ein Glühwein zu viel | Klassisch |
-| 19 | Akku-Panik | Klassisch |
-| 20 | Kugellabyrinth | Knifflig |
-| 21 | Paare finden | Knifflig |
-| 22 | Plätzchen ausstechen | Knifflig |
-| 23 | Rettet den Weihnachtsmann! | Knifflig |
-| 24 | Weihnachtsglocken | Knifflig |
+| Day | Game | Difficulty | Appearance |
+| --- | --- | --- | --- |
+| 1 | Paare finden | Leicht | Weihnachten |
+| 2 | Plätzchen ausstechen | Leicht | Weihnachten |
+| 3 | Kugellabyrinth | Leicht | Weihnachten |
+| 4 | Oy Vey, Weihnachten! | Leicht | Original |
+| 5 | Paare finden | Klassisch | Chanukka |
+| 6 | Nikolausstiefel | Klassisch | Weihnachten |
+| 7 | Plätzchen · Israel-Umriss | Klassisch | Chanukka |
+| 8 | Akku-Panik | Leicht | Weihnachten |
+| 9 | Rettet Eliyahu HaNavi! | Leicht | Chanukka |
+| 10 | Chanukka-Klänge · Maoz Tzur | Leicht · alle Hinweise | Chanukka |
+| 11 | Plätzchen ausstechen | Klassisch | Weihnachten |
+| 12 | Öl-Panik | Klassisch | Chanukka |
+| 13 | Kugellabyrinth | Klassisch | Weihnachten |
+| 14 | Wichtelwerkstatt | Leicht | Weihnachten |
+| 15 | Ein Glühwein zu viel | Leicht | Weihnachten |
+| 16 | Paare finden | Knifflig | Weihnachten |
+| 17 | Rettet den Weihnachtsmann! | Klassisch | Weihnachten |
+| 18 | Wichtelwerkstatt | Klassisch | Weihnachten |
+| 19 | Ein Glühwein zu viel | Klassisch | Weihnachten |
+| 20 | Plätzchen ausstechen | Knifflig | Weihnachten |
+| 21 | Kugellabyrinth | Knifflig | Weihnachten |
+| 22 | Akku-Panik | Knifflig | Weihnachten |
+| 23 | Wichtelwerkstatt | Knifflig | Weihnachten |
+| 24 | Weihnachtsglocken | Knifflig | Weihnachten |
 
-Game and difficulty assignments persist locally. The sample progress repository still marks days
-3 and 5 as complete so replay can be tried. Progress stays in memory and resets
-with an app restart; calendar assignments are stored separately and do not reset
-completion state or send hardware commands.
+Appearance is assigned per door, independently of the date. Early doors introduce
+mechanics; later doors revisit them at higher difficulty. All ten game types have
+appeared by day 15, and the final five challenges are hard. The editor can select
+appearance and, for bells, a specific melody independently of guidance/difficulty.
+
+Game assignments, calendar wins and achievement progress persist locally. A new
+installation starts without sample completions. Replay can earn missing bonus
+objectives without resetting completion or issuing another physical unlock.
+See [achievements](achievements.md) for the 29 bonus objectives, difficulty
+practice routes, hidden voucher configuration and persistence details.
 
 ## Development preview
 
@@ -61,11 +67,11 @@ To hide the menu, use `--dart-define=SHOW_GAME_PREVIEW=false`.
 | Game | Leicht | Klassisch | Knifflig |
 | --- | --- | --- | --- |
 | Memory | 26 attempts | 20 attempts | 15 attempts |
-| Maze | 4×4, 1 pit, 8 lives | 5×5, 2 pits, 6 lives | 6×6, 3 pits, 4 lives |
+| Maze | 5×5, 2 pits, 6 lives | 6×6, 3 pits, 4 lives | 8×8, 4 pits, 4 lives |
 | Chimney | 3×3, 12 s preparation, 1.5 s/tile | 4×4, 10 s preparation, 1.1 s/tile | 5×5, 10 s preparation, 0.9 s/tile |
 | Bells | Carol of the Bells hook, all notes shown | Last Christmas hook, first note shown | All I Want for Christmas Is You hook, audio only |
 | Cookie cutting | Star, 6 points, 1.3 s window | Tree, 9 points, 0.8 s window | Snowflake, 12 points, 0.46 s window |
-| Workshop | 5×5, 2 presents | 7×7, 3 presents | 8×8, 4 presents |
+| Workshop | 6×6, 2 presents | 7×7, 3 presents | 8×8, 4 presents |
 | Oy Vey | Slower falling objects | Standard falling objects | Faster falling objects |
 | Shoe | Broad brush, light mud | Regular brush, thick mud | Smaller brush, stubborn mud |
 | Walk home | 32 s, wide path, gentle wobble | 37 s, regular path and wobble | 42 s, narrow path, stronger wobble |
@@ -190,12 +196,13 @@ turns green and the present gains a checkmark when occupied. The short movement
 and arrival animations respect reduced-motion settings. Completion uses the
 shared foreground result and callback; replay never clears earlier completion.
 
-The three boards are handcrafted 5×5 / 2-present, 7×7 / 3-present and 8×8 /
-4-present layouts. Independently solved push-state searches found solutions
-requiring 12 / 31 / 73 moves and 2 / 6 / 12 pushes. Witnesses in
+The three curated boards have 6×6 / 2-present, 7×7 / 3-present and 8×8 /
+4-present layouts. Independently solved move-optimal push-state searches found
+solutions requiring 18 / 38 / 65 moves and 5 / 13 / 21 pushes. Witnesses in
 `app/test/helpers/workshop_solutions.dart` are replayed against the real model.
-The small board includes an ordering trap: filling one target too early blocks
-access needed to place the other present. Undo makes this safe to explore.
+The easy board requires circling an internal wall; simply pushing a box toward
+the boundary deadlocks it. The larger boards require staging presents outside a
+shared storage chamber and planning the filling order. Undo makes this safe to explore.
 
 `WorkshopLevel` parses reusable square ASCII boards with `#` walls, `.` targets,
 `$` presents and `@` elf; `*` and `+` represent occupied targets. Board data is
@@ -213,7 +220,11 @@ small-screen layouts with enlarged text. No dependencies or hardware calls added
 
 ## Oy Vey, Weihnachten! (Day 9)
 
-The mirrored front camera drives a sack at the mouth position. Catch 15
+The mirrored front camera drives a narrow-necked sack using mouth position.
+Horizontal head movement is amplified 1.7×, so the player can reach the edges
+without leaving the frame. The opening uses 4.2–6.5% of the frame width as its
+half-width, matching the collision ellipse. The burlap sack has a crossed-out
+“Weihnachten” label with handwritten Hebrew “חנוכה” underneath. Catch 15
 Hanukkah objects and avoid swallowing three Christmas objects; opening the mouth
 is unnecessary. Tracking loss hides the sack while objects keep falling, and
 collection resumes automatically when the face returns. Local capture, frame conversion and face-mesh
@@ -348,6 +359,13 @@ not require a swipe to reach its buttons. Background controls are excluded from
 interaction while the result is visible. All victories show a tappable illustrated
 gift. The shared lid-lift animation runs on tap, with reduced-motion support.
 Saving progress happens on victory; tapping the gift is a separate reward action.
+The victory card is present-first: a large illustrated gift and **Zum Öffnen
+tippen** form one tappable area. A small **Noch einmal spielen** text control
+sits at the top right; **Zurück zum Kalender** is a muted text link below.
+Game messages appear after the gift reveal. Newly earned achievements use an
+automatic illustrated toast and brief confetti overlay that never intercepts
+taps or requires dismissal; the present remains the main action. Save/retry and duplicate-opening protection
+remain shared by every game.
 
 ## Completion and separation
 

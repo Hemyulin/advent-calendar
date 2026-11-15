@@ -43,17 +43,20 @@ class _ShoeScreenState extends State<ShoeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final coin = widget.level.surface == CleaningSurface.coin;
     final progress = (_game.progress * 100).floor().clamp(0, 100);
     return GameScaffold(
-      title: 'Nikolausstiefel',
+      title: coin ? 'Schekel polieren' : 'Nikolausstiefel',
       alreadyCompleted: widget.alreadyCompleted,
       onRestart: _restart,
-      instructions:
-          'Oh je, der Schuh ist ja voller Schlamm! Bürste ihn sauber und poliere ihn danach für den Nikolaus.',
+      instructions: coin
+          ? 'Wische den Schmutz von der Münze und poliere sie danach blank.'
+          : 'Oh je, der Schuh ist ja voller Schlamm! Bürste ihn sauber und poliere ihn danach für den Nikolaus.',
       children: [
         GameStats(
           text: switch (_game.phase) {
-            ShoePhase.cleaning => 'Bürsten · $progress %',
+            ShoePhase.cleaning =>
+              '${coin ? 'Reinigen' : 'Bürsten'} · $progress %',
             ShoePhase.polishing => 'Polieren · $progress %',
             ShoePhase.finished => 'Blitzblank!',
           },
@@ -66,8 +69,8 @@ class _ShoeScreenState extends State<ShoeScreen> {
             backgroundColor: CalendarStyle.line,
             color: CalendarStyle.green,
             semanticsLabel: _game.phase == ShoePhase.cleaning
-                ? 'Schuh säubern'
-                : 'Schuh polieren',
+                ? (coin ? 'Münze säubern' : 'Schuh säubern')
+                : (coin ? 'Münze polieren' : 'Schuh polieren'),
             semanticsValue: '$progress Prozent',
           ),
         ),
@@ -79,7 +82,11 @@ class _ShoeScreenState extends State<ShoeScreen> {
             ShoePoint normalized(Offset local) =>
                 ShoePoint(local.dx / width, local.dy / height);
             return Semantics(
-              label: _game.won
+              label: coin
+                  ? (_game.won
+                        ? 'Ein blitzblanker Schekel'
+                        : 'Eine schmutzige Münze. Zum Reinigen und Polieren darüber wischen.')
+                  : _game.won
                   ? 'Ein sauberer Stiefel mit einer Nikolausüberraschung'
                   : 'Ein ${_game.phase == ShoePhase.cleaning ? 'sehr schmutziger' : 'sauberer'} Stiefel. Zum Putzen über den Schuh wischen.',
               customSemanticsActions: _game.won
@@ -126,7 +133,11 @@ class _ShoeScreenState extends State<ShoeScreen> {
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
-                        CustomPaint(painter: _ShoePainter(_game, _last)),
+                        CustomPaint(
+                          painter: coin
+                              ? _CoinPainter(_game, _last)
+                              : _ShoePainter(_game, _last),
+                        ),
                         if (!_game.won && _touchedPhase != _game.phase)
                           IgnorePointer(
                             child: Center(
@@ -173,7 +184,9 @@ class _ShoeScreenState extends State<ShoeScreen> {
           CompletionPanel(
             onComplete: widget.onComplete,
             onReplay: _restart,
-            message: 'Der Nikolaus kann kommen!',
+            message: coin
+                ? 'Dein Schekel glänzt wieder!'
+                : 'Der Nikolaus kann kommen!',
           ),
       ],
     );
@@ -293,57 +306,7 @@ class _ShoePainter extends CustomPainter {
           ..strokeCap = StrokeCap.round,
       );
     }
-    var index = 0;
-    for (final patch in game.patches) {
-      final alpha = (patch.dirt / patch.initialDirt).clamp(0.0, 1.0);
-      final center = Offset(patch.center.x, patch.center.y);
-      final r = 0.72 / math.min(game.level.columns, game.level.rows);
-      if (alpha > 0) {
-        canvas.save();
-        canvas.translate(
-          center.dx + math.sin(index * 5.3) * r * 0.18,
-          center.dy,
-        );
-        canvas.rotate(math.sin(index * 7.7) * 2.8);
-        paint.color = Color.lerp(
-          const Color(0xFF6A4D34),
-          const Color(0xFF453C2A),
-          (index % 4) / 3,
-        )!.withValues(alpha: alpha * 0.96);
-        canvas.drawOval(
-          Rect.fromCenter(
-            center: Offset.zero,
-            width: r * (2.1 + math.sin(index) * 0.3),
-            height: r * 1.7,
-          ),
-          paint,
-        );
-        canvas.drawCircle(Offset(r * 0.6, -r * 0.4), r * 0.65, paint);
-        canvas.drawCircle(Offset(-r * 0.6, r * 0.4), r * 0.68, paint);
-        canvas.drawLine(
-          Offset(-r * 0.4, 0),
-          Offset(r * 0.5, r * 0.2),
-          paint
-            ..color = const Color(0xFFC49861).withValues(alpha: alpha * 0.45)
-            ..strokeWidth = r * 0.14,
-        );
-        canvas.restore();
-      }
-      if (patch.polish > 0 && !game.won) {
-        canvas.drawOval(
-          Rect.fromCenter(
-            center: center - Offset(r * 0.3, 0),
-            width: r * 0.35,
-            height: r * 1.2,
-          ),
-          paint
-            ..color = const Color(
-              0xFFFFF4D8,
-            ).withValues(alpha: patch.polish * 0.13),
-        );
-      }
-      index++;
-    }
+    _paintCleaningPatches(canvas, game);
     if (game.won) {
       canvas.drawPath(
         Path()
@@ -414,4 +377,128 @@ class _ShoePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_ShoePainter oldDelegate) => true;
+}
+
+void _paintCleaningPatches(Canvas canvas, ShoeGame game) {
+  final paint = Paint();
+  var index = 0;
+  for (final patch in game.patches) {
+    final alpha = (patch.dirt / patch.initialDirt).clamp(0.0, 1.0);
+    final center = Offset(patch.center.x, patch.center.y);
+    final r = 0.72 / math.min(game.level.columns, game.level.rows);
+    if (alpha > 0) {
+      canvas.save();
+      canvas.translate(center.dx + math.sin(index * 5.3) * r * 0.18, center.dy);
+      canvas.rotate(math.sin(index * 7.7) * 2.8);
+      paint.color = Color.lerp(
+        const Color(0xFF6A4D34),
+        const Color(0xFF453C2A),
+        (index % 4) / 3,
+      )!.withValues(alpha: alpha * 0.96);
+      canvas.drawOval(
+        Rect.fromCenter(
+          center: Offset.zero,
+          width: r * (2.1 + math.sin(index) * 0.3),
+          height: r * 1.7,
+        ),
+        paint,
+      );
+      canvas.drawCircle(Offset(r * 0.6, -r * 0.4), r * 0.65, paint);
+      canvas.drawCircle(Offset(-r * 0.6, r * 0.4), r * 0.68, paint);
+      canvas.drawLine(
+        Offset(-r * 0.4, 0),
+        Offset(r * 0.5, r * 0.2),
+        paint
+          ..color = const Color(0xFFC49861).withValues(alpha: alpha * 0.45)
+          ..strokeWidth = r * 0.14,
+      );
+      canvas.restore();
+    }
+    if (patch.polish > 0 && !game.won) {
+      canvas.drawOval(
+        Rect.fromCenter(
+          center: center - Offset(r * 0.3, 0),
+          width: r * 0.35,
+          height: r * 1.2,
+        ),
+        paint
+          ..color = const Color(
+            0xFFFFF4D8,
+          ).withValues(alpha: patch.polish * 0.13),
+      );
+    }
+    index++;
+  }
+}
+
+class _CoinPainter extends CustomPainter {
+  const _CoinPainter(this.game, this.cursor);
+  final ShoeGame game;
+  final ShoePoint? cursor;
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.save();
+    canvas.scale(size.width, size.height);
+    final paint = Paint();
+    const coin = Rect.fromLTWH(.15, .5 - .35 / .86, .7, .7 / .86);
+    canvas.drawOval(
+      const Rect.fromLTWH(.17, .89, .66, .05),
+      paint..color = CalendarStyle.gold.withValues(alpha: .12),
+    );
+    canvas.drawOval(coin, paint..color = const Color(0xFFCEA04A));
+    canvas.drawOval(coin.deflate(.018), paint..color = const Color(0xFFF0CD79));
+    canvas.drawOval(coin.deflate(.04), paint..color = const Color(0xFFE0B65B));
+    canvas.drawOval(
+      coin.deflate(.065),
+      paint
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = .004
+        ..color = const Color(0xFFF9E5AE),
+    );
+    final text = TextPainter(
+      text: const TextSpan(
+        text: '₪',
+        style: TextStyle(
+          fontSize: .30,
+          fontFamily: 'sans-serif',
+          fontWeight: FontWeight.w600,
+          color: Color(0xFF9F732B),
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    text.paint(canvas, Offset(.5 - text.width / 2, .5 - text.height / 2));
+    text.dispose();
+    canvas.save();
+    canvas.clipPath(Path()..addOval(coin));
+    _paintCleaningPatches(canvas, game);
+    if (game.won || game.polishProgress > 0) {
+      canvas.drawLine(
+        const Offset(.27, .69),
+        const Offset(.57, .22),
+        paint
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = .035
+          ..color = const Color(
+            0xFFFFF5D2,
+          ).withValues(alpha: .3 * game.polishProgress)
+          ..strokeCap = StrokeCap.round,
+      );
+    }
+    canvas.restore();
+    if (cursor != null && !game.won) {
+      canvas.drawCircle(
+        Offset(cursor!.x, cursor!.y),
+        game.level.brushRadius,
+        paint
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = .004
+          ..color = CalendarStyle.gold,
+      );
+    }
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(_CoinPainter old) => true;
 }

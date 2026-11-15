@@ -1,3 +1,6 @@
+import '../seasonal/game_skin_scope.dart';
+import '../seasonal/hanukkah_art.dart';
+import '../../achievements/run_facts.dart';
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -105,12 +108,20 @@ class _WorkshopScreenState extends State<WorkshopScreen> {
       return KeyEventResult.handled;
     },
     child: GameScaffold(
-      title: 'Wichtelwerkstatt',
+      title: GameSkinScope.isHanukkah(context)
+          ? 'Die Chanukka-Werkstatt'
+          : 'Wichtelwerkstatt',
       alreadyCompleted: widget.alreadyCompleted,
       onRestart: _restart,
       instructions:
           'Schiebe alle Geschenke auf die goldenen Plätze. Wische über die Werkstatt oder nutze die Pfeile. Du kannst immer nur ein Geschenk schieben, niemals ziehen. Holzkisten versperren den Weg. Mit Rückgängig nimmst du Züge zurück; oben kannst du neu beginnen.',
       children: [
+        if (_game.level.bonusMoveLimit != null)
+          Text(
+            'Bonus: ${_game.moves} / ${_game.level.bonusMoveLimit} Züge',
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: CalendarStyle.muted),
+          ),
         GameStats(text: '${_game.placed} / ${_game.presents.length} Geschenke'),
         Semantics(
           label:
@@ -207,7 +218,10 @@ class _WorkshopScreenState extends State<WorkshopScreen> {
                           width: tile,
                           height: tile,
                           child: CustomPaint(
-                            painter: _ElfPainter(_game.facing),
+                            painter: _ElfPainter(
+                              _game.facing,
+                              hanukkah: GameSkinScope.isHanukkah(context),
+                            ),
                           ),
                         ),
                       ],
@@ -258,6 +272,13 @@ class _WorkshopScreenState extends State<WorkshopScreen> {
         ),
         if (_showResult)
           CompletionPanel(
+            facts: RunFacts(
+              feats: {
+                if (_game.level.bonusMoveLimit != null &&
+                    _game.moves <= _game.level.bonusMoveLimit!)
+                  RunFeat.efficientWorkshop,
+              },
+            ),
             onComplete: widget.onComplete,
             onReplay: _restart,
             message: 'Alle Geschenke sind an ihrem Platz!',
@@ -461,10 +482,15 @@ class _PresentPainter extends CustomPainter {
 }
 
 class _ElfPainter extends CustomPainter {
-  _ElfPainter(this.facing);
+  _ElfPainter(this.facing, {this.hanukkah = false});
+  final bool hanukkah;
   final WorkshopDirection facing;
   @override
   void paint(Canvas canvas, Size size) {
+    if (hanukkah) {
+      paintWorkshopSprite(canvas, size);
+      return;
+    }
     canvas.save();
     canvas.scale(size.width / 100, size.height / 100);
     final paint = Paint();
@@ -554,5 +580,6 @@ class _ElfPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_ElfPainter old) => old.facing != facing;
+  bool shouldRepaint(_ElfPainter old) =>
+      old.facing != facing || old.hanukkah != hanukkah;
 }

@@ -1,3 +1,8 @@
+import 'support/game_configuration.dart';
+import 'helpers/chimney_rooftop.dart';
+import 'package:advent_calendar/achievements/achievement_scope.dart';
+import 'package:advent_calendar/achievements/achievement_store.dart';
+import 'package:advent_calendar/challenges/games/difficulty.dart';
 import 'package:advent_calendar/challenges/chimney/chimney_game.dart';
 import 'package:advent_calendar/challenges/chimney/chimney_screen.dart';
 import 'package:advent_calendar/challenges/games/game_catalog.dart';
@@ -70,18 +75,87 @@ void main() {
       }
     }
     await frames(tester, 250);
-    expect(find.text('Geschafft!'), findsOneWidget);
+    expect(find.byKey(const ValueKey('completion-gift')), findsOneWidget);
     expect(completions, 1);
     await frames(tester, 10);
     expect(completions, 1);
     await tester.tap(find.text('Noch einmal spielen'));
     await tester.pump();
-    expect(find.text('Geschafft!'), findsNothing);
+    expect(find.byKey(const ValueKey('completion-gift')), findsNothing);
     expect(find.text('Start in 10 s'), findsOneWidget);
     expect(completions, 1);
     expect(find.byTooltip('Bereits geschafft'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
   });
+
+  testWidgets(
+    'exiting through the rooftop entrance earns the secret achievement and completes the day',
+    (tester) async {
+      const level = ChimneyLevel(
+        size: 3,
+        seed: 9,
+        preparationSeconds: 5,
+        secondsPerTile: .5,
+      );
+      final reference = ChimneyGame(level);
+      final store = AchievementStore();
+      await store.ready;
+      addTearDown(store.dispose);
+      var completions = 0;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: AchievementScope(
+            record: (facts) => store.record(
+              AchievementRun(
+                day: 4,
+                game: Minigame.chimney,
+                difficulty: GameDifficulty.easy,
+                facts: facts,
+              ),
+            ),
+            child: ChimneyScreen(
+              level: level,
+              onComplete: () async {
+                completions++;
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      Future<void> rotateTo(int cell, int turns) async {
+        final target = ChimneyTile(
+          reference.puzzle.tiles[cell].shape,
+          turns,
+        ).ports;
+        while (!reference.puzzle.tiles[cell].ports.containsAll(target)) {
+          await tester.tap(find.byKey(ValueKey('chimney-tile-$cell')));
+          reference.rotate(cell);
+        }
+      }
+
+      for (final entry in rooftopTurns.entries) {
+        await rotateTo(entry.key, entry.value);
+      }
+      await frames(tester, 132);
+      await rotateTo(4, 3);
+      await frames(tester, 200);
+      await tester.pumpAndSettle();
+      expect(
+        store.earned(achievements.firstWhere((a) => a.id == 'santaUp')),
+        isTrue,
+      );
+      expect(completions, 1);
+      expect(find.text('Zum Öffnen tippen'), findsOneWidget);
+      await tester.tap(find.text('Zum Öffnen tippen'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Zurück auf dem Dach – was für ein Umweg!'),
+        findsOneWidget,
+      );
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
 
   testWidgets('help pauses preparation; retry restores countdown', (
     tester,
@@ -132,11 +206,14 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
-  testWidgets('Day 4 and development preview expose the new game', (
+  testWidgets('Day 9 and development preview expose the new game', (
     tester,
   ) async {
     final days = calendarDays(DateTime(2026, 12, 24), {});
-    expect(buildDailyChallenge(days[3], () async {}), isA<ChimneyScreen>());
+    expect(
+      configuredGame(buildDailyChallenge(days[8], () async {})),
+      isA<ChimneyScreen>(),
+    );
     await tester.pumpWidget(const MaterialApp(home: GamePreviewScreen()));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Rettet den Weihnachtsmann!'));

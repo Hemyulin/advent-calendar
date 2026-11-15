@@ -17,6 +17,7 @@ import '../cookies/cookie_game.dart';
 import '../cookies/cookie_screen.dart';
 import '../bells/bells_game.dart';
 import '../bells/bells_screen.dart';
+import '../bells/bell_melodies.dart';
 import '../chimney/chimney_game.dart';
 import '../chimney/chimney_screen.dart';
 import '../maze/maze_game.dart';
@@ -26,6 +27,8 @@ import '../memory/memory_screen.dart';
 import '../shoe/shoe_game.dart';
 import '../shoe/shoe_screen.dart';
 import 'difficulty.dart';
+import '../seasonal/game_skin.dart';
+import '../seasonal/game_skin_scope.dart';
 
 Widget buildMinigame(
   Minigame kind,
@@ -34,6 +37,32 @@ Widget buildMinigame(
   bool alreadyCompleted = false,
   int mazeSeed = 1224,
   bool developmentPreview = false,
+  GameSkin? skin,
+  String? melodyId,
+}) {
+  Widget build(GameSkin skin) => _buildMinigame(
+    kind,
+    difficulty,
+    onComplete,
+    alreadyCompleted: alreadyCompleted,
+    mazeSeed: mazeSeed,
+    developmentPreview: developmentPreview,
+    skin: skin,
+    melodyId: melodyId,
+  );
+  if (!supportsHanukkah(kind)) return build(GameSkin.christmas);
+  return SkinnableGame(initialSkin: skin ?? GameSkin.christmas, builder: build);
+}
+
+Widget _buildMinigame(
+  Minigame kind,
+  GameDifficulty difficulty,
+  ChallengeCompletion onComplete, {
+  required bool alreadyCompleted,
+  required int mazeSeed,
+  required bool developmentPreview,
+  required GameSkin skin,
+  String? melodyId,
 }) => switch (kind) {
   Minigame.memory => MemoryScreen(
     level: MemoryLevel.forDifficulty(difficulty),
@@ -51,13 +80,16 @@ Widget buildMinigame(
     alreadyCompleted: alreadyCompleted,
   ),
   Minigame.bells => BellsScreen(
-    level: BellsLevel.forDifficulty(difficulty),
+    level: _bellsLevel(difficulty, skin, melodyId),
     onComplete: onComplete,
     alreadyCompleted: alreadyCompleted,
     previewControls: developmentPreview,
   ),
   Minigame.cookies => CookieScreen(
-    level: CookieLevel.forDifficulty(difficulty),
+    level: CookieLevel.forDifficulty(
+      difficulty,
+      hanukkah: skin == GameSkin.hanukkah,
+    ),
     onComplete: onComplete,
     alreadyCompleted: alreadyCompleted,
   ),
@@ -83,7 +115,10 @@ Widget buildMinigame(
     alreadyCompleted: alreadyCompleted,
   ),
   Minigame.shoe => ShoeScreen(
-    level: ShoeLevel.forDifficulty(difficulty),
+    level: ShoeLevel.forDifficulty(
+      difficulty,
+      hanukkah: skin == GameSkin.hanukkah,
+    ),
     onComplete: onComplete,
     alreadyCompleted: alreadyCompleted,
   ),
@@ -102,5 +137,25 @@ Widget buildDailyChallenge(
     onComplete,
     alreadyCompleted: day.state == DayState.completed,
     mazeSeed: 1221 + day.number,
+    skin: selected.skin,
+    melodyId: selected.melodyId,
+  );
+}
+
+BellsLevel _bellsLevel(
+  GameDifficulty difficulty,
+  GameSkin skin,
+  String? melodyId,
+) {
+  final base = BellsLevel.forDifficulty(
+    difficulty,
+    hanukkah: skin == GameSkin.hanukkah,
+  );
+  final index = bellMelodies.indexWhere((m) => m.id == melodyId);
+  if (index < 0 || (index >= 8) != (skin == GameSkin.hanukkah)) return base;
+  return BellsLevel(
+    rounds: [BellRound(index)],
+    beatMilliseconds: base.beatMilliseconds,
+    guidance: base.guidance,
   );
 }

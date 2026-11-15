@@ -1,3 +1,6 @@
+import '../seasonal/game_skin_scope.dart';
+import '../seasonal/hanukkah_art.dart';
+import '../../achievements/run_facts.dart';
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -182,9 +185,12 @@ class _MazeScreenState extends State<MazeScreen>
       alreadyCompleted: widget.alreadyCompleted,
       onRestart: _restart,
       instructions:
-          'Bringe die Kugel zur Zielflagge. Meide die schwarzen Abgründe: Jeder Sturz kostet ein Leben. Erreiche die Flagge, um das Türchen zu lösen.',
+          'Bringe die Kugel zur Zielflagge. Meide die schwarzen Abgründe: Jeder Sturz kostet ein Leben. Erreiche die Flagge, um das Türchen zu lösen. ${GameSkinScope.isHanukkah(context) ? 'Schekel' : 'Süßigkeiten'} in den Seitenwegen sind ein freiwilliges Bonusziel; nach einem Sturz sammelst du sie erneut.',
       children: [
-        GameStats(text: '${_game.livesLeft} Leben'),
+        GameStats(
+          text:
+              '${_game.livesLeft} Leben${_game.layout.candies.isEmpty ? '' : ' · ${_game.collectedCandy.length} / ${_game.layout.candies.length} ${GameSkinScope.isHanukkah(context) ? 'Schekel' : 'Süßigkeiten'}'}',
+        ),
         Semantics(
           label: 'Erreiche die Zielflagge und meide die Abgründe.',
           child: AspectRatio(
@@ -192,7 +198,12 @@ class _MazeScreenState extends State<MazeScreen>
             child: ClipRRect(
               borderRadius: BorderRadius.circular(18),
               child: CustomPaint(
-                painter: _MazePainter(_game.layout, _game.position),
+                painter: _MazePainter(
+                  _game.layout,
+                  _game.position,
+                  _game.collectedCandy,
+                  hanukkah: GameSkinScope.isHanukkah(context),
+                ),
               ),
             ),
           ),
@@ -297,6 +308,7 @@ class _MazeScreenState extends State<MazeScreen>
         ],
         if (_game.won)
           CompletionPanel(
+            facts: RunFacts(feats: {if (_game.allCandy) RunFeat.allCandy}),
             onComplete: widget.onComplete,
             onReplay: _restart,
             message: 'Die Kugel ist im Ziel!',
@@ -344,7 +356,14 @@ class _MazeScreenState extends State<MazeScreen>
 }
 
 class _MazePainter extends CustomPainter {
-  const _MazePainter(this.layout, this.ball);
+  const _MazePainter(
+    this.layout,
+    this.ball,
+    this.collectedCandy, {
+    this.hanukkah = false,
+  });
+  final bool hanukkah;
+  final Set<int> collectedCandy;
   final MazeLayout layout;
   final Vec2 ball;
   @override
@@ -372,6 +391,49 @@ class _MazePainter extends CustomPainter {
       );
     }
     final cell = size.width / layout.cells;
+    for (var i = 0; i < layout.candies.length; i++) {
+      if (collectedCandy.contains(i)) continue;
+      final center = point(layout.candies[i]);
+      if (hanukkah) {
+        paintHanukkahMotif(
+          canvas,
+          Rect.fromCenter(
+            center: center,
+            width: cell * .48,
+            height: cell * .48,
+          ),
+          3,
+        );
+        continue;
+      }
+      final radius = cell * .14;
+      final wrapper = Paint()..color = const Color(0xFFCB695B);
+      for (final sign in [-1.0, 1.0]) {
+        canvas.drawPath(
+          Path()
+            ..moveTo(center.dx + sign * radius * .7, center.dy)
+            ..lineTo(center.dx + sign * radius * 1.9, center.dy - radius * .8)
+            ..lineTo(center.dx + sign * radius * 1.9, center.dy + radius * .8)
+            ..close(),
+          wrapper,
+        );
+      }
+      canvas.drawCircle(
+        center,
+        radius,
+        Paint()..color = const Color(0xFFFFF5DA),
+      );
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius * .65),
+        -.8,
+        3.8,
+        false,
+        Paint()
+          ..color = const Color(0xFFCB695B)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = radius * .45,
+      );
+    }
     // Hazards are broken, matte voids: no halo, token border or reward shape.
     for (final pit in layout.pits) {
       final center = point(pit);
@@ -496,5 +558,7 @@ class _MazePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_MazePainter oldDelegate) =>
-      oldDelegate.ball != ball || oldDelegate.layout != layout;
+      hanukkah != oldDelegate.hanukkah ||
+      oldDelegate.ball != ball ||
+      oldDelegate.layout != layout;
 }

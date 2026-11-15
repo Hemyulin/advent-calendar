@@ -1,11 +1,13 @@
 import 'dart:math' as math;
 
 import '../games/difficulty.dart';
+import 'israel_outline.dart';
 
 enum CookieShape {
   star('Stern'),
   tree('Tannenbaum'),
-  snowflake('Schneeflocke');
+  snowflake('Schneeflocke'),
+  israel('Israel-Umriss');
 
   const CookieShape(this.label);
   final String label;
@@ -54,6 +56,11 @@ class CookieOutline {
   late final double totalLength;
 
   factory CookieOutline.forShape(CookieShape shape) {
+    if (shape == CookieShape.israel) {
+      return CookieOutline([
+        for (final (x, y) in israelCookieOutline) CookiePoint(x, y),
+      ]);
+    }
     if (shape == CookieShape.tree) {
       return CookieOutline(const [
         CookiePoint(.5, .1),
@@ -129,22 +136,36 @@ class CookieLevel {
   final double timingWindowSeconds;
   final int checkpoints, mistakeLimit;
 
-  factory CookieLevel.forDifficulty(GameDifficulty difficulty) =>
-      switch (difficulty) {
-        GameDifficulty.easy => const CookieLevel(
-          shape: CookieShape.star,
-          speed: .035,
-          checkpoints: 10,
-          timingWindowSeconds: 1.3,
-        ),
-        GameDifficulty.normal => const CookieLevel(),
-        GameDifficulty.hard => const CookieLevel(
-          shape: CookieShape.snowflake,
-          speed: .075,
-          checkpoints: 18,
-          timingWindowSeconds: .46,
-        ),
-      };
+  factory CookieLevel.forDifficulty(
+    GameDifficulty difficulty, {
+    bool hanukkah = false,
+  }) {
+    if (hanukkah) {
+      final base = CookieLevel.forDifficulty(difficulty);
+      return CookieLevel(
+        shape: CookieShape.israel,
+        speed: base.speed,
+        checkpoints: base.checkpoints,
+        timingWindowSeconds: base.timingWindowSeconds,
+        mistakeLimit: base.mistakeLimit,
+      );
+    }
+    return switch (difficulty) {
+      GameDifficulty.easy => const CookieLevel(
+        shape: CookieShape.star,
+        speed: .035,
+        checkpoints: 10,
+        timingWindowSeconds: 1.3,
+      ),
+      GameDifficulty.normal => const CookieLevel(),
+      GameDifficulty.hard => const CookieLevel(
+        shape: CookieShape.snowflake,
+        speed: .075,
+        checkpoints: 18,
+        timingWindowSeconds: .46,
+      ),
+    };
+  }
 }
 
 class CutCheckpoint {
@@ -170,14 +191,37 @@ class CookieGame {
       throw ArgumentError('Invalid cookie level');
     }
     outline = CookieOutline.forShape(level.shape);
-    // Fresh directions for each attempt, independent of the outline tangent.
-    final directions = random ?? math.Random();
+    final rng = random ?? math.Random();
+    // Include the approach and finishing stretch in the spacing budget.
+    // Bound each gap: clusters are welcome, overlapping input windows and
+    // long empty stretches are not. Shuffle to avoid favouring either end.
+    final gapCount = level.checkpoints + 1;
+    final averageGap = 1 / gapCount;
+    final window = level.timingWindowSeconds * level.speed;
+    final minimumGap = math.max(
+      averageGap * .48,
+      window + (averageGap - window) * .12,
+    );
+    final maximumGap = averageGap * 1.7;
+    var remaining = 1.0;
+    final gaps = <double>[];
+    for (var i = 0; i < gapCount - 1; i++) {
+      final left = gapCount - i - 1;
+      final lower = math.max(minimumGap, remaining - left * maximumGap);
+      final upper = math.min(maximumGap, remaining - left * minimumGap);
+      final gap = lower + rng.nextDouble() * math.max(0, upper - lower);
+      gaps.add(gap);
+      remaining -= gap;
+    }
+    gaps.add(remaining);
+    gaps.shuffle(rng);
+    var fraction = 0.0;
     checkpoints = List.unmodifiable(
       List.generate(level.checkpoints, (i) {
-        final fraction = (i + 1) / (level.checkpoints + 1);
+        fraction += gaps[i];
         return CutCheckpoint(
           fraction,
-          CutDirection.values[directions.nextInt(CutDirection.values.length)],
+          CutDirection.values[rng.nextInt(CutDirection.values.length)],
         );
       }),
     );

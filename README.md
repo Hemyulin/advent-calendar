@@ -23,6 +23,11 @@ flutter pub get
 flutter run
 ```
 
+On macOS, the iOS scaffold can run with `flutter run -d "iPhone 17 Pro"` after
+installing Xcode and a simulator runtime. CocoaPods 1.16.2+ is recommended.
+The face-tracking dependency is pinned to 2.9.0 for its simulator-capable
+XCFramework; iOS camera access has a German permission description.
+
 The app displays a German Advent calendar with an illustrated door and a
 horizontal day carousel. Swipe left or right across the main door to select the
 next or previous available day; the carousel also remains independently scrollable. All 24 doors contain playable challenges. In **Advent-Verwaltung → Kalender
@@ -50,11 +55,23 @@ future days are locked, today and previous days are accessible, and completed
 days can be revisited. Availability refreshes at midnight and on app resume.
 Before December all doors are locked; after December 24 all are accessible.
 
-Sample progress marks days 3 and 5 as completed. With preview disabled these
-completions only appear once their dates become available. Progress is held in
-memory and resets on restart. For development
-and tests, `AdventCalendarApp(now: DateTime(2026, 12, 8))` provides a fixed date;
-the normal entry point uses the actual device date with the preview override above.
+Calendar completion, achievements and voucher claims are stored locally and
+survive app restarts. Fresh installs start without sample completions. For
+development and tests, `AdventCalendarApp(now: DateTime(2026, 12, 8))` provides a
+fixed date; the normal entry point uses the device date with the preview override.
+
+Appearance now belongs to each door, independently of the current date. The
+Hanukkah appearances are deliberately scheduled on days 5, 7, 9, 10 and 12;
+day 4 is Oy Vey, day 6 stays Nikolaus, and days 8/11 use regular Christmas games.
+Tap the David star to replay in the other appearance, including polishing a
+shekel instead of the boot. See the [full sequence](docs/minigames.md) and
+[appearance/replay details](docs/hanukkah.md).
+
+The **Erfolge** button opens the achievement collection. Unearned badges are
+muted, with requirements and progress visible. Individual achievements award
+badges only, including collecting the labyrinth sweets. One final voucher stays
+hidden until all 17 achievements are earned. Configure its text in **Advent-Verwaltung → Erfolge &
+Gutscheine**. See [achievement rules and bonuses](docs/achievements.md).
 
 Day 1 starts with **Paare finden** on easy difficulty. Every win saves progress
 and shows an illustrated gift above the game. Tap the gift to lift its lid and
@@ -135,12 +152,12 @@ boundary](docs/admin.md).
   questionnaires, interactive minigames), shared gift rewards, and the ten playable
   games. Pure Dart mechanics are separate from screens and motion input.
 - `lib/content/`: daily content, editable calendar assignments and local storage.
-- `lib/progress/`: progress contract and in-memory mock implementation.
+- `lib/progress/`: persistent calendar checkmarks and an injectable test mock.
+- `lib/achievements/`: reusable achievement rules, persistent progress, voucher claims and the collection.
 - `lib/hardware/`: lock communication contract. A future Wi-Fi adapter for the
   Pico W will implement `LockGateway` here.
 
-Daily assignments are stored locally; progress still uses the in-memory sample
-repository. `PicoService` verifies connectivity and acknowledges new completions
+Daily assignments, progress and achievements are stored locally. `PicoService` verifies connectivity and acknowledges new completions
 over Wi-Fi. Physical unlocking is not implemented yet. Game logic stays
 independent of hardware.
 

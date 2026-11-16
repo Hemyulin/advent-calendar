@@ -13,6 +13,7 @@ import 'package:advent_calendar/challenges/memory/memory_screen.dart';
 import 'package:advent_calendar/content/calendar_day.dart';
 import 'package:advent_calendar/progress/mock_progress_repository.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class FakeTiltSource implements TiltSource {
@@ -27,6 +28,56 @@ class NoTiltSource implements TiltSource {
 }
 
 void main() {
+  testWidgets(
+    'long game titles sit below the play area and leave the app bar clear',
+    (tester) async {
+      await (FontLoader('GrenzeGotisch')..addFont(
+            rootBundle.load('assets/fonts/grenze-gotisch/GrenzeGotisch.ttf'),
+          ))
+          .load();
+      for (final (size, scale) in [
+        (const Size(390, 844), 1.0),
+        (const Size(320, 568), 2.0),
+        (const Size(844, 390), 1.0),
+      ]) {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = 1;
+        tester.platformDispatcher.textScaleFactorTestValue = scale;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: GameScaffold(
+              title: 'Ein Kiddusch-Wein zu viel',
+              instructions: 'Anleitung',
+              onRestart: () {},
+              children: const [
+                AspectRatio(
+                  aspectRatio: 1,
+                  child: SizedBox(key: ValueKey('test-play-area')),
+                ),
+              ],
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(tester.widget<AppBar>(find.byType(AppBar)).title, isNull);
+        final title = tester.getRect(find.byKey(const ValueKey('game-title')));
+        final board = tester.getRect(
+          find.byKey(const ValueKey('test-play-area')),
+        );
+        expect(title.top, greaterThanOrEqualTo(board.bottom));
+        expect(title.bottom, lessThanOrEqualTo(size.height));
+        expect(find.byTooltip('Neu starten'), findsOneWidget);
+        expect(find.byTooltip('Anleitung'), findsOneWidget);
+        expect(find.byType(Scrollable), findsNothing);
+        expect(tester.takeException(), isNull);
+      }
+      await tester.pumpWidget(const SizedBox.shrink());
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+      tester.platformDispatcher.clearTextScaleFactorTestValue();
+    },
+  );
+
   void phone(
     WidgetTester tester, {
     Size size = const Size(390, 844),
@@ -180,7 +231,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(
         find.byTooltip(
-          'Keine Sensordaten verfügbar. Nutze die Pfeile oder die Tastatur.',
+          'Keine Sensordaten verfügbar. Ziehe auf dem Spielfeld oder nutze die Pfeiltasten.',
         ),
         findsOneWidget,
       );
@@ -214,29 +265,65 @@ void main() {
   });
 
   testWidgets(
-    'missing sensors fall back to touch controls, which accept a held press',
+    'missing sensors fall back to touch controls, which accept dragging on the board',
     (tester) async {
       phone(tester);
       await tester.pumpWidget(
         MaterialApp(
-          home: MazeScreen(tiltSource: NoTiltSource(), onComplete: () async {}),
+          home: MazeScreen(
+            tiltSource: NoTiltSource(),
+            onComplete: () async {},
+            course: const MazeCourse(
+              layouts: [
+                MazeLayout(
+                  cells: 4,
+                  walls: [],
+                  start: Vec2(.2, .5),
+                  goal: Vec2(.9, .9),
+                  pits: [],
+                ),
+              ],
+            ),
+          ),
         ),
       );
       await tester.pumpAndSettle();
       expect(
         find.byTooltip(
-          'Keine Sensordaten verfügbar. Nutze die Pfeile oder die Tastatur.',
+          'Keine Sensordaten verfügbar. Ziehe auf dem Spielfeld oder nutze die Pfeiltasten.',
         ),
         findsOneWidget,
       );
-      await tester.ensureVisible(find.bySemanticsLabel('Rechts'));
+      Vec2 position() {
+        final dynamic painter = tester
+            .widget<CustomPaint>(
+              find.descendant(
+                of: find.byKey(const ValueKey('maze-touch-area')),
+                matching: find.byType(CustomPaint),
+              ),
+            )
+            .painter;
+        return painter.ball as Vec2;
+      }
+
+      expect(find.byIcon(Icons.arrow_forward_rounded), findsNothing);
       final gesture = await tester.startGesture(
-        tester.getCenter(find.bySemanticsLabel('Rechts')),
+        tester.getCenter(find.byKey(const ValueKey('maze-touch-area'))),
       );
+      await gesture.moveBy(const Offset(65, 0));
       for (var i = 0; i < 30; i++) {
         await tester.pump(const Duration(milliseconds: 16));
       }
       await gesture.up();
+      expect(position().x, greaterThan(.2));
+      final beforeKeyboard = position().y;
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.arrowDown);
+      for (var i = 0; i < 30; i++) {
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.arrowDown);
+      expect(position().y, greaterThan(beforeKeyboard));
+
       await tester.pumpWidget(const SizedBox.shrink());
       expect(tester.takeException(), isNull);
     },
@@ -305,7 +392,14 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tapVisible(tester, find.byTooltip('Spiele ausprobieren'));
+      for (var i = 0; i < 5; i++) {
+        await tester.tap(find.byKey(const ValueKey('admin-title-entry')));
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const ValueKey('admin-pin')), '0542');
+      await tapVisible(tester, find.text('Öffnen'));
+      await tapVisible(tester, find.text('Spiele testen'));
       expect(find.byType(GamePreviewScreen), findsOneWidget);
       for (final title in [
         'Paare finden',

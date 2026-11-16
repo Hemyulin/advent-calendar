@@ -13,12 +13,15 @@ enum AchievementScene {
   shoe,
   menorahs,
   cleanOy,
+  noJewishMisses,
   memory,
   workshop,
   cleanWalk,
   roughWalk,
   safeBattery,
   halfCharged,
+  fullyCharged,
+  hundredPercent,
   cookies,
   candy,
   allAchievements,
@@ -369,6 +372,52 @@ class AchievementPainter extends CustomPainter {
         line(91, 96, 99, 103, cream, 4);
         line(99, 103, 118, 84, cream, 4);
         fir(28, 100, .35);
+      case AchievementScene.noJewishMisses:
+        // A woven catching basket keeps the entire little collection safe.
+        paintFestiveObject(
+          canvas,
+          const Offset(54, 54),
+          23,
+          FestiveObject.dreidel,
+        );
+        paintFestiveObject(
+          canvas,
+          const Offset(101, 43),
+          28,
+          FestiveObject.hanukkiah,
+        );
+        paintFestiveObject(
+          canvas,
+          const Offset(149, 56),
+          22,
+          FestiveObject.sufganiyah,
+        );
+        final basket = Path()
+          ..moveTo(32, 78)
+          ..lineTo(168, 78)
+          ..lineTo(157, 115)
+          ..quadraticBezierTo(100, 129, 43, 115)
+          ..close();
+        canvas.drawPath(
+          basket,
+          p
+            ..style = PaintingStyle.fill
+            ..color = dough,
+        );
+        canvas.save();
+        canvas.clipPath(basket);
+        for (var x = 39.0; x < 170; x += 13) {
+          line(x, 78, x + 10, 124, cream.withValues(alpha: .55), 3);
+        }
+        for (var y = 88.0; y < 124; y += 10) {
+          line(32, y, 168, y, gold, 3);
+        }
+        canvas.restore();
+        box(28, 74, 144, 10, green, 5);
+        box(74, 88, 55, 22, cream, 6);
+        label('15 / 15', 101, 91, 13, green);
+        ornament(DoorMotif.star, 22, 29, 18);
+        ornament(DoorMotif.star, 172, 28, 18);
       case AchievementScene.memory:
         canvas.save();
         canvas.translate(69, 78);
@@ -549,6 +598,53 @@ class AchievementPainter extends CustomPainter {
         box(167, 28, 16, 19, green, 3);
         line(171, 29, 171, 22, gold, 3);
         line(179, 29, 179, 22, gold, 3);
+      case AchievementScene.fullyCharged:
+        // A triumphant, overflowing charge: distinct from the half-full laptop.
+        box(68, 24, 65, 94, green, 12);
+        box(89, 17, 23, 10, gold, 3);
+        box(75, 31, 51, 79, cream, 7);
+        for (var i = 0; i < 4; i++) {
+          box(81, 38 + i * 17.0, 39, 12, mint.withValues(alpha: .4), 3);
+          box(81, 38 + i * 17.0, i < 3 ? 39 : 8, 12, mint, 3);
+        }
+        polygon(const [
+          Offset(105, 45),
+          Offset(89, 71),
+          Offset(100, 71),
+          Offset(95, 94),
+          Offset(113, 66),
+          Offset(102, 66),
+        ], gold);
+        for (final x in [38.0, 160.0]) {
+          line(x, 55, x - 8, 42, gold, 3);
+          line(x, 77, x - 13, 77, gold, 3);
+          line(x, 99, x - 8, 112, gold, 3);
+        }
+        label('80 %', 100, 122, 14, green);
+      case AchievementScene.hundredPercent:
+        // A secret overachiever: a completely full battery wearing a festive hat.
+        box(70, 48, 62, 75, green, 11);
+        box(77, 55, 48, 61, cream, 6);
+        for (var i = 0; i < 4; i++) {
+          box(83, 61 + i * 12.0, 36, 8, mint, 2);
+        }
+        final hat = Path()
+          ..moveTo(65, 49)
+          ..quadraticBezierTo(75, 2, 108, 19)
+          ..quadraticBezierTo(132, 22, 139, 42)
+          ..lineTo(126, 38)
+          ..lineTo(117, 28)
+          ..lineTo(119, 49)
+          ..close();
+        canvas.drawPath(hat, Paint()..color = red);
+        box(65, 43, 70, 12, cream, 6);
+        oval(130, 34, 17, 17, cream);
+        label('100 %', 101, 81, 13, green);
+        for (final x in [40.0, 159.0]) {
+          ornament(DoorMotif.star, x, 65, 22);
+          oval(x - 3, 96, 5, 5, pink);
+          line(x - 4, 28, x + 3, 35, gold, 2);
+        }
       case AchievementScene.cookies:
         box(24, 30, 152, 91, dough.withValues(alpha: .3), 15);
         for (var i = 0; i < 3; i++) {

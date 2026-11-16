@@ -7,23 +7,65 @@ import 'package:advent_calendar/challenges/games/difficulty.dart';
 import 'package:advent_calendar/content/calendar_day.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:advent_calendar/challenges/seasonal/game_skin.dart';
+import 'package:advent_calendar/challenges/games/game_widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'helpers/workshop_solutions.dart';
 
-String name(String letter) => switch (letter) {
-  'U' => 'up',
-  'D' => 'down',
-  'L' => 'left',
-  'R' => 'right',
-  _ => throw ArgumentError(letter),
-};
 Future<void> move(WidgetTester tester, String letter) async {
-  await tester.tap(find.byKey(ValueKey('workshop-${name(letter)}')));
+  final key = switch (letter) {
+    'U' => LogicalKeyboardKey.arrowUp,
+    'D' => LogicalKeyboardKey.arrowDown,
+    'L' => LogicalKeyboardKey.arrowLeft,
+    'R' => LogicalKeyboardKey.arrowRight,
+    _ => throw ArgumentError(letter),
+  };
+  await tester.sendKeyEvent(key);
   await tester.pump(const Duration(milliseconds: 180));
 }
 
 void main() {
+  testWidgets(
+    'Chanukka workshop uses dreidels and a golem through completion and replay',
+    (tester) async {
+      var completions = 0;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: buildMinigame(
+            Minigame.workshop,
+            GameDifficulty.normal,
+            () async {
+              completions++;
+            },
+            skin: GameSkin.hanukkah,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('0 / 3 Dreidel'), findsOneWidget);
+      expect(find.textContaining('Geschenke'), findsNothing);
+      expect(
+        find.bySemanticsLabel(RegExp(r'Werkstatt\. Golem in Reihe')),
+        findsOneWidget,
+      );
+      for (final letter in workshopSolutions[1].split('')) {
+        await move(tester, letter);
+      }
+      await tester.pumpAndSettle();
+      expect(completions, 1);
+      expect(
+        tester.widget<CompletionPanel>(find.byType(CompletionPanel)).message,
+        'Alle Dreidel sind an ihrem Platz!',
+      );
+      await tester.tap(find.byKey(const ValueKey('completion-replay')));
+      await tester.pumpAndSettle();
+      expect(find.text('0 / 3 Dreidel'), findsOneWidget);
+      expect(completions, 1);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
   testWidgets(
     'handcrafted level completes once and replay retains completion',
     (tester) async {

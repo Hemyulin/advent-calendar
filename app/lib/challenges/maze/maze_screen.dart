@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import '../seasonal/game_skin_scope.dart';
 import '../seasonal/hanukkah_art.dart';
 import '../../achievements/run_facts.dart';
@@ -43,6 +44,7 @@ class _MazeScreenState extends State<MazeScreen>
   Vec2 _tilt = Vec2.zero;
   Vec2 _calibration = Vec2.zero;
   Vec2 _touch = Vec2.zero;
+  Offset? _touchStart;
   bool _useSensors = true;
   bool _sensorReady = false;
   bool _active = true;
@@ -88,7 +90,7 @@ class _MazeScreenState extends State<MazeScreen>
     setState(() {
       _useSensors = false;
       _sensorMessage =
-          'Keine Sensordaten verfügbar. Nutze die Pfeile oder die Tastatur.';
+          'Keine Sensordaten verfügbar. Ziehe auf dem Spielfeld oder nutze die Pfeiltasten.';
     });
   }
 
@@ -185,7 +187,7 @@ class _MazeScreenState extends State<MazeScreen>
       alreadyCompleted: widget.alreadyCompleted,
       onRestart: _restart,
       instructions:
-          'Bringe die Kugel zur Zielflagge. Meide die schwarzen Abgründe: Jeder Sturz kostet ein Leben. Erreiche die Flagge, um das Türchen zu lösen. ${GameSkinScope.isHanukkah(context) ? 'Schekel' : 'Süßigkeiten'} in den Seitenwegen sind ein freiwilliges Bonusziel; nach einem Sturz sammelst du sie erneut.',
+          'Bringe die Kugel zur Zielflagge. Neige das Handy oder ziehe im Touch-Modus auf dem Spielfeld; am Computer gehen auch die Pfeiltasten. Meide die schwarzen Abgründe: Jeder Sturz kostet ein Leben. Erreiche die Flagge, um das Türchen zu lösen. ${GameSkinScope.isHanukkah(context) ? 'Schekel' : 'Süßigkeiten'} in den Seitenwegen sind ein freiwilliges Bonusziel; nach einem Sturz sammelst du sie erneut.',
       children: [
         GameStats(
           text:
@@ -193,16 +195,47 @@ class _MazeScreenState extends State<MazeScreen>
         ),
         Semantics(
           label: 'Erreiche die Zielflagge und meide die Abgründe.',
-          child: AspectRatio(
-            aspectRatio: 1,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(18),
-              child: CustomPaint(
-                painter: _MazePainter(
-                  _game.layout,
-                  _game.position,
-                  _game.collectedCandy,
-                  hanukkah: GameSkinScope.isHanukkah(context),
+          child: GestureDetector(
+            key: const ValueKey('maze-touch-area'),
+            dragStartBehavior: DragStartBehavior.down,
+            behavior: HitTestBehavior.opaque,
+            onPanStart: !_useSensors
+                ? (details) {
+                    _touchStart = details.localPosition;
+                    _focus.requestFocus();
+                  }
+                : null,
+            onPanUpdate: !_useSensors
+                ? (details) {
+                    final delta =
+                        details.localPosition -
+                        (_touchStart ?? details.localPosition);
+                    setState(
+                      () => _touch = Vec2(
+                        (delta.dx / 60).clamp(-1.0, 1.0),
+                        (delta.dy / 60).clamp(-1.0, 1.0),
+                      ),
+                    );
+                    _wake();
+                  }
+                : null,
+            onPanEnd: !_useSensors
+                ? (_) => setState(() => _touch = Vec2.zero)
+                : null,
+            onPanCancel: !_useSensors
+                ? () => setState(() => _touch = Vec2.zero)
+                : null,
+            child: AspectRatio(
+              aspectRatio: 1,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(18),
+                child: CustomPaint(
+                  painter: _MazePainter(
+                    _game.layout,
+                    _game.position,
+                    _game.collectedCandy,
+                    hanukkah: GameSkinScope.isHanukkah(context),
+                  ),
                 ),
               ),
             ),
@@ -213,7 +246,7 @@ class _MazeScreenState extends State<MazeScreen>
           SegmentedButton<bool>(
             segments: const [
               ButtonSegment(value: true, label: Text('Neigen')),
-              ButtonSegment(value: false, label: Text('Pfeile')),
+              ButtonSegment(value: false, label: Text('Touch')),
             ],
             selected: {_useSensors},
             onSelectionChanged: (value) {
@@ -266,45 +299,15 @@ class _MazeScreenState extends State<MazeScreen>
                 ),
               ],
             )
-          else ...[
-            if (_sensorMessage != null)
-              Tooltip(
-                message: _sensorMessage!,
-                child: const Icon(
-                  Icons.sensors_off_rounded,
-                  size: 18,
-                  color: CalendarStyle.muted,
-                ),
+          else if (_sensorMessage != null)
+            Tooltip(
+              message: _sensorMessage!,
+              child: const Icon(
+                Icons.sensors_off_rounded,
+                size: 18,
+                color: CalendarStyle.muted,
               ),
-            const SizedBox(height: 8),
-            Wrap(
-              alignment: WrapAlignment.center,
-              spacing: 10,
-              runSpacing: 10,
-              children: [
-                _direction(
-                  'Links',
-                  Icons.arrow_back_rounded,
-                  const Vec2(-1, 0),
-                ),
-                _direction(
-                  'Oben',
-                  Icons.arrow_upward_rounded,
-                  const Vec2(0, -1),
-                ),
-                _direction(
-                  'Unten',
-                  Icons.arrow_downward_rounded,
-                  const Vec2(0, 1),
-                ),
-                _direction(
-                  'Rechts',
-                  Icons.arrow_forward_rounded,
-                  const Vec2(1, 0),
-                ),
-              ],
             ),
-          ],
         ],
         if (_game.won)
           CompletionPanel(
@@ -316,41 +319,6 @@ class _MazeScreenState extends State<MazeScreen>
         else if (_game.lost)
           DefeatPanel(message: 'Keine Leben mehr.', onRetry: _restart),
       ],
-    ),
-  );
-
-  Widget _direction(String label, IconData icon, Vec2 vector) => Semantics(
-    label: label,
-    button: true,
-    onTap: () {
-      if (mounted) setState(() => _game.advance(0.05, vector));
-    },
-    child: ExcludeSemantics(
-      child: Listener(
-        onPointerDown: (_) {
-          setState(() => _touch = vector);
-          _focus.requestFocus();
-          _wake();
-        },
-        onPointerUp: (_) => setState(() => _touch = Vec2.zero),
-        onPointerCancel: (_) => setState(() => _touch = Vec2.zero),
-        child: Container(
-          width: 56,
-          height: 52,
-          decoration: BoxDecoration(
-            color: _touch.x == vector.x && _touch.y == vector.y
-                ? CalendarStyle.green
-                : CalendarStyle.green.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Icon(
-            icon,
-            color: _touch.x == vector.x && _touch.y == vector.y
-                ? CalendarStyle.ivory
-                : CalendarStyle.green,
-          ),
-        ),
-      ),
     ),
   );
 }

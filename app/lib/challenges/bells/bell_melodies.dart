@@ -186,7 +186,7 @@ final bellMelodies = [
     'maoz-tzur',
     'Maoz Tzur',
     [
-      ..._phrase('f c f bFlat a g f highC highD g a bFlat a g f', [
+      ..._phrase('f c f bFlat a g f highC highC highD g a bFlat a g f', [
         1,
         1,
         1,
@@ -194,7 +194,8 @@ final bellMelodies = [
         1,
         1,
         2,
-        1,
+        .5,
+        .5,
         1,
         1,
         .5,

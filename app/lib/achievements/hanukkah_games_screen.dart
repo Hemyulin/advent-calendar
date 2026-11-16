@@ -12,14 +12,22 @@ import 'achievement_store.dart';
 
 /// Real replay attempts, not admin previews; never complete calendar doors.
 class HanukkahGamesScreen extends StatefulWidget {
-  const HanukkahGamesScreen({super.key, required this.store});
+  const HanukkahGamesScreen({
+    super.key,
+    required this.store,
+    this.skin = GameSkin.hanukkah,
+  });
+  final GameSkin skin;
   final AchievementStore store;
   @override
   State<HanukkahGamesScreen> createState() => _HanukkahGamesScreenState();
 }
 
 class _HanukkahGamesScreenState extends State<HanukkahGamesScreen> {
-  GameDifficulty _difficulty = GameDifficulty.easy;
+  GameDifficulty _difficulty = GameDifficulty.normal;
+  bool get _hanukkah => widget.skin == GameSkin.hanukkah;
+  List<Minigame> get _games => _hanukkah ? hanukkahGames : Minigame.values;
+  String get _prefix => _hanukkah ? 'skin' : 'game';
   int _page = 0;
   void _play(Minigame game) {
     final difficulty = _difficulty;
@@ -40,8 +48,10 @@ class _HanukkahGamesScreenState extends State<HanukkahGamesScreen> {
               game,
               difficulty,
               () async {},
-              skin: GameSkin.hanukkah,
-              alreadyCompleted: widget.store.tokenComplete('skin:${game.name}'),
+              skin: widget.skin,
+              alreadyCompleted: widget.store.tokenComplete(
+                '$_prefix:${game.name}',
+              ),
             ),
           ),
         ),
@@ -53,7 +63,9 @@ class _HanukkahGamesScreenState extends State<HanukkahGamesScreen> {
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: widget.store,
     builder: (context, _) => Scaffold(
-      appBar: AppBar(title: const Text('Dein Lichterfest')),
+      appBar: AppBar(
+        title: Text(_hanukkah ? 'Dein Lichterfest' : 'Spiele auswählen'),
+      ),
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -66,10 +78,7 @@ class _HanukkahGamesScreenState extends State<HanukkahGamesScreen> {
                       constraints.maxWidth > 500 && constraints.maxHeight < 500
                       ? 4
                       : 2;
-                  final visibleCount = (hanukkahGames.length - _page * 8).clamp(
-                    0,
-                    8,
-                  );
+                  final visibleCount = (_games.length - _page * 8).clamp(0, 8);
                   return Column(
                     children: [
                       DropdownButtonFormField<GameDifficulty>(
@@ -105,7 +114,7 @@ class _HanukkahGamesScreenState extends State<HanukkahGamesScreen> {
                                         child:
                                             row * columns + col < visibleCount
                                             ? _card(
-                                                hanukkahGames[_page * 8 +
+                                                _games[_page * 8 +
                                                     row * columns +
                                                     col],
                                               )
@@ -128,13 +137,11 @@ class _HanukkahGamesScreenState extends State<HanukkahGamesScreen> {
                                 : null,
                             icon: const Icon(Icons.chevron_left),
                           ),
-                          Text(
-                            '${_page + 1}/${(hanukkahGames.length / 8).ceil()}',
-                          ),
+                          Text('${_page + 1}/${(_games.length / 8).ceil()}'),
                           IconButton(
                             key: const ValueKey('hanukkah-games-next'),
                             tooltip: 'Weitere Spiele',
-                            onPressed: (_page + 1) * 8 < hanukkahGames.length
+                            onPressed: (_page + 1) * 8 < _games.length
                                 ? () => setState(() => _page++)
                                 : null,
                             icon: const Icon(Icons.chevron_right),
@@ -152,11 +159,13 @@ class _HanukkahGamesScreenState extends State<HanukkahGamesScreen> {
     ),
   );
   Widget _card(Minigame game) {
-    final done = widget.store.tokenComplete('skin:${game.name}');
+    final done = widget.store.tokenComplete('$_prefix:${game.name}');
     return Padding(
       padding: const EdgeInsets.all(5),
       child: OutlinedButton(
-        key: ValueKey('hanukkah-game-${game.name}'),
+        key: ValueKey(
+          '${_hanukkah ? 'hanukkah' : 'practice'}-game-${game.name}',
+        ),
         onPressed: () => _play(game),
         style: OutlinedButton.styleFrom(
           padding: EdgeInsets.zero,
@@ -175,11 +184,13 @@ class _HanukkahGamesScreenState extends State<HanukkahGamesScreen> {
               SizedBox(
                 width: 40,
                 height: 40,
-                child: CustomPaint(
-                  painter: HanukkahMotifPainter(
-                    game == Minigame.shoe ? 3 : game.index % 8,
-                  ),
-                ),
+                child: _hanukkah
+                    ? CustomPaint(
+                        painter: HanukkahMotifPainter(
+                          game == Minigame.shoe ? 3 : game.index % 8,
+                        ),
+                      )
+                    : Icon(game.icon, color: CalendarStyle.green),
               ),
               const SizedBox(height: 8),
               Text(

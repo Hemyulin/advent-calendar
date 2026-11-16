@@ -15,7 +15,8 @@ import 'achievement_store.dart';
 
 /// Real bonus attempts, separate from date assignments and development previews.
 class BellSongsScreen extends StatefulWidget {
-  const BellSongsScreen({super.key, required this.store});
+  const BellSongsScreen({super.key, required this.store, this.skin});
+  final GameSkin? skin;
   final AchievementStore store;
   @override
   State<BellSongsScreen> createState() => _BellSongsScreenState();
@@ -24,6 +25,11 @@ class BellSongsScreen extends StatefulWidget {
 class _BellSongsScreenState extends State<BellSongsScreen> {
   GameDifficulty _difficulty = GameDifficulty.normal;
   int _page = 0;
+  List<int> get _indices => [
+    for (var i = 0; i < bellMelodies.length; i++)
+      if (widget.skin == null || (widget.skin == GameSkin.hanukkah) == (i >= 8))
+        i,
+  ];
   void _play(int index) {
     final difficulty = _difficulty;
     final base = BellsLevel.forDifficulty(difficulty);
@@ -41,6 +47,9 @@ class _BellSongsScreenState extends State<BellSongsScreen> {
           child: GiftRewardScope(
             openGift: () async => GiftOpenResult.replay,
             child: SkinnableGame(
+              isReplay: widget.store.tokenComplete(
+                'bonus:bells:${bellMelodies[index].id}',
+              ),
               initialSkin: index >= 8 ? GameSkin.hanukkah : GameSkin.christmas,
               builder: (skin) {
                 final selected = (skin == GameSkin.hanukkah) == (index >= 8);
@@ -73,7 +82,13 @@ class _BellSongsScreenState extends State<BellSongsScreen> {
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: widget.store,
     builder: (context, _) => Scaffold(
-      appBar: AppBar(title: const Text('Dein Festtagskonzert')),
+      appBar: AppBar(
+        title: Text(
+          widget.skin == GameSkin.hanukkah
+              ? 'Chanukka-Lieder'
+              : 'Dein Festtagskonzert',
+        ),
+      ),
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -86,14 +101,14 @@ class _BellSongsScreenState extends State<BellSongsScreen> {
                       constraints.maxWidth > 500 && constraints.maxHeight < 500
                       ? 4
                       : 2;
-                  final visibleCount = (bellMelodies.length - _page * 8).clamp(
+                  final visibleCount = (_indices.length - _page * 8).clamp(
                     0,
                     8,
                   );
                   return Column(
                     children: [
                       Text(
-                        '${bellMelodies.where((m) => widget.store.tokenComplete('bonus:bells:${m.id}')).length} / ${bellMelodies.length} Lieder gemeistert',
+                        '${_indices.where((i) => widget.store.tokenComplete('bonus:bells:${bellMelodies[i].id}')).length} / ${_indices.length} Lieder gemeistert',
                         style: const TextStyle(color: CalendarStyle.green),
                       ),
                       const SizedBox(height: 12),
@@ -135,7 +150,9 @@ class _BellSongsScreenState extends State<BellSongsScreen> {
                                         child:
                                             row * columns + col < visibleCount
                                             ? _song(
-                                                _page * 8 + row * columns + col,
+                                                _indices[_page * 8 +
+                                                    row * columns +
+                                                    col],
                                               )
                                             : const SizedBox.shrink(),
                                       ),
@@ -156,13 +173,11 @@ class _BellSongsScreenState extends State<BellSongsScreen> {
                                 : null,
                             icon: const Icon(Icons.chevron_left),
                           ),
-                          Text(
-                            '${_page + 1}/${(bellMelodies.length / 8).ceil()}',
-                          ),
+                          Text('${_page + 1}/${(_indices.length / 8).ceil()}'),
                           IconButton(
                             key: const ValueKey('bell-songs-next'),
                             tooltip: 'Weitere Lieder',
-                            onPressed: (_page + 1) * 8 < bellMelodies.length
+                            onPressed: (_page + 1) * 8 < _indices.length
                                 ? () => setState(() => _page++)
                                 : null,
                             icon: const Icon(Icons.chevron_right),

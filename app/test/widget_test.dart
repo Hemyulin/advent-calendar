@@ -8,11 +8,7 @@ void main() {
   ) async {
     SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(
-      AdventCalendarApp(
-        now: DateTime(2026, 12, 1),
-        previewAllDays: false,
-        showGamePreview: false,
-      ),
+      AdventCalendarApp(now: DateTime(2026, 12, 1), previewAllDays: false),
     );
     await tester.pumpAndSettle();
     expect(find.text('Dein Adventskalender'), findsOneWidget);

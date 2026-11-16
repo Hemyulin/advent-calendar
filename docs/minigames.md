@@ -12,19 +12,19 @@ Kalender bearbeiten**):
 | 4 | Oy Vey, Weihnachten! | Leicht | Original |
 | 5 | Paare finden | Klassisch | Chanukka |
 | 6 | Nikolausstiefel | Klassisch | Weihnachten |
-| 7 | Plätzchen · Israel-Umriss | Klassisch | Chanukka |
+| 7 | Plätzchen · Tempel | Klassisch | Chanukka |
 | 8 | Akku-Panik | Leicht | Weihnachten |
-| 9 | Rettet Eliyahu HaNavi! | Leicht | Chanukka |
+| 9 | Rettet Eliyahu HaNavi! | Klassisch | Chanukka |
 | 10 | Chanukka-Klänge · Maoz Tzur | Leicht · alle Hinweise | Chanukka |
-| 11 | Plätzchen ausstechen | Klassisch | Weihnachten |
+| 11 | Ein Kiddusch-Wein zu viel | Klassisch | Chanukka |
 | 12 | Öl-Panik | Klassisch | Chanukka |
 | 13 | Kugellabyrinth | Klassisch | Weihnachten |
 | 14 | Wichtelwerkstatt | Leicht | Weihnachten |
-| 15 | Ein Glühwein zu viel | Leicht | Weihnachten |
+| 15 | Ein Glühwein zu viel | Klassisch | Weihnachten |
 | 16 | Paare finden | Knifflig | Weihnachten |
-| 17 | Rettet den Weihnachtsmann! | Klassisch | Weihnachten |
+| 17 | Rettet den Weihnachtsmann! | Knifflig | Weihnachten |
 | 18 | Wichtelwerkstatt | Klassisch | Weihnachten |
-| 19 | Ein Glühwein zu viel | Klassisch | Weihnachten |
+| 19 | Ein Glühwein zu viel | Knifflig | Weihnachten |
 | 20 | Plätzchen ausstechen | Knifflig | Weihnachten |
 | 21 | Kugellabyrinth | Knifflig | Weihnachten |
 | 22 | Akku-Panik | Knifflig | Weihnachten |
@@ -33,41 +33,37 @@ Kalender bearbeiten**):
 
 Appearance is assigned per door, independently of the date. Early doors introduce
 mechanics; later doors revisit them at higher difficulty. All ten game types have
-appeared by day 15, and the final five challenges are hard. The editor can select
+appeared by day 14, and the final five challenges are hard. Repeat appearances
+leave at least three intervening games, including across different skins.
+Difficulty never decreases on a later appearance. Explicit admin assignments
+remain preserved. The editor can select
 appearance and, for bells, a specific melody independently of guidance/difficulty.
 
 Game assignments, calendar wins and achievement progress persist locally. A new
 installation starts without sample completions. Replay can earn missing bonus
 objectives without resetting completion or issuing another physical unlock.
-See [achievements](achievements.md) for the 29 bonus objectives, difficulty
+See [achievements](achievements.md) for the 29 required bonus objectives, difficulty
 practice routes, hidden voucher configuration and persistence details.
 
 ## Development preview
 
-Tap **Spiele ausprobieren** on the calendar, choose **Leicht**, **Klassisch** or
-**Knifflig**, and launch any game. Preview victories do not change daily progress.
-The menu is available in debug/profile builds independently of the date and the
-all-doors override. In release builds it is hidden unless explicitly enabled:
+Open **Advent-Verwaltung → Spiele testen**, choose **Leicht**, **Klassisch** or
+**Knifflig**, and launch any game. Open admin by tapping the homepage title five
+times within three seconds, then entering the development PIN `0542`.
+Preview victories do not change daily progress. The homepage has no preview controls.
 
-```sh
-cd app
-flutter run --profile --dart-define=SHOW_GAME_PREVIEW=true
-```
-
-Date restrictions can be tested while keeping the preview menu:
+Date restrictions can be tested independently of admin previews:
 
 ```sh
 flutter run --dart-define=PREVIEW_ALL_DAYS=false
 ```
-
-To hide the menu, use `--dart-define=SHOW_GAME_PREVIEW=false`.
 
 ## Difficulty and reusable levels
 
 | Game | Leicht | Klassisch | Knifflig |
 | --- | --- | --- | --- |
 | Memory | 26 attempts | 20 attempts | 15 attempts |
-| Maze | 5×5, 2 pits, 6 lives | 6×6, 3 pits, 4 lives | 8×8, 4 pits, 4 lives |
+| Maze | 5×5, 3 candies, 3 pits, 6 lives | 6×6, 3 candies, 4 pits, 4 lives | 8×8, 7 candies, 13 pits, 4 lives |
 | Chimney | 3×3, 12 s preparation, 1.5 s/tile | 4×4, 10 s preparation, 1.1 s/tile | 5×5, 10 s preparation, 0.9 s/tile |
 | Bells | Carol of the Bells hook, all notes shown | Last Christmas hook, first note shown | All I Want for Christmas Is You hook, audio only |
 | Cookie cutting | Star, 6 points, 1.3 s window | Tree, 9 points, 0.8 s window | Snowflake, 12 points, 0.46 s window |
@@ -82,9 +78,10 @@ screens. Optional random seeds reproduce card shuffles; maze
 layouts are seeded by default. Custom `MazeLayout` objects can be supplied as a
 course. Normal retries create a new shuffled deck; a configured seed repeats
 the same level. Each maze challenge contains exactly one board. Retries restart that board and
-restore lives. Daily maze seeds derive from the day number, so future maze days
-can use distinct, repeatable layouts. `buildMinigame` also accepts `mazeSeed`
-for development previews or explicit configuration.
+restore lives. Each difficulty resolves one shared curated layout everywhere:
+Leicht uses seed 1224, Klassisch 1234 and Knifflig 1242. Calendar doors, admin
+previews and achievement replays therefore show the same distinct 5×5 / 6×6 /
+8×8 maps. `buildMinigame` still accepts an explicit `mazeSeed` for custom layouts.
 
 Memory always has sixteen cards and eight pairs. An attempt means selecting two
 cards. Mismatches remain visible for a second, during which extra card input is
@@ -95,7 +92,15 @@ physics substeps in normalized coordinates. Seeded spanning-tree candidates are 
 and forks. Raised green rails make the walls easier to read. A checkered flag
 on a square green finish pad marks the goal; entering that zone completes the
 day at any speed. Hazards are ragged black pits with muted crosses and small
-cracks, without a reward-like border or glow. Hazards are on straight sections of the actual start-to-flag route, offset
+cracks, without a reward-like border or glow. The three curated layouts use the
+manually marked candy/hole positions. Leicht and Klassisch each have three
+candies, with three and four holes respectively. Knifflig uses the final marked
+8×8 layout, with seven candies and thirteen holes. Every candy is required for
+that difficulty's optional candy objective, including all seven on Knifflig.
+Other seeds retain procedural placements appropriate to their different walls
+(two/three/four holes). The hand-positioned boards are checked for wall clearance
+and continuous ball-sized paths to every collectible and the flag.
+Procedural hazards are on straight sections of the actual start-to-flag route, offset
 slightly to alternating sides. Following the corridor centre encounters them;
 steering into the opposite passing lane avoids them. Hazards are spaced apart
 and stay clear of the start, finish and tight corners. Falling resets the
@@ -150,12 +155,12 @@ there are no additional assets, packages, hardware calls or permissions.
 ## Plätzchen ausstechen (Day 7)
 
 The pastry wheel follows a closed, arc-length-measured outline. Small directional arrows sit directly on every checkpoint from the start.
-The approaching arrow turns gold, then green during its timing window; press
-the matching arrow then. Completed arrows fade into the cut. There is no
-floating direction badge or countdown ring. Swipe across the dough in the arrow direction, or use the buttons. A swipe
-registers as soon as its direction is clear, with one input per gesture. Button
-input fires on pointer-down; arrow-key and screen-reader actions use the same
-rules. Swipes obey the same direction and timing windows as the buttons. Held keys
+The approaching arrow turns gold, then green during its timing window; swipe
+in the matching direction then. Completed arrows fade into the cut. There is no
+floating direction badge, countdown ring or direction-button row. Swipe across
+the dough in the arrow direction, or use keyboard arrow keys. A swipe registers
+as soon as its direction is clear, with one input per gesture. Both inputs obey
+the same timing windows. Held keys
 do not repeat inputs. Correct inputs progressively reveal the cut groove.
 
 Wrong directions, early inputs and missed windows each count as one mistake.
@@ -189,7 +194,7 @@ completion/replay, pause/resume and every difficulty at small/large text sizes.
 
 ## Wichtelwerkstatt (Day 8)
 
-Move the elf one tile with a swipe, a direction button or an arrow key. Push
+Move the elf one tile with a swipe or a keyboard arrow key. Push
 presents onto all golden bow-marked target mats. Wooden crates are walls;
 presents block each other and can only be pushed, never pulled. A goal mat
 turns green and the present gains a checkmark when occupied. The short movement
@@ -252,8 +257,8 @@ presets are available in **Spiele ausprobieren** without changing daily progress
 
 `walk_screen.dart` reuses the maze's injectable `TiltSource` and native adapter.
 Eight stable readings calibrate the starting posture; the calibration icon pauses
-the game and sets a new centre. Held touch arrows and keyboard arrows are the
-fallback. Sensor errors or three seconds without readings pause play and offer
+the game and sets a new centre. Dragging left/right directly on the street
+(hold the displacement to keep steering) and keyboard arrows are the fallback. Sensor errors or three seconds without readings pause play and offer
 touch controls. Help and backgrounding freeze the simulation; returning requires
 explicit resume, with fresh calibration for sensors. Replay preserves completion.
 `walk_art.dart` draws the street, character, obstacles and ending animations using
@@ -318,7 +323,8 @@ into the display orientation. No extra package, motion permission or internet
 access is needed. The first reading establishes a neutral posture; **Diese
 Haltung als Mitte setzen** recalibrates it. Tilt gently from that position.
 
-Choose **Pfeile** for held touch controls or use keyboard arrow keys. Devices
+Choose **Touch** and drag directly on the maze to steer; hold the displacement
+to keep rolling and release to return to neutral. Keyboard arrow keys also work. Devices
 without the Android adapter, missing sensors, and streams that stop producing
 readings automatically fall back to these controls. The pure Dart physics does
 not know where input comes from. Physics and subscriptions pause when the app
@@ -335,10 +341,14 @@ and the emulator can be played with touch controls.
 
 Games show their board, essential counters and direct controls. Full rules are
 available through the **Anleitung** question-mark button rather than a default
-paragraph. Restart is an icon in the app bar; previous completion is a checkmark.
+paragraph. Every game title is written in bundled Grenze Gotisch lettering on a subtly curled,
+vector-drawn parchment in a safe-area footer below the play area,
+leaving the app bar for navigation, restart, help and completion
+status. Long titles wrap rather than competing with those actions.
 The shoe demonstrates rubbing with a brief swipe cue, which disappears after a
-drag and returns for the polishing stage. Maze arrow controls visibly highlight
-while held. Calibration and missing-sensor information use icons with German
+drag and returns for the polishing stage. Workshop and cookie controls use
+swipes; maze and walking touch controls use direct dragging, without visible
+direction buttons. Calibration and missing-sensor information use icons with German
 tooltips. Full instructions remain available in optional help. Success cards show a short celebration
 and actions, with save details visible only if an error needs attention.
 

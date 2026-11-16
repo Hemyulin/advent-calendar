@@ -1,3 +1,7 @@
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:advent_calendar/achievements/achievement_scope.dart';
+import 'package:advent_calendar/achievements/achievement_store.dart';
+import 'package:advent_calendar/challenges/games/difficulty.dart';
 import 'package:advent_calendar/challenges/oy_vey/mouth_camera.dart';
 import 'package:advent_calendar/challenges/oy_vey/mouth_tracking.dart';
 import 'package:advent_calendar/challenges/oy_vey/oy_vey_game.dart';
@@ -89,6 +93,79 @@ OyVeyPainter painter(WidgetTester tester) =>
 }
 
 void main() {
+  testWidgets(
+    'a fifteen-item win awards the secret only if no Jewish item escaped',
+    (tester) async {
+      for (final misses in [0, 1]) {
+        SharedPreferences.setMockInitialValues({});
+        final store = AchievementStore();
+        await store.ready;
+        final camera = FakeMouthCamera();
+        var completions = 0;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: AchievementScope(
+              record: (facts) => store.record(
+                AchievementRun(
+                  day: null,
+                  game: Minigame.oyVey,
+                  difficulty: GameDifficulty.normal,
+                  facts: facts,
+                ),
+              ),
+              child: OyVeyScreen(
+                camera: camera,
+                level: const OyVeyLevel(spawnSeconds: 999, seed: 1),
+                onComplete: () async {
+                  completions++;
+                },
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await trackFace(tester, camera);
+        await tester.tap(find.byKey(const ValueKey('oy-vey-play')));
+        await tester.pump();
+        final g = painter(tester).game;
+        if (misses > 0) {
+          g.objects.add(
+            FallingObject(id: 100, kind: FestiveObject.dreidel, x: .5, y: 1.2),
+          );
+        }
+        for (var i = 0; i < 15; i++) {
+          g.objects.add(
+            FallingObject(
+              id: i,
+              kind: FestiveObject.values[i % 3],
+              x: .5,
+              y: .5,
+            ),
+          );
+        }
+        await tester.pump(const Duration(milliseconds: 30));
+        await tester.pumpAndSettle();
+        expect(completions, 1);
+        expect(
+          store.earned(
+            secretAchievements.firstWhere((a) => a.id == 'noJewishMisses'),
+          ),
+          misses == 0,
+        );
+        expect(
+          store.progress(achievements.firstWhere((a) => a.id == 'allDays')),
+          0,
+        );
+        expect(g.missedJewishItems, misses);
+        await tester.tap(find.byKey(const ValueKey('completion-replay')));
+        await tester.pumpAndSettle();
+        expect(painter(tester).game.missedJewishItems, 0);
+        await tester.pumpWidget(const SizedBox.shrink());
+        store.dispose();
+      }
+    },
+  );
+
   testWidgets(
     'camera requires opt-in, starts with a closed mouth and completes through position tracking',
     (tester) async {

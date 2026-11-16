@@ -18,7 +18,7 @@ void main() {
       8,
       8,
       6,
-      15,
+      16,
       12,
     ]);
     final phrases = [
@@ -31,7 +31,7 @@ void main() {
       'F E F D F E F D',
       'H H A E H H Cis↑ A',
       'D D E F F E',
-      'F C F B A G F C↑ D↑ G A B A G F',
+      'F C F B A G F C↑ C↑ D↑ G A B A G F',
       'A D↑ Fis G A A A D↑ Fis G A A',
     ];
     for (var i = 0; i < bellMelodies.length; i++) {
@@ -55,6 +55,16 @@ void main() {
       expect(melody.bells.toSet().length, melody.bells.length);
       expect(melody.bells.length, inInclusiveRange(6, 8));
     }
+  });
+  test('Maoz Tzur repeats the high C as two eighth notes', () {
+    final melody = bellMelodies.firstWhere((m) => m.id == 'maoz-tzur');
+    expect(melody.notes.length, 16);
+    expect(melody.notes.sublist(7, 9).map((n) => n.pitch), [
+      BellNote.highC,
+      BellNote.highC,
+    ]);
+    expect(melody.notes.sublist(7, 9).map((n) => n.beats), [.5, .5]);
+    expect(melody.notes.fold<double>(0, (sum, n) => sum + n.beats), 16);
   });
   test('difficulty uses trickier patterns, not a growing song-length ladder', () {
     final levels = GameDifficulty.values.map(BellsLevel.forDifficulty).toList();

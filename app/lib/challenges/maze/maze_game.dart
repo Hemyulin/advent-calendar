@@ -235,14 +235,67 @@ class MazeCourse {
   final List<MazeLayout> layouts;
   final int lives;
 
-  factory MazeCourse.forDifficulty(
-    GameDifficulty difficulty, {
-    int seed = 1224,
-  }) {
+  static int defaultSeed(GameDifficulty difficulty) => switch (difficulty) {
+    GameDifficulty.easy => 1224,
+    GameDifficulty.normal => 1234,
+    GameDifficulty.hard => 1242,
+  };
+
+  factory MazeCourse.forDifficulty(GameDifficulty difficulty, {int? seed}) {
+    seed ??= defaultSeed(difficulty);
     final base = switch (difficulty) {
       GameDifficulty.easy => 5,
       GameDifficulty.normal => 6,
       GameDifficulty.hard => 8,
+    };
+    final generated = MazeLayout.generate(
+      cells: base,
+      seed: seed,
+      pitCount: difficulty.index + 2,
+    );
+    // Art-directed object positions for the marked reference boards. Other seeds
+    // keep their procedural placements because their wall layouts differ.
+    final (pits, candies) = switch ((seed, difficulty)) {
+      (1224, GameDifficulty.easy) => (
+        const [Vec2(.52, .1), Vec2(.34, .3), Vec2(.7, .46)],
+        const [Vec2(.1, .3), Vec2(.3, .7), Vec2(.9, .1)],
+      ),
+      (1234, GameDifficulty.normal) => (
+        const [
+          Vec2(.745, .06),
+          Vec2(.75, .215),
+          Vec2(.25, .77),
+          Vec2(.615, .7425),
+        ],
+        const [Vec2(5 / 12, 1 / 12), Vec2(1 / 12, 11 / 12), Vec2(.75, .75)],
+      ),
+      (1242, GameDifficulty.hard) => (
+        const [
+          Vec2(.32, .17),
+          Vec2(.83, .1875),
+          Vec2(.952, .22),
+          Vec2(.67, .425),
+          Vec2(.54, .615),
+          Vec2(.21, .68),
+          Vec2(.29, .81),
+          Vec2(.48, .79),
+          Vec2(.585, .72),
+          Vec2(.915, .72),
+          Vec2(.952, .615),
+          Vec2(.71, .855),
+          Vec2(.755, .952),
+        ],
+        const [
+          Vec2(.9375, .0625),
+          Vec2(.6875, .1875),
+          Vec2(.0625, .5625),
+          Vec2(.5625, .54),
+          Vec2(.9375, .5625),
+          Vec2(.1875, .8125),
+          Vec2(.42, .8125),
+        ],
+      ),
+      _ => (generated.pits, generated.candies),
     };
     return MazeCourse(
       lives: switch (difficulty) {
@@ -251,10 +304,13 @@ class MazeCourse {
         GameDifficulty.hard => 4,
       },
       layouts: [
-        MazeLayout.generate(
-          cells: base,
-          seed: seed,
-          pitCount: difficulty.index + 2,
+        MazeLayout(
+          cells: generated.cells,
+          walls: generated.walls,
+          start: generated.start,
+          goal: generated.goal,
+          pits: pits,
+          candies: candies,
         ),
       ],
     );

@@ -3,20 +3,38 @@ import '../presentation/calendar_style.dart';
 import '../presentation/viewport_fit.dart';
 import '../challenges/games/difficulty.dart';
 import 'achievement_store.dart';
-import 'bell_songs_screen.dart';
-import 'hanukkah_games_screen.dart';
 import '../challenges/seasonal/game_skin.dart';
 import '../challenges/bells/bell_melodies.dart';
 import 'achievement_art.dart';
 import 'achievement_scope.dart';
-import 'achievement_objectives_screen.dart';
+import '../content/calendar_day.dart';
 import '../challenges/games/game_catalog.dart';
 import '../challenges/games/gift_reward_scope.dart';
 import '../challenges/gift_reward.dart';
 
-final _collection = [...achievements, finalReward];
+// Individual goals launch the relevant game; aggregate goals use collections.
+Minigame? gameForAchievement(String id) => switch (id) {
+  'shoe' => Minigame.shoe,
+  'menorahs' || 'cleanOy' || 'noJewishMisses' => Minigame.oyVey,
+  'memory' => Minigame.memory,
+  'workshop' => Minigame.workshop,
+  'cleanWalk' || 'roughWalk' => Minigame.walkHome,
+  'safeBattery' ||
+  'halfCharged' ||
+  'fullyCharged' ||
+  'hundredPercent' => Minigame.battery,
+  'cookies' => Minigame.cookies,
+  'candy' => Minigame.maze,
+  'santaUp' => Minigame.chimney,
+  _ => null,
+};
 
 String objectiveLabel(String token) {
+  if (token.startsWith('achievement:')) {
+    return achievementCatalog
+        .firstWhere((a) => a.id == token.substring(12))
+        .title;
+  }
   if (token.startsWith('day:')) return '${token.split(':').last}. Dezember';
   if (token.startsWith('skin:')) {
     return hanukkahTitle(Minigame.values.byName(token.split(':').last));
@@ -40,14 +58,32 @@ String objectiveLabel(String token) {
   return achievements.firstWhere((a) => a.id == id).title;
 }
 
+/// Connects award day links to the live calendar's availability and completion.
+class AchievementCalendar {
+  const AchievementCalendar({
+    required this.days,
+    required this.openDay,
+    required this.titleForDay,
+  });
+  final List<CalendarDay> Function() days;
+  final Future<void> Function(int day) openDay;
+  final String Function(int day) titleForDay;
+}
+
 class AchievementsScreen extends StatefulWidget {
-  const AchievementsScreen({super.key, required this.store});
+  const AchievementsScreen({super.key, required this.store, this.calendar});
+  final AchievementCalendar? calendar;
   final AchievementStore store;
   @override
   State<AchievementsScreen> createState() => _AchievementsScreenState();
 }
 
 class _AchievementsScreenState extends State<AchievementsScreen> {
+  List<Achievement> get _collection => [
+    ...achievements,
+    finalReward,
+    ...secretAchievements.where(widget.store.earned),
+  ];
   final _pages = PageController();
   int _page = 0;
   @override
@@ -155,6 +191,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
               builder: (_) => _AchievementDetail(
                 store: widget.store,
                 achievement: achievement,
+                calendar: widget.calendar,
               ),
             ),
           ),
@@ -169,6 +206,19 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                   width: 156,
                   height: 110,
                 ),
+                if (secretAchievements.contains(achievement)) ...[
+                  const SizedBox(height: 6),
+                  const Text(
+                    'GEHEIMER ZUSATZERFOLG',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: CalendarStyle.gold,
+                      fontSize: 10,
+                      letterSpacing: 1.2,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
                 if (achievement.id == finalReward.id) ...[
                   const SizedBox(height: 6),
                   const Text(
@@ -222,7 +272,12 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
 }
 
 class _AchievementDetail extends StatefulWidget {
-  const _AchievementDetail({required this.store, required this.achievement});
+  const _AchievementDetail({
+    required this.store,
+    required this.achievement,
+    this.calendar,
+  });
+  final AchievementCalendar? calendar;
   final AchievementStore store;
   final Achievement achievement;
   @override
@@ -248,7 +303,12 @@ class _AchievementDetailState extends State<_AchievementDetail> {
     }
   }
 
-  Future<void> _practice(Minigame game, GameDifficulty difficulty) async {
+  Future<void> _practice(
+    Minigame game,
+    GameDifficulty difficulty, {
+    GameSkin skin = GameSkin.christmas,
+    String? melodyId,
+  }) async {
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => AchievementScope(
@@ -262,9 +322,284 @@ class _AchievementDetailState extends State<_AchievementDetail> {
           ),
           child: GiftRewardScope(
             openGift: () async => GiftOpenResult.replay,
-            child: buildMinigame(game, difficulty, () async {}),
+            child: buildMinigame(
+              game,
+              difficulty,
+              () async {},
+              skin: skin,
+              melodyId: melodyId,
+              alreadyCompleted: widget.store.tokenComplete(
+                '${skin == GameSkin.hanukkah ? 'skin' : 'game'}:${game.name}',
+              ),
+            ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _launchOptions(Minigame game) {
+    final multiple = {
+      'cookies',
+      'workshop',
+      'candy',
+    }.contains(widget.achievement.id);
+    final difficulties = multiple
+        ? GameDifficulty.values
+        : [GameDifficulty.normal];
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (final skin in [
+          GameSkin.christmas,
+          if (supportsHanukkah(game)) GameSkin.hanukkah,
+        ]) ...[
+          if (multiple) ...[
+            Text(
+              skin == GameSkin.hanukkah ? 'Chanukka' : 'Weihnachten',
+              style: const TextStyle(color: CalendarStyle.muted),
+            ),
+            const SizedBox(height: 4),
+          ],
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 6,
+            runSpacing: 4,
+            children: [
+              for (final difficulty in difficulties)
+                OutlinedButton(
+                  key: ValueKey(
+                    'achievement-play-${skin.name}-${difficulty.name}',
+                  ),
+                  onPressed: () => _practice(game, difficulty, skin: skin),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (multiple) ...[
+                        Icon(
+                          widget.store.tokenComplete(
+                                'bonus:${game == Minigame.maze ? 'candy' : game.name}:${difficulty.name}',
+                              )
+                              ? Icons.check_circle_outline
+                              : Icons.circle_outlined,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 6),
+                      ],
+                      Text(
+                        multiple
+                            ? difficulty.label
+                            : skin == GameSkin.hanukkah
+                            ? 'Chanukka · ${difficulty.label}'
+                            : 'Jetzt ausprobieren',
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+        ],
+      ],
+    );
+  }
+
+  bool _onlyOpen = false;
+
+  void _openAward(Achievement award) => Navigator.of(context).push(
+    MaterialPageRoute<void>(
+      builder: (_) => _AchievementDetail(
+        store: widget.store,
+        achievement: award,
+        calendar: widget.calendar,
+      ),
+    ),
+  );
+
+  Achievement? _related(String token) {
+    if (token.startsWith('achievement:')) {
+      return achievementCatalog
+          .where((a) => a.id == token.substring(12))
+          .firstOrNull;
+    }
+    return achievements
+        .skip(3)
+        .where((a) => a.requirements.contains(token))
+        .firstOrNull;
+  }
+
+  VoidCallback? _openObjective(String token) {
+    if (token.startsWith('game:') || token.startsWith('skin:')) {
+      final game = Minigame.values.byName(token.split(':').last);
+      return () => _practice(
+        game,
+        GameDifficulty.normal,
+        skin: token.startsWith('skin:')
+            ? GameSkin.hanukkah
+            : GameSkin.christmas,
+      );
+    }
+    if (token.startsWith('bonus:bells:')) {
+      final id = token.substring(12);
+      final index = bellMelodies.indexWhere((m) => m.id == id);
+      return () => _practice(
+        Minigame.bells,
+        GameDifficulty.normal,
+        melodyId: id,
+        skin: index >= 8 ? GameSkin.hanukkah : GameSkin.christmas,
+      );
+    }
+    final related = _related(token);
+    return related == null ? null : () => _openAward(related);
+  }
+
+  bool _complete(String token) => token.startsWith('achievement:')
+      ? widget.store.earned(
+          achievementCatalog.firstWhere((a) => a.id == token.substring(12)),
+        )
+      : widget.store.tokenComplete(token);
+
+  Widget _objectives(Achievement a) {
+    final tokens = a.requirements
+        .where((t) => !_onlyOpen || !_complete(t))
+        .toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (a.requirements.length > 6)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: FilterChip(
+              label: const Text('Nur offene'),
+              selected: _onlyOpen,
+              onSelected: (value) => setState(() => _onlyOpen = value),
+            ),
+          ),
+        for (final token in tokens)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Material(
+              color: _complete(token)
+                  ? const Color(0xFFE5EEE5)
+                  : const Color(0xFFF3E9D8),
+              borderRadius: BorderRadius.circular(16),
+              child: ListTile(
+                key: ValueKey('objective-$token'),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 4,
+                ),
+                leading: Icon(
+                  _complete(token)
+                      ? Icons.check_circle_outline
+                      : Icons.circle_outlined,
+                  color: CalendarStyle.green,
+                ),
+                title: Text(
+                  objectiveLabel(token),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: CalendarStyle.green,
+                  ),
+                ),
+                trailing: _openObjective(token) == null
+                    ? null
+                    : const Icon(Icons.chevron_right),
+                onTap: _openObjective(token),
+              ),
+            ),
+          ),
+        if (tokens.isEmpty)
+          const Padding(
+            padding: EdgeInsets.all(20),
+            child: Text(
+              'Alle Teilziele geschafft!',
+              textAlign: TextAlign.center,
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _days() {
+    final days =
+        widget.calendar?.days() ??
+        calendarDays(DateTime.now(), {
+          for (var n = 1; n <= 24; n++)
+            if (widget.store.tokenComplete('day:$n')) 'day-$n',
+        });
+    return Column(
+      children: [
+        for (var row = 0; row < 12; row++)
+          Padding(
+            padding: const EdgeInsets.only(top: 10),
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (var col = 0; col < 2; col++) ...[
+                    if (col == 1) const SizedBox(width: 10),
+                    Expanded(child: _day(days[row * 2 + col])),
+                  ],
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _day(CalendarDay day) {
+    final enabled = day.isAvailable && widget.calendar != null;
+    final done =
+        day.state == DayState.completed ||
+        widget.store.tokenComplete('day:${day.number}');
+    final color = enabled ? CalendarStyle.green : CalendarStyle.muted;
+    return OutlinedButton(
+      key: ValueKey('award-day-${day.number}'),
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.all(14),
+        backgroundColor: !day.isAvailable
+            ? const Color(0xFFE8E6E1)
+            : done
+            ? const Color(0xFFE5EEE5)
+            : const Color(0xFFF3E9D8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+      onPressed: enabled
+          ? () async {
+              await widget.calendar!.openDay(day.number);
+              if (mounted) setState(() {});
+            }
+          : null,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Text(
+                day.number.toString().padLeft(2, '0'),
+                style: TextStyle(fontSize: 24, color: color),
+              ),
+              const Spacer(),
+              Icon(
+                !day.isAvailable
+                    ? Icons.lock_outline
+                    : done
+                    ? Icons.check_circle_outline
+                    : Icons.lock_open_outlined,
+                size: 20,
+                color: color,
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            widget.calendar?.titleForDay(day.number) ??
+                '${day.number}. Dezember',
+            style: TextStyle(fontSize: 14, color: color),
+          ),
+        ],
       ),
     );
   }
@@ -282,207 +617,96 @@ class _AchievementDetailState extends State<_AchievementDetail> {
           ),
         ),
         body: SafeArea(
-          child: ViewportFit(
-            maxWidth: 480,
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                AchievementIllustration(
-                  achievementId: a.id,
-                  earned: earned,
-                  width: 220,
-                  height: 154,
-                ),
-                if (a.id == finalReward.id) ...[
-                  const SizedBox(height: 8),
-                  const Text(
-                    'ZUSÄTZLICH ZU DEINEN TÄGLICHEN GESCHENKEN',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: CalendarStyle.green,
-                      fontSize: 11,
-                      letterSpacing: 1,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 18),
-                Text(
-                  a.title,
-                  textAlign: TextAlign.center,
-                  style: CalendarStyle.heading.copyWith(fontSize: 30),
-                ),
-                const SizedBox(height: 12),
-                Text(a.description, textAlign: TextAlign.center),
-                const SizedBox(height: 16),
-                Text(
-                  '${widget.store.progress(a)} / ${a.requirements.length}',
-                  style: const TextStyle(
-                    color: CalendarStyle.green,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                if (a.requirements.length > 6 && a.id != finalReward.id) ...[
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: 240,
-                    child: LinearProgressIndicator(
-                      value: widget.store.progress(a) / a.requirements.length,
-                      color: CalendarStyle.green,
-                      backgroundColor: CalendarStyle.green.withValues(
-                        alpha: .1,
+          child: SingleChildScrollView(
+            key: const ValueKey('award-progress-scroll'),
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 640),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Center(
+                      child: AchievementIllustration(
+                        achievementId: a.id,
+                        earned: earned,
+                        width: 200,
+                        height: 140,
                       ),
-                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      a.title,
+                      textAlign: TextAlign.center,
+                      style: CalendarStyle.heading.copyWith(fontSize: 30),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(a.description, textAlign: TextAlign.center),
+                    const SizedBox(height: 16),
+                    Text(
+                      '${widget.store.progress(a)} / ${a.requirements.length}',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: CalendarStyle.green,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    LinearProgressIndicator(
+                      value: widget.store.progress(a) / a.requirements.length,
+                      backgroundColor: CalendarStyle.line,
+                      color: CalendarStyle.green,
                       minHeight: 5,
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  OutlinedButton.icon(
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => AchievementObjectivesScreen(
-                          store: widget.store,
-                          achievement: a,
-                          label: objectiveLabel,
-                          onOpenAchievement: (achievement) =>
-                              Navigator.of(context).push(
-                                MaterialPageRoute<void>(
-                                  builder: (_) => _AchievementDetail(
-                                    store: widget.store,
-                                    achievement: achievement,
-                                  ),
-                                ),
-                              ),
+                    const SizedBox(height: 16),
+                    if (a.id == finalReward.id) ...[
+                      const Text(
+                        'ZUSÄTZLICH ZU DEINEN TÄGLICHEN GESCHENKEN',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: CalendarStyle.green,
+                          fontSize: 11,
+                          letterSpacing: 1,
                         ),
                       ),
-                    ),
-                    icon: const Icon(Icons.checklist_rounded),
-                    label: const Text('Teilziele ansehen'),
-                  ),
-                ] else if (a.requirements.length > 1 &&
-                    a.id != finalReward.id) ...[
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 5,
-                    alignment: WrapAlignment.center,
-                    children: [
-                      for (final token in a.requirements)
-                        Chip(
-                          visualDensity: VisualDensity.compact,
-                          avatar: Icon(
-                            widget.store.tokenComplete(token)
-                                ? Icons.check_circle_outline
-                                : Icons.circle_outlined,
-                            size: 16,
-                          ),
-                          label: Text(
-                            objectiveLabel(token),
-                            style: const TextStyle(fontSize: 12),
+                      const SizedBox(height: 12),
+                      Text(
+                        !earned
+                            ? 'Der Extra-Bonus bleibt bis zum letzten Erfolg geheim.'
+                            : widget.store.reward(a) ??
+                                  'Alle Erfolge geschafft! Dein Extra-Bonus wird noch vorbereitet.',
+                        textAlign: TextAlign.center,
+                      ),
+                      if (earned && widget.store.reward(a) != null)
+                        FilledButton(
+                          onPressed: _saving || widget.store.claimed(a)
+                              ? null
+                              : _claim,
+                          child: Text(
+                            widget.store.claimed(a)
+                                ? 'Gutschein erhalten'
+                                : _saving
+                                ? 'Speichert…'
+                                : 'Als erhalten markieren',
                           ),
                         ),
                     ],
-                  ),
-                ],
-                if (a.id == 'cookies' ||
-                    a.id == 'workshop' ||
-                    a.id == 'candy') ...[
-                  const SizedBox(height: 12),
-                  if (widget.store.tokenComplete(
-                    'game:${a.id == 'candy' ? 'maze' : a.id}',
-                  ))
-                    Wrap(
-                      spacing: 6,
-                      alignment: WrapAlignment.center,
-                      children: [
-                        for (final difficulty in GameDifficulty.values)
-                          OutlinedButton(
-                            onPressed: () => _practice(
-                              a.id == 'cookies'
-                                  ? Minigame.cookies
-                                  : a.id == 'candy'
-                                  ? Minigame.maze
-                                  : Minigame.workshop,
-                              difficulty,
-                            ),
-                            child: Text(difficulty.label),
-                          ),
-                      ],
-                    )
-                  else
-                    const Text(
-                      'Schließe zuerst ein Türchen mit diesem Spiel ab.',
+                    if (a.id == 'allDays')
+                      _days()
+                    else if (gameForAchievement(a.id) case final game?)
+                      _launchOptions(game)
+                    else if (a.requirements.length > 1)
+                      _objectives(a),
+                    const SizedBox(height: 20),
+                    Text(
+                      earned ? 'Erfolg freigeschaltet!' : 'Noch zu entdecken.',
                       textAlign: TextAlign.center,
                     ),
-                ],
-                if (a.id == 'hanukkah') ...[
-                  const SizedBox(height: 12),
-                  OutlinedButton.icon(
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) =>
-                            HanukkahGamesScreen(store: widget.store),
-                      ),
-                    ),
-                    icon: const Icon(Icons.celebration_outlined),
-                    label: const Text('Chanukka-Spiele spielen'),
-                  ),
-                ],
-                if (a.id == 'bells') ...[
-                  const SizedBox(height: 12),
-                  if (widget.store.tokenComplete('game:bells'))
-                    OutlinedButton.icon(
-                      onPressed: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => BellSongsScreen(store: widget.store),
-                        ),
-                      ),
-                      icon: const Icon(Icons.music_note_outlined),
-                      label: const Text('Lieder spielen'),
-                    )
-                  else
-                    const Text(
-                      'Schließe zuerst ein Türchen mit Weihnachtsglocken ab.',
-                      textAlign: TextAlign.center,
-                    ),
-                ],
-                const SizedBox(height: 22),
-                if (a.id == finalReward.id) ...[
-                  Icon(
-                    earned ? Icons.card_giftcard : Icons.lock_outline,
-                    color: CalendarStyle.gold,
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    !earned
-                        ? 'Der Extra-Bonus bleibt bis zum letzten Erfolg geheim.'
-                        : widget.store.reward(a) ??
-                              'Alle Erfolge geschafft! Dein Extra-Bonus wird noch vorbereitet.',
-                    textAlign: TextAlign.center,
-                  ),
-                  if (earned && widget.store.reward(a) != null) ...[
-                    const SizedBox(height: 16),
-                    FilledButton(
-                      onPressed: _saving || widget.store.claimed(a)
-                          ? null
-                          : _claim,
-                      child: Text(
-                        widget.store.claimed(a)
-                            ? 'Gutschein erhalten'
-                            : _saving
-                            ? 'Speichert…'
-                            : 'Als erhalten markieren',
-                      ),
-                    ),
+                    if (_error != null)
+                      Text(_error!, textAlign: TextAlign.center),
                   ],
-                ] else
-                  Text(
-                    earned ? 'Erfolg freigeschaltet!' : 'Noch zu entdecken.',
-                    textAlign: TextAlign.center,
-                  ),
-                if (_error != null) Text(_error!, textAlign: TextAlign.center),
-              ],
+                ),
+              ),
             ),
           ),
         ),

@@ -4,18 +4,29 @@ import '../../presentation/calendar_style.dart';
 import '../../presentation/viewport_fit.dart';
 import 'difficulty.dart';
 import 'game_catalog.dart';
+import '../seasonal/game_skin.dart';
+import '../seasonal/game_skin_scope.dart';
 
 class GamePreviewScreen extends StatefulWidget {
-  const GamePreviewScreen({super.key});
+  const GamePreviewScreen({super.key, this.skin = GameSkin.christmas});
+  final GameSkin skin;
   @override
   State<GamePreviewScreen> createState() => _GamePreviewScreenState();
 }
 
 class _GamePreviewScreenState extends State<GamePreviewScreen> {
   GameDifficulty _difficulty = GameDifficulty.normal;
+  List<Minigame> get _games =>
+      widget.skin == GameSkin.hanukkah ? hanukkahGames : Minigame.values;
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Spiele ausprobieren')),
+    appBar: AppBar(
+      title: Text(
+        widget.skin == GameSkin.hanukkah
+            ? 'Chanukka-Spiele ausprobieren'
+            : 'Spiele ausprobieren',
+      ),
+    ),
     body: SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
@@ -31,6 +42,22 @@ class _GamePreviewScreenState extends State<GamePreviewScreen> {
                     textAlign: TextAlign.center,
                     style: TextStyle(color: CalendarStyle.muted),
                   ),
+                  if (widget.skin == GameSkin.christmas)
+                    TextButton.icon(
+                      key: const ValueKey('preview-hanukkah-games'),
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) =>
+                              const GamePreviewScreen(skin: GameSkin.hanukkah),
+                        ),
+                      ),
+                      icon: const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CustomPaint(painter: StarOfDavidPainter()),
+                      ),
+                      label: const Text('Chanukka-Spiele'),
+                    ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<GameDifficulty>(
                     initialValue: _difficulty,
@@ -56,7 +83,7 @@ class _GamePreviewScreenState extends State<GamePreviewScreen> {
                       children: [
                         for (
                           var row = 0;
-                          row < (Minigame.values.length / 2).ceil();
+                          row < (_games.length / 2).ceil();
                           row++
                         )
                           Expanded(
@@ -65,13 +92,12 @@ class _GamePreviewScreenState extends State<GamePreviewScreen> {
                               children: [
                                 for (var col = 0; col < 2; col++)
                                   Expanded(
-                                    child:
-                                        row * 2 + col >= Minigame.values.length
+                                    child: row * 2 + col >= _games.length
                                         ? const SizedBox.shrink()
                                         : Padding(
                                             padding: const EdgeInsets.all(5),
                                             child: _gameCard(
-                                              Minigame.values[row * 2 + col],
+                                              _games[row * 2 + col],
                                             ),
                                           ),
                                   ),
@@ -102,6 +128,7 @@ class _GamePreviewScreenState extends State<GamePreviewScreen> {
           _difficulty,
           () async {},
           developmentPreview: true,
+          skin: widget.skin,
         ),
       ),
     ),
@@ -112,7 +139,7 @@ class _GamePreviewScreenState extends State<GamePreviewScreen> {
           Icon(game.icon, size: 32),
           const SizedBox(height: 10),
           Text(
-            game.title,
+            widget.skin == GameSkin.hanukkah ? hanukkahTitle(game) : game.title,
             textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 19),
           ),

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'presentation/calendar_screen.dart';
@@ -11,10 +10,6 @@ class AdventCalendarApp extends StatelessWidget {
     super.key,
     this.now,
     this.progressRepository,
-    this.showGamePreview = const bool.fromEnvironment(
-      'SHOW_GAME_PREVIEW',
-      defaultValue: !kReleaseMode,
-    ),
     this.previewAllDays = const bool.fromEnvironment(
       'PREVIEW_ALL_DAYS',
       defaultValue: true,
@@ -24,7 +19,6 @@ class AdventCalendarApp extends StatelessWidget {
   final DateTime? now;
   final ProgressRepository? progressRepository;
   final bool previewAllDays;
-  final bool showGamePreview;
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +47,6 @@ class AdventCalendarApp extends StatelessWidget {
         now: now,
         progressRepository: progressRepository,
         previewAllDays: previewAllDays,
-        showGamePreview: showGamePreview,
       ),
     );
   }

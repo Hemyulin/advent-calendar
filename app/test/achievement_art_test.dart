@@ -7,7 +7,7 @@ void main() {
   testWidgets(
     'every achievement has artwork that renders in locked and earned states',
     (tester) async {
-      for (final achievement in [...achievements, finalReward]) {
+      for (final achievement in [...achievementCatalog, finalReward]) {
         for (final earned in [false, true]) {
           await tester.pumpWidget(
             MaterialApp(

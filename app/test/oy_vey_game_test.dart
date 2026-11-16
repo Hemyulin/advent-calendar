@@ -14,6 +14,64 @@ MouthObservation pose(double ratio, {double x = .5}) =>
     MouthObservation(x: x, y: .55, width: .12, gapRatio: ratio);
 
 void main() {
+  test('every missed Jewish kind counts once, including without tracking', () {
+    for (final kind in FestiveObject.values) {
+      final g = game()..objects.add(item(1, kind, y: 1.1));
+      g.advance(.1, null);
+      g.advance(.1, null);
+      expect(g.missedJewishItems, kind.correct ? 1 : 0);
+      expect(g.mistakes, 0);
+      expect(g.lost, isFalse);
+    }
+  });
+  test(
+    'a missed Jewish item does not prevent a regular victory or leak into a retry',
+    () {
+      final g = game()..objects.add(item(50, FestiveObject.dreidel, y: 1.1));
+      g.advance(.1, null);
+      for (var i = 0; i < 15; i++) {
+        g.objects.add(item(i, FestiveObject.values[i % 3]));
+      }
+      g.advance(.01, open);
+      expect(g.won, isTrue);
+      expect(g.missedJewishItems, 1);
+      expect(game().missedJewishItems, 0);
+    },
+  );
+  test(
+    'a perfect seeded run generates exactly fifteen Jewish items and catches all of them',
+    () {
+      final g = OyVeyGame(
+        const OyVeyLevel(seed: 1, startSpeed: 1, spawnSeconds: .5),
+      );
+      final generated = <int>{};
+      for (var tick = 0; tick < 10000 && !g.won && !g.lost; tick++) {
+        final candidates =
+            g.objects
+                .where((o) => o.kind.correct && o.y >= .45 && o.y <= .7)
+                .toList()
+              ..sort((a, b) => b.y.compareTo(a.y));
+        g.resetTracking();
+        final mouth = candidates.isEmpty
+            ? null
+            : CatchMouth(candidates.first.x, .6, .04);
+        g.advance(.01, mouth);
+        generated.addAll(
+          g.objects.where((o) => o.kind.correct).map((o) => o.id),
+        );
+        expect(
+          g.collected + g.objects.where((o) => o.kind.correct).length,
+          lessThanOrEqualTo(15),
+        );
+      }
+      expect(g.won, isTrue);
+      expect(g.collected, 15);
+      expect(generated.length, 15);
+      expect(g.missedJewishItems, 0);
+      expect(g.objects.any((o) => o.kind.correct), isFalse);
+    },
+  );
+
   test('small head movements cover the screen with a narrow sack opening', () {
     CatchMouth head(double x, {double width = .2}) =>
         CatchMouth.fromHeadPosition(x: x, y: .5, mouthWidth: width);

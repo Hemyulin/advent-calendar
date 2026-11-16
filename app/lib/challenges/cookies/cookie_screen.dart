@@ -37,7 +37,6 @@ class _CookieScreenState extends State<CookieScreen>
   bool _paused = false;
   bool _foreground = true;
   bool _showResult = false;
-  CutDirection? _pressed;
   double _cutFrom = 0;
   Offset _swipeDelta = Offset.zero;
   bool _swipeUsed = false;
@@ -76,7 +75,6 @@ class _CookieScreenState extends State<CookieScreen>
         ),
       );
       if (_game.mistakes != mistakes) {
-        _pressed = null;
         _feedback.forward(from: 0);
       }
       _finishIfNeeded();
@@ -137,8 +135,7 @@ class _CookieScreenState extends State<CookieScreen>
     final cutFrom = _game.cutUntil;
     final result = _game.press(direction);
     if (result == CutInput.ignored) return;
-    _cutFrom = cutFrom;
-    setState(() => _pressed = direction);
+    setState(() => _cutFrom = cutFrom);
     _feedback.forward(from: 0);
     _finishIfNeeded();
   }
@@ -164,7 +161,6 @@ class _CookieScreenState extends State<CookieScreen>
       _last = null;
       _paused = false;
       _showResult = false;
-      _pressed = null;
     });
   }
 
@@ -203,7 +199,7 @@ class _CookieScreenState extends State<CookieScreen>
         alreadyCompleted: widget.alreadyCompleted,
         onRestart: _restart,
         instructions:
-            'Der Ausstecher folgt der Form. Sobald der Pfeil grün aufleuchtet, wische die passende Richtung über den Teig oder nutze die Pfeile. Ein falscher oder verpasster Pfeil kostet einen Fehler. Die Stelle wird noch einmal angefahren. Bei ${widget.level.mistakeLimit} Fehlern beginnt ein neuer Versuch.',
+            'Der Ausstecher folgt der Form. Sobald der Pfeil grün aufleuchtet, wische die passende Richtung über den Teig oder nutze am Computer die Pfeiltasten. Ein falscher oder verpasster Pfeil kostet einen Fehler. Die Stelle wird noch einmal angefahren. Bei ${widget.level.mistakeLimit} Fehlern beginnt ein neuer Versuch.',
         children: [
           GameStats(
             text:
@@ -263,18 +259,6 @@ class _CookieScreenState extends State<CookieScreen>
               ),
             ),
           ),
-          const SizedBox(height: 24),
-          Row(
-            children: [
-              for (final direction in CutDirection.values)
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 5),
-                    child: _arrow(direction, enabled),
-                  ),
-                ),
-            ],
-          ),
           const SizedBox(height: 20),
           if (_game.phase == CookiePhase.ready || _paused)
             FilledButton.icon(
@@ -325,59 +309,6 @@ class _CookieScreenState extends State<CookieScreen>
       ),
     );
   }
-
-  Widget _arrow(CutDirection direction, bool enabled) {
-    final icon = switch (direction) {
-      CutDirection.up => Icons.arrow_upward_rounded,
-      CutDirection.down => Icons.arrow_downward_rounded,
-      CutDirection.left => Icons.arrow_back_rounded,
-      CutDirection.right => Icons.arrow_forward_rounded,
-    };
-    return Semantics(
-      label: direction.label,
-      button: true,
-      enabled: enabled,
-      onTap: enabled ? () => _press(direction) : null,
-      child: ExcludeSemantics(
-        child: AnimatedBuilder(
-          animation: _feedback,
-          builder: (_, _) {
-            final pressed = _feedback.isAnimating && _pressed == direction;
-            return Material(
-              color: !enabled
-                  ? CalendarStyle.line.withValues(alpha: .45)
-                  : pressed
-                  ? (_game.lastInput == CutInput.correct
-                        ? CalendarStyle.green
-                        : const Color(0xFFBE8C79))
-                  : const Color(0xFFE2E9DF),
-              borderRadius: BorderRadius.circular(17),
-              child: Listener(
-                onPointerDown: enabled ? (_) => _press(direction) : null,
-                child: InkWell(
-                  key: ValueKey('cookie-${direction.name}'),
-                  onTap: enabled ? () {} : null,
-                  borderRadius: BorderRadius.circular(17),
-                  child: SizedBox(
-                    height: 62,
-                    child: Icon(
-                      icon,
-                      size: 30,
-                      color: pressed
-                          ? CalendarStyle.ivory
-                          : CalendarStyle.green.withValues(
-                              alpha: enabled ? 1 : .4,
-                            ),
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
 }
 
 class _CookiePainter extends CustomPainter {
@@ -408,6 +339,25 @@ class _CookiePainter extends CustomPainter {
 
   Offset point(CookiePoint p, Size size) =>
       Offset(p.x * size.width, p.y * size.height);
+
+  void _paintMotifDetails(Canvas canvas, Size size) {
+    if (game.level.shape != CookieShape.temple) return;
+    canvas.save();
+    canvas.scale(size.width, size.height);
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = .004
+      ..strokeCap = StrokeCap.round
+      ..color = const Color(0xFFBD8A4D).withValues(alpha: .38);
+    canvas.drawRect(const Rect.fromLTWH(.44, .4, .12, .3), paint);
+    canvas.drawLine(const Offset(.37, .21), const Offset(.63, .21), paint);
+    for (final x in [.25, .32, .68, .75]) {
+      canvas.drawLine(Offset(x, .34), Offset(x, .66), paint);
+    }
+    canvas.drawLine(const Offset(.18, .74), const Offset(.82, .74), paint);
+    canvas.drawLine(const Offset(.12, .82), const Offset(.88, .82), paint);
+    canvas.restore();
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -482,6 +432,7 @@ class _CookiePainter extends CustomPainter {
         );
       }
       canvas.restore();
+      _paintMotifDetails(canvas, size);
       canvas.restore();
     } else {
       // A dashed flour guide remains visually distinct from the completed cut.
@@ -514,6 +465,7 @@ class _CookiePainter extends CustomPainter {
         );
         paint.style = PaintingStyle.fill;
       }
+      _paintMotifDetails(canvas, size);
       // Pastry wheel: a steel cutting disc and a warm wooden handle.
       final position = point(game.outline.at(game.progress), size);
       final tangent = game.outline.tangentAt(game.progress);

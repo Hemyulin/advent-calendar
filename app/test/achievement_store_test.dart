@@ -10,7 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Achievement achievement(String id) =>
-    achievements.firstWhere((a) => a.id == id);
+    achievementCatalog.firstWhere((a) => a.id == id);
 AchievementRun run(
   Minigame game, {
   int? day = 1,
@@ -41,6 +41,243 @@ void main() {
           .expand((a) => a.requirements)
           .toSet();
       expect(individual, achievement('allExtras').requirements);
+    },
+  );
+
+  test(
+    '80% persists immediately without granting a win or other run bonuses',
+    () async {
+      final store = AchievementStore();
+      await store.ready;
+      const facts = RunFacts(
+        won: false,
+        hanukkahMode: true,
+        feats: {RunFeat.fullyCharged, RunFeat.halfCharged, RunFeat.safeBattery},
+      );
+      const milestone = AchievementRun(
+        day: 8,
+        game: Minigame.battery,
+        difficulty: GameDifficulty.normal,
+        facts: facts,
+      );
+      expect((await store.record(milestone)).map((a) => a.id), [
+        'fullyCharged',
+      ]);
+      expect(store.progress(achievement('allDays')), 0);
+      expect(store.progress(achievement('allGames')), 0);
+      expect(store.progress(achievement('hanukkah')), 0);
+      expect(store.earned(achievement('halfCharged')), isFalse);
+      expect(store.earned(achievement('safeBattery')), isFalse);
+      expect(await store.record(milestone), isEmpty);
+      final reloaded = AchievementStore();
+      await reloaded.ready;
+      expect(reloaded.earned(achievement('fullyCharged')), isTrue);
+      expect(
+        reloaded.earned(
+          secretAchievements.firstWhere((a) => a.id == 'hundredPercent'),
+        ),
+        isFalse,
+      );
+      expect(
+        await reloaded.record(
+          const AchievementRun(
+            day: 9,
+            game: Minigame.chimney,
+            difficulty: GameDifficulty.normal,
+            facts: facts,
+          ),
+        ),
+        isEmpty,
+      );
+      store.dispose();
+      reloaded.dispose();
+    },
+  );
+
+  test(
+    'v6 migration retains individual awards and claims but requires the new milestone',
+    () async {
+      final oldTokens = <String>{
+        for (final a in achievements)
+          if (a.id != 'fullyCharged')
+            ...a.requirements.where((t) => t != 'bonus:fullyCharged'),
+      };
+      SharedPreferences.setMockInitialValues({
+        AchievementStore.storageKey: jsonEncode({
+          'rulesVersion': 6,
+          'tokens': oldTokens.toList(),
+          'earned': [
+            ...achievements
+                .where((a) => a.id != 'fullyCharged')
+                .map((a) => a.id),
+            finalReward.id,
+          ],
+          'claimed': [finalReward.id],
+          'rewards': {},
+        }),
+      });
+      final store = AchievementStore();
+      await store.ready;
+      expect(store.earned(achievement('safeBattery')), isTrue);
+      expect(store.earned(achievement('fullyCharged')), isFalse);
+      expect(store.earned(achievement('allExtras')), isFalse);
+      expect(store.earned(finalReward), isFalse);
+      await store.record(
+        const AchievementRun(
+          day: null,
+          game: Minigame.battery,
+          difficulty: GameDifficulty.easy,
+          facts: RunFacts(won: false, feats: {RunFeat.fullyCharged}),
+        ),
+      );
+      expect(store.earned(achievement('allExtras')), isTrue);
+      expect(store.earned(finalReward), isTrue);
+      expect(store.claimed(finalReward), isTrue);
+      store.dispose();
+    },
+  );
+
+  test(
+    'all required achievements and the voucher are attainable without 100%',
+    () async {
+      final store = AchievementStore();
+      await store.ready;
+      addTearDown(store.dispose);
+      await earnAllAchievements(store);
+      expect(secretAchievements.every((a) => !store.earned(a)), isTrue);
+      expect(store.earned(finalReward), isTrue);
+      expect(store.progress(finalReward), achievements.length);
+      expect(store.earned(achievement('allExtras')), isTrue);
+      expect(
+        store.earned(
+          secretAchievements.firstWhere((a) => a.id == 'hundredPercent'),
+        ),
+        isFalse,
+      );
+      expect(
+        finalReward.requirements,
+        isNot(contains('achievement:hundredPercent')),
+      );
+      expect(bonusObjectives, isNot(contains('hundredPercent')));
+      expect(store.earned(achievement('santaUp')), isFalse);
+      expect(bonusObjectives, isNot(contains('santaUp')));
+      expect(finalReward.requirements, isNot(contains('achievement:santaUp')));
+      final earned = await store.record(
+        const AchievementRun(
+          day: null,
+          game: Minigame.battery,
+          difficulty: GameDifficulty.normal,
+          facts: RunFacts(won: false, feats: {RunFeat.hundredPercent}),
+        ),
+      );
+      expect(earned.map((a) => a.id), ['hundredPercent']);
+      expect(store.progress(finalReward), achievements.length);
+      final reloaded = AchievementStore();
+      await reloaded.ready;
+      expect(
+        reloaded.earned(
+          secretAchievements.firstWhere((a) => a.id == 'hundredPercent'),
+        ),
+        isTrue,
+      );
+      expect(reloaded.earned(finalReward), isTrue);
+      reloaded.dispose();
+    },
+  );
+
+  test(
+    'a prior 100% award migrates to both thresholds without losing voucher claims',
+    () async {
+      for (final tokens in [
+        <String>['bonus:fullyCharged'],
+        <String>[],
+      ]) {
+        SharedPreferences.setMockInitialValues({
+          AchievementStore.storageKey: jsonEncode({
+            'rulesVersion': 7,
+            'tokens': tokens,
+            'earned': ['fullyCharged'],
+            'claimed': [finalReward.id],
+            'rewards': {finalReward.id: 'Gutschein'},
+          }),
+        });
+        final store = AchievementStore();
+        await store.ready;
+        expect(store.earned(achievement('fullyCharged')), isTrue);
+        expect(
+          store.earned(
+            secretAchievements.firstWhere((a) => a.id == 'hundredPercent'),
+          ),
+          isTrue,
+        );
+        expect(store.claimed(finalReward), isTrue);
+        expect(store.reward(finalReward), 'Gutschein');
+        store.dispose();
+      }
+    },
+  );
+
+  test(
+    'a previously earned Santa return stays earned as an optional secret',
+    () async {
+      SharedPreferences.setMockInitialValues({
+        AchievementStore.storageKey: jsonEncode({
+          'rulesVersion': 8,
+          'tokens': ['bonus:santaUp'],
+          'earned': ['santaUp'],
+          'claimed': [],
+          'rewards': {},
+        }),
+      });
+      final store = AchievementStore();
+      await store.ready;
+      expect(store.earned(achievement('santaUp')), isTrue);
+      expect(store.progress(achievement('allExtras')), 0);
+      expect(achievements.any((a) => a.id == 'santaUp'), isFalse);
+      expect(secretAchievements.any((a) => a.id == 'santaUp'), isTrue);
+      store.dispose();
+    },
+  );
+
+  test(
+    'the no-miss Oy Vey secret is win-only, persistent and outside required progress',
+    () async {
+      final store = AchievementStore();
+      await store.ready;
+      final secret = achievementCatalog.firstWhere(
+        (a) => a.id == 'noJewishMisses',
+      );
+      await store.record(run(Minigame.memory, feats: {RunFeat.noJewishMisses}));
+      expect(store.earned(secret), isFalse);
+      await store.record(
+        const AchievementRun(
+          day: null,
+          game: Minigame.oyVey,
+          difficulty: GameDifficulty.normal,
+          facts: RunFacts(won: false, feats: {RunFeat.noJewishMisses}),
+        ),
+      );
+      expect(store.earned(secret), isFalse);
+      final victory = run(
+        Minigame.oyVey,
+        day: null,
+        feats: {RunFeat.noJewishMisses},
+      );
+      expect((await store.record(victory)).map((a) => a.id), [
+        'noJewishMisses',
+      ]);
+      expect(await store.record(victory), isEmpty);
+      expect(bonusObjectives, isNot(contains('noJewishMisses')));
+      expect(
+        finalReward.requirements,
+        isNot(contains('achievement:noJewishMisses')),
+      );
+      expect(store.progress(achievement('allExtras')), 0);
+      final reloaded = AchievementStore();
+      await reloaded.ready;
+      expect(reloaded.earned(secret), isTrue);
+      store.dispose();
+      reloaded.dispose();
     },
   );
 
@@ -88,7 +325,11 @@ void main() {
       await store.record(
         run(
           Minigame.battery,
-          feats: {RunFeat.safeBattery, RunFeat.halfCharged},
+          feats: {
+            RunFeat.safeBattery,
+            RunFeat.halfCharged,
+            RunFeat.fullyCharged,
+          },
         ),
       );
       await store.record(run(Minigame.maze, feats: {RunFeat.allCandy}));

@@ -1,3 +1,7 @@
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:advent_calendar/achievements/achievement_scope.dart';
+import 'package:advent_calendar/achievements/achievement_store.dart';
+import 'package:advent_calendar/achievements/run_facts.dart';
 import 'support/game_configuration.dart';
 import 'package:advent_calendar/challenges/battery/battery_screen.dart';
 import 'package:advent_calendar/challenges/battery/battery_game.dart';
@@ -26,6 +30,134 @@ Future<void> connect(WidgetTester t, int index) async {
 }
 
 void main() {
+  testWidgets(
+    '80% unlocks the required goal before 100%, which awards a separate secret once',
+    (t) async {
+      SharedPreferences.setMockInitialValues({});
+      final store = AchievementStore();
+      await store.ready;
+      addTearDown(store.dispose);
+      var completions = 0;
+      final reports = <RunFacts>[];
+      await t.pumpWidget(
+        MaterialApp(
+          home: AchievementScope(
+            record: (facts) {
+              reports.add(facts);
+              return store.record(
+                AchievementRun(
+                  day: 8,
+                  game: Minigame.battery,
+                  difficulty: GameDifficulty.normal,
+                  facts: facts,
+                ),
+              );
+            },
+            child: BatteryScreen(
+              level: const BatteryLevel(seed: 1, charge: 100),
+              onComplete: () async {
+                completions++;
+              },
+            ),
+          ),
+        ),
+      );
+      await t.pumpAndSettle();
+      await connect(t, 0);
+      await frames(t, .8);
+      expect(tile(t, 0).device.battery, inExclusiveRange(80, 100));
+      expect(
+        store.earned(achievements.firstWhere((a) => a.id == 'fullyCharged')),
+        isTrue,
+      );
+      expect(
+        store.earned(
+          secretAchievements.firstWhere((a) => a.id == 'hundredPercent'),
+        ),
+        isFalse,
+      );
+      expect(reports.single.feats, {RunFeat.fullyCharged});
+      await frames(t, .4);
+      expect(
+        store.earned(
+          secretAchievements.firstWhere((a) => a.id == 'hundredPercent'),
+        ),
+        isTrue,
+      );
+      expect(reports.length, 2);
+      expect(reports.last.feats, {RunFeat.hundredPercent});
+      expect(reports.every((facts) => !facts.won), isTrue);
+      await frames(t, 14);
+      expect(reports.length, 2);
+      expect(completions, 0);
+      expect(
+        store.progress(achievements.firstWhere((a) => a.id == 'allDays')),
+        0,
+      );
+      expect(
+        store.earned(
+          secretAchievements.firstWhere((a) => a.id == 'hundredPercent'),
+        ),
+        isTrue,
+      );
+      await t.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets(
+    '100% awards during play, survives a loss, and never completes the door',
+    (t) async {
+      SharedPreferences.setMockInitialValues({});
+      final store = AchievementStore();
+      await store.ready;
+      addTearDown(store.dispose);
+      var completions = 0;
+      final reports = <RunFacts>[];
+      await t.pumpWidget(
+        MaterialApp(
+          home: AchievementScope(
+            record: (facts) {
+              reports.add(facts);
+              return store.record(
+                AchievementRun(
+                  day: 8,
+                  game: Minigame.battery,
+                  difficulty: GameDifficulty.normal,
+                  facts: facts,
+                ),
+              );
+            },
+            child: BatteryScreen(
+              level: const BatteryLevel(seed: 1, charge: 1000),
+              onComplete: () async {
+                completions++;
+              },
+            ),
+          ),
+        ),
+      );
+      await t.pumpAndSettle();
+      await connect(t, 0);
+      await frames(t, .4);
+      expect(reports.length, 1);
+      expect(reports.single.won, isFalse);
+      final award = achievements.firstWhere((a) => a.id == 'fullyCharged');
+      expect(store.earned(award), isTrue);
+      expect(find.text('Volle Ladung!'), findsOneWidget);
+      expect(completions, 0);
+      await frames(t, 14);
+      expect(reports.length, 1);
+      expect(completions, 0);
+      expect(
+        store.progress(achievements.firstWhere((a) => a.id == 'allDays')),
+        0,
+      );
+      expect(store.earned(award), isTrue);
+      await t.pumpWidget(const SizedBox());
+      expect(t.takeException(), isNull);
+    },
+  );
+
   testWidgets('only dragging the actual plug starts or changes charging', (
     t,
   ) async {

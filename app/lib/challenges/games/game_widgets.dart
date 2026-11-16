@@ -10,6 +10,7 @@ import '../../achievements/achievement_celebration.dart';
 import '../gift_reward.dart';
 import '../seasonal/game_skin_scope.dart';
 import 'gift_art.dart';
+import 'game_title_scroll.dart';
 import 'gift_reward_scope.dart';
 
 class GameScaffold extends StatelessWidget {
@@ -36,15 +37,27 @@ class GameScaffold extends StatelessWidget {
       result: result,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(
-            title,
-            maxLines: 2,
-            style: title.length > 24
-                ? const TextStyle(fontSize: 18, height: 1.1)
-                : null,
-          ),
           actions: [
-            const SkinSwitch(),
+            if (GameSkinScope.maybeOf(context)?.toggleReplayTheme
+                case final start?)
+              IconButton(
+                key: const ValueKey('hanukkah-replay'),
+                tooltip: GameSkinScope.isHanukkah(context)
+                    ? 'Weihnachtsmodus spielen'
+                    : 'Chanukka spielen',
+                isSelected: GameSkinScope.isHanukkah(context),
+                style: IconButton.styleFrom(
+                  backgroundColor: GameSkinScope.isHanukkah(context)
+                      ? const Color(0xFFE3ECF2)
+                      : Colors.transparent,
+                ),
+                onPressed: start,
+                icon: const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CustomPaint(painter: StarOfDavidPainter()),
+                ),
+              ),
             if (alreadyCompleted)
               const Tooltip(
                 message: 'Bereits geschafft',
@@ -70,7 +83,15 @@ class GameScaffold extends StatelessWidget {
             ),
           ],
         ),
+        bottomNavigationBar: SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
+            child: GameTitleScroll(title: title),
+          ),
+        ),
         body: SafeArea(
+          bottom: false,
           child: ViewportFit(
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
             child: Column(
@@ -306,10 +327,18 @@ class _CompletionPanelState extends State<CompletionPanel>
           alignment: WrapAlignment.end,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            if (_saved && !_opening) const SkinSwitch(),
             TextButton.icon(
               key: const ValueKey('completion-replay'),
-              onPressed: _saved && !_opening ? widget.onReplay : null,
+              onPressed: _saved && !_opening
+                  ? () {
+                      final replay = GameSkinScope.maybeOf(context)?.replay;
+                      if (replay == null) {
+                        widget.onReplay();
+                      } else {
+                        replay(widget.onReplay);
+                      }
+                    }
+                  : null,
               icon: const Icon(Icons.replay_rounded, size: 17),
               label: const Text(
                 'Noch einmal spielen',

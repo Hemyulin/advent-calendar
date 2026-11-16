@@ -3,6 +3,59 @@ import 'package:advent_calendar/challenges/games/difficulty.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test(
+    '100% is reachable with ordinary easy rules and deliberate reserve charging',
+    () {
+      final base = BatteryLevel.forDifficulty(GameDifficulty.easy);
+      final g = BatteryGame(
+        BatteryLevel(
+          seed: 1,
+          drain: base.drain,
+          charge: base.charge,
+          eventInterval: base.eventInterval,
+          eventBoost: base.eventBoost,
+        ),
+      )..start();
+      // Reserve enough energy on the other devices, then fill the low-drain watch.
+      while (g.phase == BatteryPhase.playing && g.highestBattery < 100) {
+        final others = [0, 2, 3, 4]
+          ..sort(
+            (a, b) => (g.devices[a].battery / g.drainFor(a)).compareTo(
+              g.devices[b].battery / g.drainFor(b),
+            ),
+          );
+        final urgent = others.first;
+        final current = g.connected;
+        final target = g.devices[urgent].battery / g.drainFor(urgent) < 4
+            ? urgent
+            : current != null &&
+                  current != 1 &&
+                  g.devices[current].battery / g.drainFor(current) < 8
+            ? current
+            : 1;
+        // Also protect the watch while building the reserves.
+        final selected = g.devices[1].battery / g.drainFor(1) < 4 ? 1 : target;
+        if (g.connected != selected) {
+          g.disconnect();
+          g.advance(.1);
+          g.advance(.05);
+          g.connect(selected);
+        }
+        for (var i = 0; i < 5; i++) {
+          g.advance(.1);
+        }
+      }
+      expect(g.highestBattery, 100);
+      expect(g.phase, BatteryPhase.playing);
+      // The milestone remains a fact even if the player abandons the round.
+      g.disconnect();
+      while (g.phase == BatteryPhase.playing) {
+        g.advance(.1);
+      }
+      expect(g.highestBattery, 100);
+    },
+  );
+
   test('five initially critical devices and exactly one cable', () {
     final g = BatteryGame(const BatteryLevel(seed: 1));
     expect(g.devices.length, 5);

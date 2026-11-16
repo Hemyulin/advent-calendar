@@ -1,15 +1,21 @@
 # Chanukka-Modus
 
 Skins are **assigned per calendar door**, never switched automatically by the
-current date. Days 5, 7, 9, 10 and 12 have Hanukkah variants; day 4 is Oy Vey.
-Day 6 keeps the Nikolaus boot, and days 8/11 remain regular Christmas games.
-The [complete sequence](minigames.md) introduces all mechanics by day 15 and
+current date. Days 5, 7, 9, 10, 11 and 12 have Hanukkah variants; day 4 is Oy Vey.
+Day 6 keeps the Nikolaus boot, and day 8 remains regular Akku-Panik.
+The [complete sequence](minigames.md) introduces all mechanics by day 14 and
 increases difficulty on later revisits, ending with five hard challenges.
 
 Nine games support both appearances. Only **Oy Vey** has no alternate skin.
-The David-star button switches appearance and starts a fresh attempt, in real
-replays and isolated admin previews. Standalone games default to Christmas;
-calendar routes pass the saved door appearance explicitly. No date manipulation
+Each attempt has a fixed appearance. Achievement details offer explicit play
+buttons for Christmas and Chanukka; first Christmas attempts keep their calendar assignment. The David-star button
+on regular replays and explicitly themed games switches in both directions,
+starting a fresh attempt. A highlighted star means Chanukka; tapping again
+returns to Christmas. The one-time discovery modal does not switch anything.
+Individual attempts and the Chanukka game collection default to Klassisch;
+three-difficulty goals offer Leicht, Klassisch and Knifflig in both appearances.
+Admin previews offer a separate Chanukka collection and remain isolated.
+Calendar routes keep the saved door appearance. No date manipulation
 is needed. Admin also supports an optional melody choice, separate from guidance:
 day 10 introduces **Maoz Tzur** with all demonstration bells highlighted.
 
@@ -18,24 +24,23 @@ day 10 introduces **Maoz Tzur** with all demonstration bells highlighted.
 | Paare finden | Eight illustrated pairs: sufganiyah, chanukkiah, dreidel, shekel, oil jug, David star, Temple and candle. |
 | Kugellabyrinth | Existing golden ball, shekel collectibles; identical maze physics and bonus conditions. |
 | Rettet den Weihnachtsmann | Eliyahu HaNavi with a long black coat, broad-brimmed hat, sidecurls and spectacles. A plain bank facade with a clearly marked entrance replaces the fireplace. Pipe connections, route validation and rooftop exit stay the same. |
-| Wichtelwerkstatt | A mischievous leaf-eared fantasy workshop sprite; same planning puzzles and move budgets. |
+| Wichtelwerkstatt | A sculpted clay golem inspired by the Prague legend pushes faceted wooden dreidels onto matching target markings. German labels and accessibility name the golem and dreidels; planning puzzles and move budgets stay shared. |
 | Weihnachtsglocken | Blue ribbons/David-star decorations and three traditional melody hooks. |
 | Ein Glühwein zu viel | Ein Kiddusch-Wein zu viel; the blonde protagonist wears a kippa and arrives at a synagogue. |
 | Akku-Panik | Öl-Panik: five oil-fed lights, one draggable oil jug, percentage gauges, gust events and identical survival/refill rules. |
-| Plätzchen ausstechen | Geographically proportioned combined Israel/Gaza/West Bank/Golan outer silhouette, with the same randomized arrows, timing and difficulty. |
+| Plätzchen ausstechen | Leicht: six-pointed David star; Klassisch: stepped Temple with engraved doorway/columns; Knifflig: nine-branched Chanukkiah with a raised central shamash. Random arrows, timing and mistake limits stay shared. |
 | Nikolausstiefel | Optional Schekel polieren replay: a round dirty coin, followed by a polishing stage. Day 6 defaults to the original boot. |
 
 No additional dependencies, recordings, network calls or Pico commands are used.
-The shared `SkinnableGame` recreates its child when switching; it therefore cleans
-up the old game's audio, tickers, gestures and sensors normally. Presentation
+The shared `SkinnableGame` scopes the active attempt and offers the replay shortcut. Replay preserves the
+chosen version, and leaving disposes audio, tickers, gestures and sensors normally. Presentation
 lives in `challenges/seasonal`; the game models retain their existing rules.
 Cookie outlines, bell melodies and the cleaning-surface mask vary as model configuration; the rules stay shared.
 
 ## Completion and achievements
 
 The central `CompletionPanel` snapshots the skin together with the won attempt's
-facts. `AchievementStore` records one set token per supported game. Switching
-appearance, starting a game, losing or repeating an already counted win cannot
+facts. `AchievementStore` records one set token per supported game. Starting a game, losing or repeating an already counted win cannot
 inflate progress. Admin previews still have no achievement writer.
 
 **Neun Spiele, ein Lichterfest** requires a win in all nine supported modes at
@@ -45,7 +50,7 @@ box action. Existing daily completion and the LED acknowledgement retain their
 normal shared, once-per-new-completion behavior.
 
 The overall bonus now requires 17 achievements. All 11 curated bell hooks count
-for the song collection, bringing the bonus-objective checklist to 29. Rule
+for the song collection, bringing the required bonus-objective checklist to 29. Rule
 version 5 reevaluates only the affected aggregates/song collection; existing
 individual badges, daily completion, voucher text and previous voucher claims
 remain intact. A previously claimed physical voucher is never offered twice.
@@ -59,7 +64,7 @@ information, and replaying the hook never plays a full song.
 | Difficulty | Hook | Source pitches / adaptation | Guidance |
 | --- | --- | --- | --- |
 | Leicht | Sevivon, sov sov sov | D D E F F E; opening six notes, 4 beats. | All bells shown. |
-| Klassisch | Maoz Tzur | Opening two phrases, D major transposed up a minor third to F major so its low fifth fits existing samples. 15 notes, 16 beats. | First bell only. |
+| Klassisch | Maoz Tzur | Opening two phrases, D major transposed up a minor third to F major so its low fifth fits existing samples. 16 notes, 16 beats; the repeated high C uses two eighth notes. | First bell only. |
 | Knifflig | Hanerot Halalu | The leaping, repeated refrain figure at source beats 20–28, D major. 12 notes, 8 beats. | No demonstration highlights. |
 
 The traditional melody pitches and durations were checked against published
@@ -84,9 +89,10 @@ badge. Previously earned individual badges and voucher claims remain intact;
 only the seasonal aggregate/final bonus are reevaluated. Polishing a coin on day
 6 does not earn the boot-specific Nikolaus achievement.
 
-## Map source
+## Legacy custom map outline
 
-`cookies/israel_outline.dart` stores 41 simplified, geographically proportioned
+The old map is no longer used for the difficulty skins, but remains available
+as an explicit custom `CookieShape.israel`. `cookies/israel_outline.dart` stores 41 simplified, geographically proportioned
 points, derived from the outer union of Natural Earth's ISR, GAZ and WEB map
 units. Shared internal edges are removed. Longitude is scaled by the cosine of
 mean latitude to preserve aspect rather than stretching it to the board width.

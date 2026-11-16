@@ -6,17 +6,20 @@ Each has a separate native vector scene: calendar house, toy train, treasure
 cabinet, polished boot, candlelight, collecting sack, memory cards, elf workbench,
 safe winter path, tipsy trip home, batteries, charging laptop, three cookies,
 maze sweets, Santa climbing out of a chimney and an extra-bonus envelope. Earned scenes regain their colors.
-Tap a badge for its illustrated summary. Longer checklists open via
-**Teilziele ansehen**: readable objective cards, adaptive pagination, a filter
-for unfinished goals and links to the individual bonus-goal explanations.
-The checklist uses two columns in landscape when text size permits; it never
-shrinks text to squeeze in every objective. Individual achievements award badges only. A
-separate final reward card tracks all 17 achievements; its contents stay hidden
-until every achievement has been earned. It is explicitly labelled as an extra
-bonus **in addition to the daily presents**, with a voucher envelope rather than
-the main gift illustration. The final reward is not another required
-achievement and cannot depend on itself.
-The screens fit the viewport without vertical scrolling, including large text.
+Tap an award to see its progress immediately on a readable, scrollable detail
+page. Checklists live inline; there is no extra list page. **24 kleine
+Weihnachtswunder** shows 24 day cards in two columns. Available days launch their
+live calendar assignment through the same completion/gift handler as the home
+screen; future days are gray and disabled. Completed days remain replayable.
+Game and song checklist rows launch the appropriate challenge directly. Larger
+lists offer **Nur offene**; normal text remains readable instead of shrinking.
+Individual game goals retain their explicit difficulty and Chanukka launch buttons.
+
+Individual achievements award badges only. A separate final reward card tracks
+all 17 required achievements. Its voucher stays hidden until those are complete
+and is an extra bonus **in addition to the daily presents**. Secret extras are
+visible only after earning them and never block the required counter or voucher.
+The paged collection and games keep their fixed layouts; award details scroll.
 
 ## Rules
 
@@ -24,8 +27,8 @@ The screens fit the viewport without vertical scrolling, including large text.
 | --- | --- |
 | 24 kleine Weihnachtswunder | Complete 24 distinct calendar doors. |
 | Weihnachts-Alleskönnerin | Win each of the ten game types at least once. |
-| Mit Liebe zum Detail | Complete all 29 finite bonus objectives below. |
-| Blank für den Nikolaus | Clean and polish the boot in door 6. |
+| Mit Liebe zum Detail | Complete all 29 required bonus objectives below. |
+| Blank für den Nikolaus | Clean and polish the Nikolaus boot, in door 6 or its achievement attempt. |
 | Lichterfest | Win Oy Vey collecting only Chanukkiot, with no Christmas mistakes. |
 | Koscher durch Weihnachten | Win Oy Vey with zero Christmas mistakes. Other correct objects are allowed. |
 | Einmal gesehen, nie vergessen | Win Memory without missing an available known twin. |
@@ -34,13 +37,14 @@ The screens fit the viewport without vertical scrolling, including large text.
 | Unkaputtbar | Reach home after hitting at least five distinct obstacles. |
 | Keine roten Balken | Win Akku-Panik without any battery ever falling below 3%. |
 | Halb voll, ganz geschafft | Reach at least 50% on one device at any point and win that run. |
+| Volle Ladung! | Reach 80% on one battery or oil lamp. Awarded immediately; winning is not required. |
 | Wie ausgestochen | One zero-mistake cookie win per difficulty. Three objectives. |
-| Naschkatze | Collect all three candies and reach the flag separately on Leicht, Klassisch and Knifflig. Three objectives. |
+| Naschkatze | Collect every candy and reach the flag separately on Leicht, Klassisch and Knifflig (3 / 3 / 7 candies). Three objectives. |
 | Ein ganzes Festtagskonzert | Win each of the eleven curated bell-song excerpts once, at any difficulty. Eleven objectives. |
 | Neun Spiele, ein Lichterfest | Win all nine supported games in Chanukka mode; difficulty is freely selectable. |
-| Feierabend, Weihnachtsmann! | Return to the starting pipe and leave northward through the rooftop chimney. This is a secret successful ending. |
+| Feierabend, Weihnachtsmann! | Return to the starting pipe and leave northward through the rooftop chimney. An optional secret successful ending, excluded from required objectives. |
 
-The individual bonus requirements total 29. Repeated wins never inflate counters.
+The required bonus objectives total 29. Repeated wins never inflate counters.
 Replays can earn missed bonuses even when the calendar door is already complete.
 
 ### Fairness and measurement
@@ -56,8 +60,13 @@ are allowed. The illustration features an oversized brain and a tiny bespectacle
 elf. Previously earned achievements remain earned. Undo restores
 net moves. Exceeding the budget never loses the puzzle, only the bonus attempt.
 Custom levels without a bonus budget do not display a move counter or qualify.
-The achievement's detail page offers all three difficulties after the player
-has won that game in a calendar door. Cookie and labyrinth practice work the same way.
+Every individual game achievement offers a direct attempt without requiring a
+prior calendar win. Workshop, cookies and labyrinth offer all three difficulties
+in both appearances; other goals default to Klassisch and offer a separate
+Chanukka button where supported. The bell goal offers separate Christmas and
+Chanukka song lists. Aggregate goals link to the calendar, relevant checklists,
+game collections or achievement collection. The Nikolaus boot can also earn its
+badge from its dedicated achievement attempt, without completing door 6.
 These real bonus attempts update achievements but never mark a calendar date or
 open the physical box. Admin/development previews remain isolated and award nothing.
 
@@ -68,10 +77,15 @@ mistake. Each difficulty must be perfected in its own run.
 Walk collisions already count each obstacle at most once. Both collision bonuses
 require reaching home. Battery minima and peaks are measured at every physics
 substep, including initial batteries; temporary dips and peaks count even if the
-final values change. All built-in battery levels start above 3%.
+final values change. All built-in battery levels start above 3%. The required 80%
+milestone and optional secret 100% milestone are saved during play, with nonblocking confetti, and survives a later
+loss or leaving the game. It never completes a door or sends a Pico notification.
+The regular illustration shows 80% with golden energy rays. The secret 100%
+illustration is a full battery wearing a Christmas hat.
 
-Generated labyrinths reserve three reachable candy positions off the required
-route, favoring deeper branch areas. Candy is optional for ordinary victory,
+The curated labyrinths have 3 / 3 / 7 candies on Leicht / Klassisch / Knifflig.
+Custom generated labyrinths reserve three reachable candy positions off the
+required route, favoring deeper branch areas. Candy is optional for ordinary victory,
 does not overlap pits or walls, counts once per attempt, and resets after a fall.
 The HUD shows the pickup count. Finishing without all candy does not earn a
 bonus objective. Naschkatze requires qualifying wins at all three difficulties;
@@ -103,7 +117,7 @@ Neither store has a dependency on Pico services or physical unlocking.
 ## Physical vouchers
 
 **Advent-Verwaltung → Erfolge & Gutscheine** edits the single hidden final
-reward text (up to 240 characters). The player must earn all 17 achievements to
+reward text (up to 240 characters). The player must earn all 17 required achievements to
 reveal and mark that voucher as received once. Collecting all labyrinth candy
 awards only **Naschkatze**, with no additional treat or voucher.
 
@@ -147,8 +161,8 @@ Listening, unfinished answers, shortened custom lessons and repeating a song
 do not substitute for the other songs. Correct retries are allowed. Full song
 rounds completed within a multi-round challenge are reported with its final win.
 
-After completing a bell-game door, **Lieder spielen** on the achievement detail
-page opens the player song collection. Select any song and difficulty; each
+**Lieder spielen** and **Chanukka-Lieder** on the achievement detail page open
+the corresponding player song collection, even before any bell-game door is won. Select any song and difficulty; each
 completion updates the collection without marking a calendar date or opening
 the box. This is distinct from the admin/development preview, which remains
 isolated. The collection uses a fixed two-column portrait/four-column landscape
@@ -163,7 +177,7 @@ received final vouchers remain marked as received. Old generic bell-game wins
 cannot prove which songs were played, so no historical melody IDs are guessed.
 
 Rule version 5 adds three Hanukkah hooks and the eight-game seasonal achievement.
-The current totals are 29 bonus objectives and 17 achievements. Affected aggregate
+At that revision the totals were 29 bonus objectives and 17 achievements. Affected aggregate
 awards are reevaluated; previous voucher claims remain acknowledged. See
 [Chanukka mode](hanukkah.md) for date rules, replay controls and music sources.
 
@@ -171,3 +185,46 @@ Rule version 6 adds the shekel-cleaning variant to the seasonal badge. Existing
 individual badges and voucher claims remain earned; the seasonal aggregate and
 final bonus now also require the ninth mode. Day 6 defaults to the boot; cleaning
 a coin there cannot substitute for the Nikolaus boot achievement.
+
+Rule version 7 adds **Volle Ladung!**, bringing the totals to 30 bonus objectives
+and 18 achievements. Existing individual badges and voucher claims survive;
+the affected aggregate and final-bonus awards now include the new milestone.
+
+Rule version 8 lowers **Volle Ladung!** to 80%. **Bis unter die Mütze!** is a
+separate secret 100% achievement, visible in the collection only after earning
+it. It is excluded from the 18 required achievements, the 30 bonus objectives,
+the collection's required counter and the final voucher. Both thresholds trigger
+immediately, including in Öl-Panik, without needing to win. A saved pre-v8 100%
+award grants both achievements; earning 80% in v8 never implies 100% on reload.
+Existing voucher claims and all other achievements remain intact.
+
+Rule version 9 moves **Feierabend, Weihnachtsmann!** into the optional secret
+collection alongside the 100% charge extra. The required totals are 17
+achievements and 29 bonus objectives; previously earned Santa awards and voucher
+claims remain intact. Required completion is attainable without either secret.
+
+Regular completed games and the result's replay action now offer a David-star
+shortcut to a fresh Chanukka run. A one-time **Chanukka-Modus
+freigeschaltet!** modal explains the Jewish variants and the David-star shortcut;
+**Verstanden** dismisses it without changing the theme. It appears on the first regular replay and is remembered
+locally across restarts. Replays never switch theme automatically; only tapping
+the star switches the theme, in either direction, with a fresh attempt. First attempts retain their assigned appearance, themed
+runs stay themed, and isolated admin previews do not trigger the notice.
+
+## Optional Oy Vey secret
+
+**Nichts kommt weg!** requires a won run collecting at least 15 Jewish objects
+without any Jewish object falling out of the bottom. All three Jewish kinds
+count; missed Christmas objects do not. This is independent of the existing
+zero-Christmas-mistakes goal. Losing tracking does not suspend falls or reset the
+miss counter. Restart creates a fresh attempt.
+
+Spawning reserves only enough outstanding Jewish targets to finish the round.
+A perfect standard run therefore generates exactly 15 Jewish objects and catches
+them all. A miss frees a replacement slot, so ordinary victories remain possible
+but the secret is disqualified for that attempt. Completion reports the new fact
+through the shared achievement interface. Admin previews award nothing.
+
+The secret has its own woven-basket illustration, appears only once earned,
+and is excluded from the 17 required achievements, 29 bonus objectives and final
+voucher. Historical wins have no miss observations and are not backfilled.

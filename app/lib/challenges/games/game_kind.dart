@@ -46,6 +46,11 @@ enum Minigame {
     'Fünf Geräte, ein Kabel. Bloß nicht ausgehen!',
     Icons.battery_charging_full_rounded,
   ),
+  trash(
+    'Müll rausbringen',
+    'Beutel raus. Frischen Beutel rein.',
+    Icons.delete_outline_rounded,
+  ),
   shoe(
     'Nikolausstiefel',
     'Ein schmutziger Schuh wartet auf deine Bürste.',

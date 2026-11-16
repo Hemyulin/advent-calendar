@@ -69,7 +69,11 @@ void main() {
           expect(a.difficulty, GameDifficulty.easy);
         }
       }
-      expect(first, Minigame.values.toSet());
+      expect(
+        first,
+        Minigame.values.where((game) => game != Minigame.trash).toSet(),
+      );
+      expect(first, isNot(contains(Minigame.trash)));
       expect(defaultAssignments[8].difficulty, GameDifficulty.normal);
       expect(defaultAssignments[10].difficulty, GameDifficulty.normal);
       final lastSeen = <Minigame, int>{};

@@ -47,7 +47,12 @@ final achievements = <Achievement>[
     'allGames',
     'Weihnachts-Alleskönnerin',
     'Meistere jede der zehn Spielarten mindestens einmal.',
-    {for (final game in Minigame.values) 'game:${game.name}'},
+    {
+      for (final game in Minigame.values.where(
+        (game) => game != Minigame.trash,
+      ))
+        'game:${game.name}',
+    },
   ),
   Achievement(
     'allExtras',
@@ -143,6 +148,12 @@ final achievements = <Achievement>[
 
 /// Secret extras never contribute to required objectives or the final voucher.
 const secretAchievements = [
+  Achievement(
+    'freshBag',
+    'Und der neue Beutel?',
+    'Müll draußen und ein frischer Beutel im Eimer. Du denkst einfach an alles! Ein geheimer Zusatzerfolg, der für den Weihnachtsbonus nicht nötig ist.',
+    {'bonus:freshBag'},
+  ),
   Achievement(
     'noJewishMisses',
     'Nichts kommt weg!',
@@ -360,6 +371,8 @@ class AchievementStore extends ChangeNotifier {
     }
     if (run.facts.won) {
       switch (run.game) {
+        case Minigame.trash:
+          if (feats.contains(RunFeat.freshBag)) bonus('freshBag');
         case Minigame.shoe:
           if ((run.day == 6 || run.day == null) && !run.facts.hanukkahMode) {
             bonus('shoe');

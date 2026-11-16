@@ -1,8 +1,7 @@
 # Minigames
 
 Day 1 starts with easy Memory. The following daily assignments are defined in
-`app/lib/content/calendar_schedule.dart` (editable in **Advent-Verwaltung →
-Kalender bearbeiten**):
+`app/lib/content/calendar_schedule.dart`:
 
 | Day | Game | Difficulty | Appearance |
 | --- | --- | --- | --- |
@@ -422,3 +421,25 @@ keeps the game complete and is not automatically retried. The UI confirms physic
 opening only after the gateway succeeds. Leaving mid-reveal does not resend the
 command. Calendar assignments saved with the retired `tutorial` identifier load
 as easy Memory without clearing completion state.
+
+## Gentler attempts and Müll rausbringen
+
+Calendar challenges offer **Zu schwer?** in the app bar and on defeat. **Etwas
+leichter** restarts only the current attempt at the next easier difficulty. At
+Leicht, the trash alternative remains available. For cookies, the same shape and
+checkpoint count stay in place: speed becomes 65% and timing windows 150% of the
+original. It can be relaxed once per attempt. Gentler wins complete their door,
+but do not report strict bonus feats or completed-song milestones.
+
+**Lieber Müll rausbringen** replaces this attempt with a two-step kitchen chore:
+drag the dark full bag to the exterior door, then drag a fresh liner from its
+roll into the empty bin. Wrong targets and cancelled drags restore the item.
+Removing the bag never finishes the game. The fresh liner animates into place
+before the normal gift result appears. Replay starts both steps again and
+preserves the door's completed status.
+
+The original calendar sequence is unchanged. Alternative wins count for that
+day and for the trash game, never for the replaced game's bonuses. Trash is also
+available through **Spiele testen**. It has no timer, motion sensor, theme toggle,
+new dependencies or hardware code. Pure rules live in `trash_game.dart`; gestures,
+rendering and the finite finish animation live in `trash_screen.dart`.

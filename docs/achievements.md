@@ -228,3 +228,13 @@ through the shared achievement interface. Admin previews award nothing.
 The secret has its own woven-basket illustration, appears only once earned,
 and is excluded from the 17 required achievements, 29 bonus objectives and final
 voucher. Historical wins have no miss observations and are not backfilled.
+
+## Optional fresh-bag secret
+
+**Und der neue Beutel?** unlocks when Müll rausbringen is finished with a fresh
+liner actually installed. It has its own illustrated bin and liner scene, appears
+only after earning, and is excluded from the final bonus and all extra-objective
+requirements. The ten original game types remain the requirement for
+Weihnachts-Alleskönnerin; the optional escape game does not add a required win.
+Admin previews do not persist this secret. Calendar alternatives still report the
+real game played, and prior completions survive replays.

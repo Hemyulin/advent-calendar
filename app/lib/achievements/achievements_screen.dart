@@ -14,6 +14,7 @@ import '../challenges/gift_reward.dart';
 
 // Individual goals launch the relevant game; aggregate goals use collections.
 Minigame? gameForAchievement(String id) => switch (id) {
+  'freshBag' => Minigame.trash,
   'shoe' => Minigame.shoe,
   'menorahs' || 'cleanOy' || 'noJewishMisses' => Minigame.oyVey,
   'memory' => Minigame.memory,

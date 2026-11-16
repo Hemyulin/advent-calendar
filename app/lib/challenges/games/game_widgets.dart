@@ -11,6 +11,7 @@ import '../gift_reward.dart';
 import '../seasonal/game_skin_scope.dart';
 import 'gift_art.dart';
 import 'game_title_scroll.dart';
+import 'challenge_assistance.dart';
 import 'gift_reward_scope.dart';
 
 class GameScaffold extends StatelessWidget {
@@ -38,6 +39,14 @@ class GameScaffold extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           actions: [
+            if (result == null)
+              if (ChallengeAssistance.maybeOf(context) case final assistance?)
+                IconButton(
+                  key: const ValueKey('challenge-assistance'),
+                  tooltip: 'Zu schwer?',
+                  onPressed: assistance.open,
+                  icon: const Icon(Icons.tune_rounded),
+                ),
             if (GameSkinScope.maybeOf(context)?.toggleReplayTheme
                 case final start?)
               IconButton(
@@ -481,6 +490,11 @@ class DefeatPanel extends StatelessWidget {
           onPressed: onRetry,
           child: const Text('Noch einmal versuchen'),
         ),
+        if (ChallengeAssistance.maybeOf(context) case final assistance?)
+          TextButton(
+            onPressed: assistance.open,
+            child: const Text('Zu schwer?'),
+          ),
         TextButton(
           onPressed: () => Navigator.pop(context),
           child: const Text('Zurück zum Kalender'),

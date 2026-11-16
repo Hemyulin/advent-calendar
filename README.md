@@ -147,9 +147,9 @@ boundary](docs/admin.md).
 - `lib/presentation/`: calendar screen, vector door illustration, day carousel,
   and challenge placeholder. Reduced-motion preferences are respected.
 - `lib/challenges/`: challenge identities and types (puzzles, quizzes,
-  questionnaires, interactive minigames), shared gift rewards, and the ten playable
+  questionnaires, interactive minigames), shared gift rewards, and the playable
   games. Pure Dart mechanics are separate from screens and motion input.
-- `lib/content/`: daily content, editable calendar assignments and local storage.
+- `lib/content/`: daily content, calendar assignments and local storage.
 - `lib/progress/`: persistent calendar checkmarks and an injectable test mock.
 - `lib/achievements/`: reusable achievement rules, persistent progress, voucher claims and the collection.
 - `lib/hardware/`: lock communication contract. A future Wi-Fi adapter for the
@@ -188,3 +188,8 @@ The firmware exposes `/health` with the `DoorZero` identity and falls back to a
 hotspot if home Wi-Fi is unavailable. The LED now indicates network status;
 manual LED endpoints return HTTP 410. `old_main.py` preserves the earlier LED
 server for reference and also reads credentials from the local config.
+
+Calendar challenges now offer **Zu schwer?** for a gentler attempt or the optional
+**Müll rausbringen** alternative. Carry the full bag out, then fit a fresh bag to
+complete the door and earn a secret achievement. The trash game can also be
+launched in admin previews. See [minigames](docs/minigames.md).

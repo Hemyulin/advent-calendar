@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import '../seasonal/game_skin_scope.dart';
 import '../../achievements/run_facts.dart';
 import 'dart:async';
@@ -46,10 +47,9 @@ class _WalkScreenState extends State<WalkScreen>
       _ready = false,
       _active = true,
       _paused = false,
-      _left = false,
-      _right = false,
       _showResult = false;
-  double _latest = 0, _zero = 0;
+  double _latest = 0, _zero = 0, _touchControl = 0;
+  double _touchStart = 0;
   int _sensorEpoch = 0;
   String? _sensorMessage;
   @override
@@ -80,7 +80,7 @@ class _WalkScreenState extends State<WalkScreen>
                 (_keys.contains(LogicalKeyboardKey.arrowLeft) ? 1.0 : 0)
           : _useSensors
           ? ((_latest - _zero) * 3.4).clamp(-1.0, 1.0)
-          : (_right ? 1.0 : 0) - (_left ? 1.0 : 0);
+          : _touchControl;
       setState(
         () => _game.advance(
           (elapsed - previous).inMicroseconds / 1e6,
@@ -137,7 +137,8 @@ class _WalkScreenState extends State<WalkScreen>
       _pause();
       _useSensors = false;
       _ready = false;
-      _sensorMessage = 'Keine Sensordaten. Nutze die Pfeile oder die Tastatur.';
+      _sensorMessage =
+          'Keine Sensordaten. Ziehe auf der Straße oder nutze die Pfeiltasten.';
     });
   }
 
@@ -145,8 +146,7 @@ class _WalkScreenState extends State<WalkScreen>
     if (_game.phase == WalkPhase.walking) _paused = true;
     _ticker.stop();
     _previous = null;
-    _left = false;
-    _right = false;
+    _touchControl = 0;
     _keys.clear();
   }
 
@@ -166,8 +166,7 @@ class _WalkScreenState extends State<WalkScreen>
     _sensorEpoch++;
     _subscription?.cancel();
     _timeout?.cancel();
-    _left = false;
-    _right = false;
+    _touchControl = 0;
     _keys.clear();
     if (!_ending.isAnimating && !_showResult) {
       if (MediaQuery.disableAnimationsOf(context)) {
@@ -186,8 +185,7 @@ class _WalkScreenState extends State<WalkScreen>
       _nightMode = _lightingRandom.nextBool();
       _paused = false;
       _showResult = false;
-      _left = false;
-      _right = false;
+      _touchControl = 0;
       _keys.clear();
       _previous = null;
     });
@@ -254,7 +252,7 @@ class _WalkScreenState extends State<WalkScreen>
         alreadyCompleted: widget.alreadyCompleted,
         onRestart: _restart,
         instructions:
-            '${GameSkinScope.isHanukkah(context) ? 'Bring die Figur zur Synagoge.' : 'Bring die Figur nach Hause.'} Neige das Handy sanft nach links oder rechts und gleiche das Schwanken aus. Weiche Schneemännern, Fahrrädern, Mülltonnen und schlafenden Feiernden aus. Eis macht die Straße rutschig. Wenn du zu lange schief stehst oder vom Weg abkommst, landest du im Schnee. Halte bei Pfeilsteuerung die Richtung gedrückt. Die Mitte kannst du neu kalibrieren.',
+            '${GameSkinScope.isHanukkah(context) ? 'Bring die Figur zur Synagoge.' : 'Bring die Figur nach Hause.'} Neige das Handy sanft nach links oder rechts und gleiche das Schwanken aus. Weiche Schneemännern, Fahrrädern, Mülltonnen und schlafenden Feiernden aus. Eis macht die Straße rutschig. Wenn du zu lange schief stehst oder vom Weg abkommst, landest du im Schnee. Ziehe im Touch-Modus auf der Straße nach links oder rechts und halte den Finger dort. Am Computer gehen auch die Pfeiltasten. Die Mitte kannst du neu kalibrieren.',
         children: [
           GameStats(
             text:
@@ -273,47 +271,74 @@ class _WalkScreenState extends State<WalkScreen>
             ),
           ),
           const SizedBox(height: 12),
-          AspectRatio(
-            aspectRatio: .85,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(22),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  AnimatedBuilder(
-                    animation: _ending,
-                    builder: (_, _) => CustomPaint(
-                      key: const ValueKey('walk-street'),
-                      painter: WinterStreetPainter(
-                        _game,
-                        Curves.easeOutCubic.transform(_ending.value),
-                        reducedMotion: MediaQuery.disableAnimationsOf(context),
-                        nightMode: _nightMode,
-                        hanukkah: GameSkinScope.isHanukkah(context),
+          GestureDetector(
+            key: const ValueKey('walk-touch-area'),
+            dragStartBehavior: DragStartBehavior.down,
+            behavior: HitTestBehavior.opaque,
+            onPanStart: !_useSensors && playing && !_paused
+                ? (details) {
+                    _touchStart = details.localPosition.dx;
+                    _focus.requestFocus();
+                  }
+                : null,
+            onPanUpdate: !_useSensors && playing && !_paused
+                ? (details) {
+                    setState(
+                      () => _touchControl =
+                          ((details.localPosition.dx - _touchStart) / 70).clamp(
+                            -1.0,
+                            1.0,
+                          ),
+                    );
+                  }
+                : null,
+            onPanEnd: (_) => setState(() => _touchControl = 0),
+            onPanCancel: () => setState(() => _touchControl = 0),
+            child: AspectRatio(
+              aspectRatio: .85,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(22),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    AnimatedBuilder(
+                      animation: _ending,
+                      builder: (_, _) => CustomPaint(
+                        key: const ValueKey('walk-street'),
+                        painter: WinterStreetPainter(
+                          _game,
+                          Curves.easeOutCubic.transform(_ending.value),
+                          reducedMotion: MediaQuery.disableAnimationsOf(
+                            context,
+                          ),
+                          nightMode: _nightMode,
+                          hanukkah: GameSkinScope.isHanukkah(context),
+                        ),
                       ),
                     ),
-                  ),
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: IconButton.filledTonal(
-                      key: const ValueKey('walk-lighting'),
-                      tooltip: _nightMode
-                          ? 'Zum Tagmodus wechseln'
-                          : 'Zum Nachtmodus wechseln',
-                      style: IconButton.styleFrom(
-                        backgroundColor: CalendarStyle.ivory,
-                        foregroundColor: CalendarStyle.green,
-                      ),
-                      onPressed: () => setState(() => _nightMode = !_nightMode),
-                      icon: Icon(
-                        _nightMode
-                            ? Icons.light_mode_outlined
-                            : Icons.dark_mode_outlined,
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: IconButton.filledTonal(
+                        key: const ValueKey('walk-lighting'),
+                        tooltip: _nightMode
+                            ? 'Zum Tagmodus wechseln'
+                            : 'Zum Nachtmodus wechseln',
+                        style: IconButton.styleFrom(
+                          backgroundColor: CalendarStyle.ivory,
+                          foregroundColor: CalendarStyle.green,
+                        ),
+                        onPressed: () =>
+                            setState(() => _nightMode = !_nightMode),
+                        icon: Icon(
+                          _nightMode
+                              ? Icons.light_mode_outlined
+                              : Icons.dark_mode_outlined,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -322,7 +347,7 @@ class _WalkScreenState extends State<WalkScreen>
             SegmentedButton<bool>(
               segments: const [
                 ButtonSegment(value: true, label: Text('Neigen')),
-                ButtonSegment(value: false, label: Text('Pfeile')),
+                ButtonSegment(value: false, label: Text('Touch')),
               ],
               selected: {_useSensors},
               onSelectionChanged: (value) {
@@ -367,14 +392,6 @@ class _WalkScreenState extends State<WalkScreen>
                     icon: const Icon(Icons.center_focus_strong_rounded),
                   ),
                 ],
-              )
-            else
-              Row(
-                children: [
-                  Expanded(child: _button(false)),
-                  const SizedBox(width: 14),
-                  Expanded(child: _button(true)),
-                ],
               ),
             if (_sensorMessage != null)
               Padding(
@@ -418,63 +435,6 @@ class _WalkScreenState extends State<WalkScreen>
               onRetry: _restart,
             ),
         ],
-      ),
-    );
-  }
-
-  Widget _button(bool right) {
-    final label = right ? 'Rechts' : 'Links';
-    final enabled = _game.phase == WalkPhase.walking && !_paused;
-    return Semantics(
-      label: label,
-      button: true,
-      enabled: enabled,
-      onTap: enabled
-          ? () => setState(() => _game.advance(1 / 30, right ? 1 : -1))
-          : null,
-      child: ExcludeSemantics(
-        child: Listener(
-          onPointerDown: enabled
-              ? (_) => setState(() {
-                  if (right) {
-                    _right = true;
-                  } else {
-                    _left = true;
-                  }
-                })
-              : null,
-          onPointerUp: (_) => setState(() {
-            if (right) {
-              _right = false;
-            } else {
-              _left = false;
-            }
-          }),
-          onPointerCancel: (_) => setState(() {
-            if (right) {
-              _right = false;
-            } else {
-              _left = false;
-            }
-          }),
-          child: Container(
-            key: ValueKey(right ? 'walk-right' : 'walk-left'),
-            height: 58,
-            decoration: BoxDecoration(
-              color: (right ? _right : _left)
-                  ? CalendarStyle.green
-                  : const Color(0xFFE0E8DC),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(
-              right ? Icons.arrow_forward_rounded : Icons.arrow_back_rounded,
-              color: (right ? _right : _left)
-                  ? CalendarStyle.ivory
-                  : CalendarStyle.green,
-              size: 30,
-            ),
-          ),
-        ),
       ),
     );
   }

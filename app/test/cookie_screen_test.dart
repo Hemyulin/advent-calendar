@@ -34,7 +34,7 @@ Future<void> start(WidgetTester tester) async {
 
 void main() {
   testWidgets(
-    'touch-down cuts immediately; lift precedes completion; replay retains completion',
+    'swiping cuts immediately; lift precedes completion; replay retains completion',
     (tester) async {
       var completions = 0;
       await tester.pumpWidget(
@@ -54,8 +54,14 @@ void main() {
       expect(find.text('Jetzt!'), findsOneWidget);
       final direction = currentGame(tester).target!.direction;
       final gesture = await tester.startGesture(
-        tester.getCenter(find.byKey(ValueKey('cookie-${direction.name}'))),
+        tester.getCenter(find.byKey(const ValueKey('cookie-swipe-area'))),
       );
+      await gesture.moveBy(switch (direction) {
+        CutDirection.up => const Offset(0, -60),
+        CutDirection.down => const Offset(0, 60),
+        CutDirection.left => const Offset(-60, 0),
+        CutDirection.right => const Offset(60, 0),
+      });
       await tester.pump();
       expect(
         find.text('1 / 1 · 0 / 3 Fehler'),

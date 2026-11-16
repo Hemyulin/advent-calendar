@@ -233,7 +233,7 @@ void main() {
   );
 
   testWidgets(
-    'concert detail offers the song collection after completing a bells door',
+    'concert detail shows song progress and launches a song directly',
     (tester) async {
       final store = AchievementStore();
       await store.ready;
@@ -251,9 +251,13 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('achievement-bells')));
       await tester.pumpAndSettle();
       expect(find.text('1 / ${bellMelodies.length}'), findsOneWidget);
-      await tester.tap(find.text('Lieder spielen'));
+      final song = find.byKey(
+        ValueKey('objective-bonus:bells:${bellMelodies.first.id}'),
+      );
+      await tester.ensureVisible(song);
+      await tester.tap(song);
       await tester.pumpAndSettle();
-      expect(find.byType(BellSongsScreen), findsOneWidget);
+      expect(find.byType(BellsScreen), findsOneWidget);
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );

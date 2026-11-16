@@ -13,7 +13,7 @@ const hanukkahMotifNames = [
   'Schekel',
   'Ölkrug',
   'Davidstern',
-  'Latke',
+  'Tempel',
   'Kerze',
 ];
 
@@ -113,25 +113,62 @@ void paintHanukkahMotif(Canvas c, Rect rect, int motif) {
         const Size(46, 46),
       );
     case 6:
-      c.drawOval(
-        const Rect.fromLTWH(-23, -16, 46, 34),
-        p..color = hanukkahGold,
+      // Jerusalem's Temple: tall central sanctuary, lower stone wings and
+      // broad approach steps. Large shapes stay readable on a memory card.
+      const stone = Color(0xFFEBD3A7);
+      const edge = Color(0xFFAD8B54);
+      c.drawRect(const Rect.fromLTWH(-20, -7, 40, 23), p..color = stone);
+      c.drawRect(
+        const Rect.fromLTWH(-20, -7, 40, 23),
+        p
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.4
+          ..color = edge,
       );
-      c.drawOval(
-        const Rect.fromLTWH(-19, -13, 38, 27),
-        p..color = const Color(0xFFC58E41),
+      c.drawRect(
+        const Rect.fromLTWH(-10, -20, 20, 36),
+        p
+          ..style = PaintingStyle.fill
+          ..color = const Color(0xFFF4E4C5),
       );
-      for (var i = 0; i < 8; i++) {
-        final a = i * 2.4;
-        final x = math.cos(a) * 13, y = math.sin(a) * 9;
-        c.drawLine(
-          Offset(x - 3, y - 2),
-          Offset(x + 3, y + 2),
-          p
-            ..color = const Color(0xFFEAC881)
-            ..strokeWidth = 2,
-        );
+      c.drawRect(
+        const Rect.fromLTWH(-10, -20, 20, 36),
+        p
+          ..style = PaintingStyle.stroke
+          ..color = edge,
+      );
+      c.drawRect(
+        const Rect.fromLTWH(-12, -22, 24, 4),
+        p
+          ..style = PaintingStyle.fill
+          ..color = hanukkahGold,
+      );
+      c.drawRect(const Rect.fromLTWH(-22, -9, 12, 3), p);
+      c.drawRect(const Rect.fromLTWH(10, -9, 12, 3), p);
+      c.drawRect(const Rect.fromLTWH(-6, -3, 12, 19), p);
+      c.drawRect(
+        const Rect.fromLTWH(-3.5, 0, 7, 16),
+        p..color = const Color(0xFF65503A),
+      );
+      for (final side in [-1.0, 1.0]) {
+        for (final y in [0.0, 7.0]) {
+          c.drawLine(
+            Offset(side * 12, y),
+            Offset(side * 18, y),
+            p
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = 1.3
+              ..color = edge,
+          );
+        }
       }
+      c.drawRect(
+        const Rect.fromLTWH(-21, 15, 42, 3),
+        p
+          ..style = PaintingStyle.fill
+          ..color = hanukkahGold,
+      );
+      c.drawRect(const Rect.fromLTWH(-24, 19, 48, 3), p..color = edge);
     case 7:
       paintOilCandle(
         c,
@@ -231,82 +268,186 @@ void paintEliyahu(Canvas c, Size size) {
   c.restore();
 }
 
-/// A fantasy workshop sprite, with leaf ears and a small round button nose.
-void paintWorkshopSprite(Canvas c, Size size) {
+/// A small sculpted clay guardian inspired by the Prague golem.
+void paintPragueGolem(Canvas c, Size size, {Offset gaze = Offset.zero}) {
   c.save();
   c.scale(size.width / 100, size.height / 100);
-  final p = Paint();
+  final p = Paint()..isAntiAlias = true;
+  const clay = Color(0xFFB68A69),
+      shade = Color(0xFF8D654E),
+      light = Color(0xFFD3AE8D),
+      groove = Color(0xFF765540);
+  void block(Rect rect, Color color, double radius) => c.drawRRect(
+    RRect.fromRectAndRadius(rect, Radius.circular(radius)),
+    p..color = color,
+  );
   c.drawOval(
-    const Rect.fromLTWH(18, 84, 64, 10),
+    const Rect.fromLTWH(15, 85, 70, 10),
     p..color = const Color(0xFFD1C1A6),
   );
-  c.drawRRect(
-    RRect.fromRectAndRadius(
-      const Rect.fromLTWH(32, 57, 37, 29),
-      const Radius.circular(10),
-    ),
-    p..color = hanukkahBlue,
-  );
-  for (final side in [-1.0, 1.0]) {
-    c.drawLine(
-      Offset(50 + side * 10, 83),
-      Offset(50 + side * 17, 89),
-      p
-        ..color = const Color(0xFF617866)
-        ..strokeWidth = 9
-        ..strokeCap = StrokeCap.round,
-    );
-    c.drawPath(
-      Path()
-        ..moveTo(50 + side * 19, 31)
-        ..quadraticBezierTo(50 + side * 43, 10, 50 + side * 37, 42)
-        ..lineTo(50 + side * 19, 49)
-        ..close(),
-      p
-        ..style = PaintingStyle.fill
-        ..color = const Color(0xFF91AB89),
-    );
-  }
-  c.drawOval(
-    const Rect.fromLTWH(25, 20, 50, 48),
-    p..color = const Color(0xFFABC19B),
-  );
+  block(const Rect.fromLTWH(29, 77, 19, 16), shade, 4);
+  block(const Rect.fromLTWH(53, 77, 19, 16), shade, 4);
+  block(const Rect.fromLTWH(13, 54, 18, 31), shade, 6);
+  block(const Rect.fromLTWH(69, 54, 18, 31), shade, 6);
+  block(const Rect.fromLTWH(22, 50, 56, 35), clay, 8);
+  block(const Rect.fromLTWH(25, 54, 5, 22), light, 2);
+  final head = Path()
+    ..moveTo(27, 15)
+    ..lineTo(72, 15)
+    ..lineTo(81, 24)
+    ..lineTo(78, 49)
+    ..lineTo(68, 59)
+    ..lineTo(32, 59)
+    ..lineTo(21, 49)
+    ..lineTo(19, 25)
+    ..close();
+  c.drawPath(head, p..color = clay);
   c.drawPath(
     Path()
-      ..moveTo(28, 26)
-      ..lineTo(47, 8)
-      ..lineTo(54, 19)
-      ..lineTo(68, 14)
-      ..lineTo(73, 31)
+      ..moveTo(27, 15)
+      ..lineTo(72, 15)
+      ..lineTo(77, 21)
+      ..lineTo(24, 21)
       ..close(),
-    p..color = const Color(0xFF617866),
-  );
-  for (final x in [40.0, 61.0]) {
-    c.drawOval(
-      Rect.fromCenter(center: Offset(x, 40), width: 12, height: 15),
-      p..color = const Color(0xFFFFF5DE),
-    );
-    c.drawCircle(Offset(x + 1, 41), 2.5, p..color = const Color(0xFF354D41));
-  }
-  c.drawOval(
-    const Rect.fromLTWH(46, 46, 10, 7),
-    p..color = const Color(0xFF88A07C),
+    p..color = light,
   );
   c.drawPath(
     Path()
-      ..moveTo(39, 56)
-      ..quadraticBezierTo(51, 65, 64, 54),
+      ..moveTo(72, 21)
+      ..lineTo(81, 24)
+      ..lineTo(78, 49)
+      ..lineTo(68, 59)
+      ..lineTo(65, 54)
+      ..lineTo(72, 45)
+      ..close(),
+    p..color = shade,
+  );
+  // Engraved אמת, rendered as text so the Hebrew spelling remains intact.
+  final inscription = TextPainter(
+    text: const TextSpan(
+      text: 'אמת',
+      style: TextStyle(
+        fontFamily: 'sans-serif',
+        fontSize: 13,
+        fontWeight: FontWeight.w700,
+        color: groove,
+      ),
+    ),
+    textDirection: TextDirection.rtl,
+  )..layout();
+  inscription.paint(c, Offset(49 - inscription.width / 2, 21));
+  inscription.dispose();
+  for (final x in [37.0, 62.0]) {
+    block(Rect.fromLTWH(x - 7, 37, 14, 8), groove, 3);
+    c.drawCircle(
+      Offset(x + gaze.dx * 1.5, 41 + gaze.dy),
+      2.5,
+      p..color = const Color(0xFFF2D990),
+    );
+  }
+  c.drawLine(
+    const Offset(42, 51),
+    const Offset(57, 51),
+    p
+      ..color = groove
+      ..strokeWidth = 1.8
+      ..strokeCap = StrokeCap.round,
+  );
+  c.drawPath(
+    Path()
+      ..moveTo(31, 26)
+      ..lineTo(27, 30)
+      ..lineTo(30, 34)
+      ..moveTo(64, 65)
+      ..lineTo(60, 70)
+      ..lineTo(64, 75),
     p
       ..style = PaintingStyle.stroke
-      ..color = const Color(0xFF354D41)
-      ..strokeWidth = 2,
+      ..strokeWidth = 1.3
+      ..color = shade,
   );
-  c.drawLine(
-    const Offset(34, 72),
-    const Offset(68, 72),
+  c.drawPath(
+    Path()
+      ..moveTo(41, 65)
+      ..lineTo(50, 61)
+      ..lineTo(59, 65)
+      ..lineTo(59, 76)
+      ..lineTo(41, 76)
+      ..close(),
     p
-      ..color = hanukkahGold
-      ..strokeWidth = 4,
+      ..color = groove
+      ..strokeWidth = 1.2,
+  );
+  c.restore();
+}
+
+/// Faceted painted wooden dreidels, with a handle, Hebrew face and pointed tip.
+void paintWorkshopDreidel(Canvas c, Size size, {int variant = 0}) {
+  c.save();
+  c.scale(size.width / 100, size.height / 100);
+  final p = Paint()..isAntiAlias = true;
+  final color = const [
+    hanukkahBlue,
+    Color(0xFF528377),
+    Color(0xFFB78C4A),
+    Color(0xFF9B7187),
+  ][variant % 4];
+  c.drawRRect(
+    RRect.fromRectAndRadius(
+      const Rect.fromLTWH(45, 10, 11, 23),
+      const Radius.circular(3),
+    ),
+    p..color = const Color(0xFFC89F64),
+  );
+  c.drawPath(
+    Path()
+      ..moveTo(22, 35)
+      ..lineTo(50, 24)
+      ..lineTo(78, 35)
+      ..lineTo(50, 46)
+      ..close(),
+    p..color = Color.lerp(color, Colors.white, .28)!,
+  );
+  c.drawPath(
+    Path()
+      ..moveTo(22, 35)
+      ..lineTo(50, 46)
+      ..lineTo(50, 74)
+      ..lineTo(22, 63)
+      ..close(),
+    p..color = color,
+  );
+  c.drawPath(
+    Path()
+      ..moveTo(50, 46)
+      ..lineTo(78, 35)
+      ..lineTo(78, 63)
+      ..lineTo(50, 74)
+      ..close(),
+    p..color = Color.lerp(color, Colors.black, .2)!,
+  );
+  c.drawPath(
+    Path()
+      ..moveTo(22, 63)
+      ..lineTo(50, 74)
+      ..lineTo(78, 63)
+      ..lineTo(50, 91)
+      ..close(),
+    p..color = Color.lerp(color, Colors.black, .1)!,
+  );
+  // A carved נ on the light-facing side, drawn natively at small tile sizes.
+  c.drawPath(
+    Path()
+      ..moveTo(35, 47)
+      ..lineTo(40, 49)
+      ..lineTo(40, 61)
+      ..lineTo(30, 57),
+    p
+      ..color = const Color(0xFFF8E6B5)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round,
   );
   c.restore();
 }

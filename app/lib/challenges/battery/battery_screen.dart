@@ -1,6 +1,8 @@
 import '../seasonal/game_skin_scope.dart';
 import '../seasonal/hanukkah_art.dart';
 import '../../achievements/run_facts.dart';
+import '../../achievements/achievement_scope.dart';
+import '../../achievements/achievement_celebration.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -35,6 +37,9 @@ class _BatteryScreenState extends State<BatteryScreen>
   late final Ticker _ticker;
   late final AnimationController _ending;
   final _deskKey = GlobalKey();
+  final _reportedMilestones = <RunFeat>{};
+  double _nextMilestoneRetry = 0;
+  VoidCallback? _dismissAchievement;
   Duration? _previous;
   bool _paused = false, _foreground = true, _showResult = false;
   bool _dragging = false, _haptics = false, _sound = true;
@@ -69,6 +74,7 @@ class _BatteryScreenState extends State<BatteryScreen>
       if (previous == null) return;
       setState(() => _game.advance((elapsed - previous).inMicroseconds / 1e6));
       _feedback();
+      _reportChargeMilestones();
       if (_game.phase != BatteryPhase.playing) _finish();
     });
   }
@@ -97,6 +103,34 @@ class _BatteryScreenState extends State<BatteryScreen>
       _effect(SystemSound.play(SystemSoundType.click));
     }
     _lastSecond = second;
+  }
+
+  void _reportChargeMilestones() {
+    if (_game.elapsed < _nextMilestoneRetry) return;
+    final milestones = <RunFeat>{
+      if (_game.highestBattery >= 80) RunFeat.fullyCharged,
+      if (_game.highestBattery >= 100) RunFeat.hundredPercent,
+    }.difference(_reportedMilestones);
+    if (milestones.isEmpty) return;
+    final record = AchievementScope.maybeOf(context)?.record;
+    if (record == null) return; // Development previews remain isolated.
+    _reportedMilestones.addAll(milestones);
+    final attempt = _game;
+    unawaited(() async {
+      try {
+        final earned = await record(RunFacts(won: false, feats: milestones));
+        // Storage survives navigation/restart; an old attempt cannot show a toast.
+        if (!mounted || attempt != _game || earned.isEmpty) return;
+        _dismissAchievement?.call();
+        _dismissAchievement = showAchievementCelebration(context, earned);
+      } catch (_) {
+        // A transient local save failure may retry on the next threshold check.
+        if (mounted && attempt == _game) {
+          _reportedMilestones.removeAll(milestones);
+          _nextMilestoneRetry = _game.elapsed + 2;
+        }
+      }
+    }());
   }
 
   void _pause() {
@@ -150,6 +184,10 @@ class _BatteryScreenState extends State<BatteryScreen>
   }
 
   void _restart() {
+    _dismissAchievement?.call();
+    _dismissAchievement = null;
+    _reportedMilestones.clear();
+    _nextMilestoneRetry = 0;
     _ticker.stop();
     _ending.reset();
     setState(() {
@@ -234,6 +272,7 @@ class _BatteryScreenState extends State<BatteryScreen>
 
   @override
   void dispose() {
+    _dismissAchievement?.call();
     WidgetsBinding.instance.removeObserver(this);
     _ticker.dispose();
     _ending.dispose();
@@ -517,6 +556,8 @@ class _BatteryScreenState extends State<BatteryScreen>
               feats: {
                 if (_game.lowestBattery >= 3) RunFeat.safeBattery,
                 if (_game.highestBattery >= 50) RunFeat.halfCharged,
+                if (_game.highestBattery >= 80) RunFeat.fullyCharged,
+                if (_game.highestBattery >= 100) RunFeat.hundredPercent,
               },
             ),
             onComplete: widget.onComplete,

@@ -69,7 +69,14 @@ void main() {
       for (final difficulty in GameDifficulty.values) {
         final base = CookieLevel.forDifficulty(difficulty);
         final variant = CookieLevel.forDifficulty(difficulty, hanukkah: true);
-        expect(variant.shape, CookieShape.israel);
+        expect(
+          variant.shape,
+          [
+            CookieShape.davidStar,
+            CookieShape.temple,
+            CookieShape.hanukkiah,
+          ][difficulty.index],
+        );
         expect(variant.speed, base.speed);
         expect(variant.checkpoints, base.checkpoints);
         expect(variant.timingWindowSeconds, base.timingWindowSeconds);
@@ -142,7 +149,7 @@ void main() {
     },
   );
   testWidgets(
-    'switching starts fresh and a real replay win records the shared seasonal fact once',
+    'explicit Chanukka launch and replay keep their theme and record the shared fact once',
     (tester) async {
       final store = AchievementStore();
       await store.ready;
@@ -167,7 +174,7 @@ void main() {
               ),
             ),
             child: SkinnableGame(
-              initialSkin: GameSkin.christmas,
+              initialSkin: GameSkin.hanukkah,
               builder: (_) => MemoryScreen(
                 level: const MemoryLevel(seed: 42),
                 alreadyCompleted: true,
@@ -180,10 +187,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('memory-card-0')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('hanukkah-skin-switch')));
-      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('hanukkah-skin-switch')), findsNothing);
       expect(find.bySemanticsLabel('Karte 1, verdeckt'), findsOneWidget);
       expect(store.progress(festival), 0);
       await solveVisibleMemory(tester);
@@ -192,18 +196,29 @@ void main() {
       expect(store.progress(festival), 1);
       final dayAchievement = achievements.firstWhere((a) => a.id == 'allDays');
       expect(store.progress(dayAchievement), 1);
-      final resultSwitch = find.descendant(
-        of: find.byType(CompletionPanel),
-        matching: find.byKey(const ValueKey('hanukkah-skin-switch')),
-      );
-      await tester.tap(resultSwitch);
+      expect(find.byKey(const ValueKey('hanukkah-skin-switch')), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('completion-replay')));
       await tester.pumpAndSettle();
       expect(find.byType(CompletionPanel), findsNothing);
       expect(store.progress(festival), 1);
       expect(
         GameSkinScope.maybeOf(tester.element(find.byType(MemoryScreen)))!.skin,
-        GameSkin.christmas,
+        GameSkin.hanukkah,
       );
+      await tester.tap(find.byKey(const ValueKey('hanukkah-replay')));
+      await tester.pumpAndSettle();
+      expect(
+        GameSkinScope.isHanukkah(tester.element(find.byType(MemoryScreen))),
+        isFalse,
+      );
+      expect(store.progress(festival), 1);
+      await tester.tap(find.byKey(const ValueKey('hanukkah-replay')));
+      await tester.pumpAndSettle();
+      expect(
+        GameSkinScope.isHanukkah(tester.element(find.byType(MemoryScreen))),
+        isTrue,
+      );
+      expect(store.progress(festival), 1);
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );

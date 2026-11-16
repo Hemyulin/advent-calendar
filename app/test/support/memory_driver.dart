@@ -4,6 +4,12 @@ import 'package:advent_calendar/challenges/games/game_widgets.dart';
 
 /// Solve through visible card faces, without accessing a shuffled game's state.
 Future<void> solveVisibleMemory(WidgetTester tester) async {
+  final replayNotice = find.byKey(const ValueKey('hanukkah-unlock-understood'));
+  if (replayNotice.evaluate().isNotEmpty) {
+    await tester.tap(replayNotice);
+    await tester.pumpAndSettle();
+  }
+
   Future<void> card(int i) async {
     await tester.tap(find.byKey(ValueKey('memory-card-$i')));
     await tester.pumpAndSettle();

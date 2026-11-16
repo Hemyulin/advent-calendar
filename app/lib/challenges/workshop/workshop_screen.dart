@@ -114,7 +114,7 @@ class _WorkshopScreenState extends State<WorkshopScreen> {
       alreadyCompleted: widget.alreadyCompleted,
       onRestart: _restart,
       instructions:
-          'Schiebe alle Geschenke auf die goldenen Plätze. Wische über die Werkstatt oder nutze die Pfeile. Du kannst immer nur ein Geschenk schieben, niemals ziehen. Holzkisten versperren den Weg. Mit Rückgängig nimmst du Züge zurück; oben kannst du neu beginnen.',
+          'Schiebe alle ${GameSkinScope.isHanukkah(context) ? 'Dreidel auf die markierten' : 'Geschenke auf die goldenen'} Plätze. Wische über die Werkstatt oder nutze am Computer die Pfeiltasten. Du kannst immer nur ${GameSkinScope.isHanukkah(context) ? 'einen Dreidel' : 'ein Geschenk'} schieben, niemals ziehen. Holzkisten versperren den Weg. Mit Rückgängig nimmst du Züge zurück; oben kannst du neu beginnen.',
       children: [
         if (_game.level.bonusMoveLimit != null)
           Text(
@@ -122,10 +122,13 @@ class _WorkshopScreenState extends State<WorkshopScreen> {
             textAlign: TextAlign.center,
             style: const TextStyle(color: CalendarStyle.muted),
           ),
-        GameStats(text: '${_game.placed} / ${_game.presents.length} Geschenke'),
+        GameStats(
+          text:
+              '${_game.placed} / ${_game.presents.length} ${GameSkinScope.isHanukkah(context) ? 'Dreidel' : 'Geschenke'}',
+        ),
         Semantics(
           label:
-              'Werkstatt. Wichtel in Reihe ${_game.elf ~/ _game.level.size + 1}, Spalte ${_game.elf % _game.level.size + 1}. ${_game.placed} Geschenke am Ziel.',
+              'Werkstatt. ${GameSkinScope.isHanukkah(context) ? 'Golem' : 'Wichtel'} in Reihe ${_game.elf ~/ _game.level.size + 1}, Spalte ${_game.elf % _game.level.size + 1}. ${_game.placed} ${GameSkinScope.isHanukkah(context) ? 'Dreidel' : 'Geschenke'} am Ziel.',
           child: GestureDetector(
             key: const ValueKey('workshop-board'),
             behavior: HitTestBehavior.opaque,
@@ -170,6 +173,7 @@ class _WorkshopScreenState extends State<WorkshopScreen> {
                             painter: _WorkshopFloorPainter(
                               _game.level,
                               boxes.toSet(),
+                              hanukkah: GameSkinScope.isHanukkah(context),
                             ),
                           ),
                         ),
@@ -184,7 +188,7 @@ class _WorkshopScreenState extends State<WorkshopScreen> {
                             height: tile,
                             child: Semantics(
                               label:
-                                  'Geschenk ${i + 1}${_game.level.targets.contains(boxes[i]) ? ', am Ziel' : ''}',
+                                  '${GameSkinScope.isHanukkah(context) ? 'Dreidel' : 'Geschenk'} ${i + 1}${_game.level.targets.contains(boxes[i]) ? ', am Ziel' : ''}',
                               child: TweenAnimationBuilder<double>(
                                 key: ValueKey(
                                   _game.level.targets.contains(boxes[i]),
@@ -204,6 +208,7 @@ class _WorkshopScreenState extends State<WorkshopScreen> {
                                   painter: _PresentPainter(
                                     i,
                                     _game.level.targets.contains(boxes[i]),
+                                    hanukkah: GameSkinScope.isHanukkah(context),
                                   ),
                                 ),
                               ),
@@ -232,37 +237,6 @@ class _WorkshopScreenState extends State<WorkshopScreen> {
             ),
           ),
         ),
-        const SizedBox(height: 22),
-        Row(
-          children: [
-            for (final direction in WorkshopDirection.values)
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 5),
-                  child: Tooltip(
-                    message: direction.label,
-                    child: FilledButton.tonal(
-                      key: ValueKey('workshop-${direction.name}'),
-                      style: FilledButton.styleFrom(
-                        padding: EdgeInsets.zero,
-                        minimumSize: const Size(0, 60),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      onPressed: _game.won ? null : () => _move(direction),
-                      child: Icon(switch (direction) {
-                        WorkshopDirection.up => Icons.arrow_upward_rounded,
-                        WorkshopDirection.down => Icons.arrow_downward_rounded,
-                        WorkshopDirection.left => Icons.arrow_back_rounded,
-                        WorkshopDirection.right => Icons.arrow_forward_rounded,
-                      }, size: 28),
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
         const SizedBox(height: 16),
         OutlinedButton.icon(
           key: const ValueKey('workshop-undo'),
@@ -281,7 +255,9 @@ class _WorkshopScreenState extends State<WorkshopScreen> {
             ),
             onComplete: widget.onComplete,
             onReplay: _restart,
-            message: 'Alle Geschenke sind an ihrem Platz!',
+            message: GameSkinScope.isHanukkah(context)
+                ? 'Alle Dreidel sind an ihrem Platz!'
+                : 'Alle Geschenke sind an ihrem Platz!',
           ),
       ],
     ),
@@ -289,7 +265,8 @@ class _WorkshopScreenState extends State<WorkshopScreen> {
 }
 
 class _WorkshopFloorPainter extends CustomPainter {
-  _WorkshopFloorPainter(this.level, this.boxes);
+  _WorkshopFloorPainter(this.level, this.boxes, {this.hanukkah = false});
+  final bool hanukkah;
   final WorkshopLevel level;
   final Set<int> boxes;
   @override
@@ -367,30 +344,46 @@ class _WorkshopFloorPainter extends CustomPainter {
                   : CalendarStyle.gold.withValues(alpha: .65),
           );
           final c = Offset(x + tile / 2, y + tile / 2);
-          canvas.drawPath(
-            Path()
-              ..moveTo(c.dx, c.dy)
-              ..cubicTo(
-                c.dx - tile * .33,
-                c.dy - tile * .3,
-                c.dx - tile * .23,
-                c.dy + tile * .12,
-                c.dx,
-                c.dy,
-              )
-              ..cubicTo(
-                c.dx + tile * .33,
-                c.dy - tile * .3,
-                c.dx + tile * .23,
-                c.dy + tile * .12,
-                c.dx,
-                c.dy,
-              )
-              ..lineTo(c.dx - tile * .12, c.dy + tile * .2)
-              ..moveTo(c.dx, c.dy)
-              ..lineTo(c.dx + tile * .12, c.dy + tile * .2),
-            paint..strokeWidth = tile * .035,
-          );
+          if (hanukkah) {
+            canvas.drawPath(
+              Path()
+                ..moveTo(c.dx - tile * .035, c.dy - tile * .23)
+                ..lineTo(c.dx + tile * .035, c.dy - tile * .23)
+                ..lineTo(c.dx + tile * .035, c.dy - tile * .13)
+                ..moveTo(c.dx - tile * .15, c.dy - tile * .13)
+                ..lineTo(c.dx + tile * .15, c.dy - tile * .13)
+                ..lineTo(c.dx + tile * .15, c.dy + tile * .1)
+                ..lineTo(c.dx, c.dy + tile * .23)
+                ..lineTo(c.dx - tile * .15, c.dy + tile * .1)
+                ..close(),
+              paint..strokeWidth = tile * .03,
+            );
+          } else {
+            canvas.drawPath(
+              Path()
+                ..moveTo(c.dx, c.dy)
+                ..cubicTo(
+                  c.dx - tile * .33,
+                  c.dy - tile * .3,
+                  c.dx - tile * .23,
+                  c.dy + tile * .12,
+                  c.dx,
+                  c.dy,
+                )
+                ..cubicTo(
+                  c.dx + tile * .33,
+                  c.dy - tile * .3,
+                  c.dx + tile * .23,
+                  c.dy + tile * .12,
+                  c.dx,
+                  c.dy,
+                )
+                ..lineTo(c.dx - tile * .12, c.dy + tile * .2)
+                ..moveTo(c.dx, c.dy)
+                ..lineTo(c.dx + tile * .12, c.dy + tile * .2),
+              paint..strokeWidth = tile * .035,
+            );
+          }
           paint.style = PaintingStyle.fill;
         }
       }
@@ -402,7 +395,8 @@ class _WorkshopFloorPainter extends CustomPainter {
 }
 
 class _PresentPainter extends CustomPainter {
-  _PresentPainter(this.id, this.placed);
+  _PresentPainter(this.id, this.placed, {this.hanukkah = false});
+  final bool hanukkah;
   final int id;
   final bool placed;
   @override
@@ -414,42 +408,46 @@ class _PresentPainter extends CustomPainter {
       const Rect.fromLTWH(16, 78, 68, 13),
       paint..color = const Color(0xFFCDBB9E),
     );
-    final color = const [
-      Color(0xFFBD6758),
-      Color(0xFF4E8171),
-      Color(0xFF638E9C),
-      Color(0xFFA27B89),
-    ][id % 4];
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        const Rect.fromLTWH(16, 22, 68, 59),
-        const Radius.circular(9),
-      ),
-      paint..color = color,
-    );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        const Rect.fromLTWH(13, 25, 74, 15),
-        const Radius.circular(5),
-      ),
-      paint..color = Color.lerp(color, CalendarStyle.ivory, .1)!,
-    );
-    canvas.drawRect(
-      const Rect.fromLTWH(44, 24, 12, 56),
-      paint..color = const Color(0xFFF4DCAB),
-    );
-    canvas.drawPath(
-      Path()
-        ..moveTo(50, 26)
-        ..cubicTo(15, -1, 20, 41, 50, 26)
-        ..cubicTo(83, -1, 80, 41, 50, 26),
-      paint
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 6
-        ..strokeCap = StrokeCap.round
-        ..color = const Color(0xFFF4DCAB),
-    );
-    paint.style = PaintingStyle.fill;
+    if (hanukkah) {
+      paintWorkshopDreidel(canvas, const Size(100, 100), variant: id);
+    } else {
+      final color = const [
+        Color(0xFFBD6758),
+        Color(0xFF4E8171),
+        Color(0xFF638E9C),
+        Color(0xFFA27B89),
+      ][id % 4];
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          const Rect.fromLTWH(16, 22, 68, 59),
+          const Radius.circular(9),
+        ),
+        paint..color = color,
+      );
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          const Rect.fromLTWH(13, 25, 74, 15),
+          const Radius.circular(5),
+        ),
+        paint..color = Color.lerp(color, CalendarStyle.ivory, .1)!,
+      );
+      canvas.drawRect(
+        const Rect.fromLTWH(44, 24, 12, 56),
+        paint..color = const Color(0xFFF4DCAB),
+      );
+      canvas.drawPath(
+        Path()
+          ..moveTo(50, 26)
+          ..cubicTo(15, -1, 20, 41, 50, 26)
+          ..cubicTo(83, -1, 80, 41, 50, 26),
+        paint
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 6
+          ..strokeCap = StrokeCap.round
+          ..color = const Color(0xFFF4DCAB),
+      );
+      paint.style = PaintingStyle.fill;
+    }
     if (placed) {
       canvas.drawCircle(
         const Offset(79, 75),
@@ -478,7 +476,7 @@ class _PresentPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_PresentPainter old) =>
-      old.id != id || old.placed != placed;
+      old.id != id || old.placed != placed || old.hanukkah != hanukkah;
 }
 
 class _ElfPainter extends CustomPainter {
@@ -488,7 +486,11 @@ class _ElfPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     if (hanukkah) {
-      paintWorkshopSprite(canvas, size);
+      paintPragueGolem(
+        canvas,
+        size,
+        gaze: Offset(facing.dx.toDouble(), facing.dy.toDouble()),
+      );
       return;
     }
     canvas.save();

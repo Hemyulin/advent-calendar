@@ -5,18 +5,10 @@ import '../presentation/viewport_fit.dart';
 import 'pico_connection_screen.dart';
 import 'achievement_rewards_screen.dart';
 import '../achievements/achievement_store.dart';
-import 'calendar_editor_screen.dart';
-import '../content/calendar_schedule.dart';
 import '../hardware/pico_service.dart';
 
 class AdminScreen extends StatelessWidget {
-  const AdminScreen({
-    super.key,
-    this.picoService,
-    required this.schedule,
-    required this.achievements,
-  });
-  final CalendarSchedule schedule;
+  const AdminScreen({super.key, this.picoService, required this.achievements});
   final AchievementStore achievements;
   final PicoService? picoService;
   @override
@@ -34,13 +26,6 @@ class AdminScreen extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _section(
-              context,
-              title: 'Kalender bearbeiten',
-              description: 'Spiele und Schwierigkeit pro Dezembertag.',
-              icon: Icons.calendar_month_outlined,
-              page: CalendarEditorScreen(schedule: schedule),
-            ),
             _section(
               context,
               title: 'Spiele testen',
@@ -62,12 +47,6 @@ class AdminScreen extends StatelessWidget {
               icon: Icons.workspace_premium_outlined,
               page: AchievementRewardsScreen(store: achievements),
             ),
-            _section(
-              context,
-              title: 'Diagnose & Fortschritt',
-              description: 'Erfolge prüfen und Fehler eingrenzen.',
-              icon: Icons.fact_check_outlined,
-            ),
           ],
         ),
       ),
@@ -79,7 +58,7 @@ class AdminScreen extends StatelessWidget {
     required String title,
     required String description,
     required IconData icon,
-    Widget? page,
+    required Widget page,
   }) => Padding(
     padding: const EdgeInsets.only(bottom: 14),
     child: Material(
@@ -87,17 +66,9 @@ class AdminScreen extends StatelessWidget {
       borderRadius: BorderRadius.circular(20),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            builder: (_) =>
-                page ??
-                _PlannedSection(
-                  title: title,
-                  description: description,
-                  icon: icon,
-                ),
-          ),
-        ),
+        onTap: () => Navigator.of(
+          context,
+        ).push(MaterialPageRoute<void>(builder: (_) => page)),
         child: Padding(
           padding: const EdgeInsets.all(18),
           child: Row(
@@ -124,16 +95,6 @@ class AdminScreen extends StatelessWidget {
                         fontSize: 13,
                       ),
                     ),
-                    if (page == null) ...[
-                      const SizedBox(height: 6),
-                      const Text(
-                        'In Vorbereitung',
-                        style: TextStyle(
-                          color: CalendarStyle.gold,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ),
@@ -144,45 +105,6 @@ class AdminScreen extends StatelessWidget {
               ),
             ],
           ),
-        ),
-      ),
-    ),
-  );
-}
-
-class _PlannedSection extends StatelessWidget {
-  const _PlannedSection({
-    required this.title,
-    required this.description,
-    required this.icon,
-  });
-  final String title, description;
-  final IconData icon;
-  @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(
-      title: FittedBox(fit: BoxFit.scaleDown, child: Text(title)),
-    ),
-    body: SafeArea(
-      child: ViewportFit(
-        padding: const EdgeInsets.all(28),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 48, color: CalendarStyle.green),
-            const SizedBox(height: 24),
-            Text(
-              description,
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: CalendarStyle.green, fontSize: 18),
-            ),
-            const SizedBox(height: 14),
-            const Text(
-              'Dieser Bereich ist noch in Vorbereitung.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: CalendarStyle.muted),
-            ),
-          ],
         ),
       ),
     ),

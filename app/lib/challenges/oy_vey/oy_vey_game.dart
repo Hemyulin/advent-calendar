@@ -100,6 +100,7 @@ class OyVeyGame {
   final math.Random _random;
   final List<FallingObject> objects = [];
   int collected = 0, mistakes = 0, menorahsCollected = 0;
+  int missedJewishItems = 0;
   double elapsed = 0, _spawn = 0;
   int _nextId = 0;
   CatchMouth? _previous;
@@ -135,14 +136,19 @@ class OyVeyGame {
       final kind = _random.nextDouble() < .7
           ? FestiveObject.values[_random.nextInt(3)]
           : FestiveObject.values[3 + _random.nextInt(3)];
-      objects.add(
-        FallingObject(
-          id: _nextId++,
-          kind: kind,
-          x: .07 + _random.nextDouble() * .86,
-          y: -.05,
-        ),
-      );
+      // A perfect run generates exactly the target number of Jewish items.
+      // Misses free a slot for a replacement, so ordinary wins stay possible.
+      final outstanding = objects.where((object) => object.kind.correct).length;
+      if (!kind.correct || collected + outstanding < level.target) {
+        objects.add(
+          FallingObject(
+            id: _nextId++,
+            kind: kind,
+            x: .07 + _random.nextDouble() * .86,
+            y: -.05,
+          ),
+        );
+      }
     }
     for (final object in objects.toList()) {
       final oldY = object.y;
@@ -162,6 +168,7 @@ class OyVeyGame {
         if (won || lost) break;
       } else if (object.y - object.radius > 1) {
         objects.remove(object);
+        if (object.kind.correct) missedJewishItems++;
       }
     }
     _previous = mouth;

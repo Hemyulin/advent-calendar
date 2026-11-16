@@ -26,13 +26,13 @@ final bonusObjectives = <String>{
   'roughWalk',
   'safeBattery',
   'halfCharged',
+  'fullyCharged',
   'cookies:easy',
   'cookies:normal',
   'cookies:hard',
   'candy:easy',
   'candy:normal',
   'candy:hard',
-  'santaUp',
   for (final melody in bellMelodies) 'bells:${melody.id}',
 };
 
@@ -58,7 +58,7 @@ final achievements = <Achievement>[
   const Achievement(
     'shoe',
     'Blank für den Nikolaus',
-    'Reinige und poliere den Stiefel am 6. Türchen.',
+    'Reinige und poliere den Nikolausstiefel.',
     {'bonus:shoe'},
   ),
   const Achievement(
@@ -110,6 +110,12 @@ final achievements = <Achievement>[
     {'bonus:halfCharged'},
   ),
   const Achievement(
+    'fullyCharged',
+    'Volle Ladung!',
+    'Bringe einen Akku oder Ölstand auf mindestens 80 %. Du musst den Durchlauf nicht gewinnen.',
+    {'bonus:fullyCharged'},
+  ),
+  const Achievement(
     'cookies',
     'Wie ausgestochen',
     'Schaffe je einen fehlerfreien Durchlauf auf Leicht, Klassisch und Knifflig.',
@@ -120,12 +126,6 @@ final achievements = <Achievement>[
     'Naschkatze',
     'Sammle auf Leicht, Klassisch und Knifflig jeweils alle Süßigkeiten oder Schekel und erreiche die Flagge.',
     {'bonus:candy:easy', 'bonus:candy:normal', 'bonus:candy:hard'},
-  ),
-  const Achievement(
-    'santaUp',
-    'Feierabend, Weihnachtsmann!',
-    'Schick den Weihnachtsmann zurück nach Hause.',
-    {'bonus:santaUp'},
   ),
   Achievement(
     'bells',
@@ -140,6 +140,30 @@ final achievements = <Achievement>[
     {for (final game in hanukkahGames) 'skin:${game.name}'},
   ),
 ];
+
+/// Secret extras never contribute to required objectives or the final voucher.
+const secretAchievements = [
+  Achievement(
+    'noJewishMisses',
+    'Nichts kommt weg!',
+    'Gewinne Oy Vey und fange alle 15 jüdischen Gegenstände, ohne einen unten vorbeifallen zu lassen. Ein geheimer Zusatzerfolg, der für den Weihnachtsbonus nicht nötig ist.',
+    {'bonus:noJewishMisses'},
+  ),
+  Achievement(
+    'santaUp',
+    'Feierabend, Weihnachtsmann!',
+    'Schick den Weihnachtsmann zurück nach Hause. Ein geheimer Zusatzerfolg, der für den Weihnachtsbonus nicht nötig ist.',
+    {'bonus:santaUp'},
+  ),
+
+  Achievement(
+    'hundredPercent',
+    'Bis unter die Mütze!',
+    'Bringe einen Akku oder Ölstand auf 100 %. Ein geheimer Zusatzerfolg, der für den Weihnachtsbonus nicht nötig ist. Du musst den Durchlauf nicht gewinnen.',
+    {'bonus:hundredPercent'},
+  ),
+];
+final achievementCatalog = [...achievements, ...secretAchievements];
 
 /// A reward milestone outside the badge list, so it cannot depend on itself.
 final finalReward = Achievement(
@@ -195,7 +219,9 @@ class AchievementStore extends ChangeNotifier {
       final raw = (await _preferences()).getString(storageKey);
       if (raw != null) {
         final json = jsonDecode(raw) as Map<String, dynamic>;
-        final allowed = achievements.expand((a) => a.requirements).toSet();
+        final allowed = achievementCatalog
+            .expand((a) => a.requirements)
+            .toSet();
         _tokens = (json['tokens'] as List)
             .whereType<String>()
             .where(allowed.contains)
@@ -204,7 +230,8 @@ class AchievementStore extends ChangeNotifier {
             .whereType<String>()
             .where(
               (id) =>
-                  id == finalReward.id || achievements.any((a) => a.id == id),
+                  id == finalReward.id ||
+                  achievementCatalog.any((a) => a.id == id),
             )
             .toSet();
         if ((json['rulesVersion'] as int? ?? 1) < 2) {
@@ -226,6 +253,15 @@ class AchievementStore extends ChangeNotifier {
         }
         if ((json['rulesVersion'] as int? ?? 1) < 6) {
           _earned.removeAll({'hanukkah', finalReward.id});
+        }
+        if ((json['rulesVersion'] as int? ?? 1) < 7) {
+          _earned.removeAll({'allExtras', finalReward.id});
+        }
+        if ((json['rulesVersion'] as int? ?? 1) < 8 &&
+            (_tokens.contains('bonus:fullyCharged') ||
+                _earned.contains('fullyCharged'))) {
+          // Before v8, this token certified 100%, so preserve that accomplishment.
+          _tokens.addAll({'bonus:fullyCharged', 'bonus:hundredPercent'});
         }
         _claimed = (json['claimed'] as List)
             .whereType<String>()
@@ -263,7 +299,7 @@ class AchievementStore extends ChangeNotifier {
   ) async {
     final earned = {
       ..._earned,
-      for (final a in achievements)
+      for (final a in achievementCatalog)
         if (a.requirements.every(tokens.contains)) a.id,
     };
     if (achievements.every((a) => earned.contains(a.id))) {
@@ -272,7 +308,7 @@ class AchievementStore extends ChangeNotifier {
     final saved = await (await _preferences()).setString(
       storageKey,
       jsonEncode({
-        'rulesVersion': 6,
+        'rulesVersion': 9,
         'tokens': tokens.toList(),
         'earned': earned.toList(),
         'claimed': claims.toList(),
@@ -304,53 +340,66 @@ class AchievementStore extends ChangeNotifier {
     if (run.day != null) {
       RangeError.checkValueInInterval(run.day!, 1, 24, 'day');
     }
-    final before = achievements.where(earned).map((a) => a.id).toSet();
+    final before = achievementCatalog.where(earned).map((a) => a.id).toSet();
     final tokens = {
       ..._tokens,
-      if (run.day != null) 'day:${run.day}',
-      'game:${run.game.name}',
-      if (run.facts.hanukkahMode && supportsHanukkah(run.game))
+      if (run.facts.won && run.day != null) 'day:${run.day}',
+      if (run.facts.won) 'game:${run.game.name}',
+      if (run.facts.won && run.facts.hanukkahMode && supportsHanukkah(run.game))
         'skin:${run.game.name}',
     };
     void bonus(String token) => tokens.add('bonus:$token');
     final feats = run.facts.feats;
-    switch (run.game) {
-      case Minigame.shoe:
-        if (run.day == 6 && !run.facts.hanukkahMode) bonus('shoe');
-      case Minigame.memory:
-        if (feats.contains(RunFeat.perfectMemory)) bonus('memory');
-      case Minigame.maze:
-        if (feats.contains(RunFeat.allCandy)) {
-          bonus('candy:${run.difficulty.name}');
-        }
-      case Minigame.oyVey:
-        if (feats.contains(RunFeat.onlyMenorahs)) bonus('menorahs');
-        if (feats.contains(RunFeat.cleanOyVey)) bonus('cleanOy');
-      case Minigame.workshop:
-        if (feats.contains(RunFeat.efficientWorkshop)) {
-          bonus('workshop:${run.difficulty.name}');
-        }
-      case Minigame.cookies:
-        if (feats.contains(RunFeat.perfectCookie)) {
-          bonus('cookies:${run.difficulty.name}');
-        }
-      case Minigame.walkHome:
-        if (feats.contains(RunFeat.cleanWalk)) bonus('cleanWalk');
-        if (feats.contains(RunFeat.roughWalk)) bonus('roughWalk');
-      case Minigame.battery:
-        if (feats.contains(RunFeat.safeBattery)) bonus('safeBattery');
-        if (feats.contains(RunFeat.halfCharged)) bonus('halfCharged');
-      case Minigame.chimney:
-        if (feats.contains(RunFeat.santaEscaped)) bonus('santaUp');
-      case Minigame.bells:
-        for (final melody in bellMelodies) {
-          if (run.facts.completedBellSongs.contains(melody.id)) {
-            bonus('bells:${melody.id}');
+    // Both charging milestones are earned immediately, independently of a win.
+    if (run.game == Minigame.battery) {
+      if (feats.contains(RunFeat.fullyCharged) ||
+          feats.contains(RunFeat.hundredPercent)) {
+        bonus('fullyCharged');
+      }
+      if (feats.contains(RunFeat.hundredPercent)) bonus('hundredPercent');
+    }
+    if (run.facts.won) {
+      switch (run.game) {
+        case Minigame.shoe:
+          if ((run.day == 6 || run.day == null) && !run.facts.hanukkahMode) {
+            bonus('shoe');
           }
-        }
+        case Minigame.memory:
+          if (feats.contains(RunFeat.perfectMemory)) bonus('memory');
+        case Minigame.maze:
+          if (feats.contains(RunFeat.allCandy)) {
+            bonus('candy:${run.difficulty.name}');
+          }
+        case Minigame.oyVey:
+          if (feats.contains(RunFeat.onlyMenorahs)) bonus('menorahs');
+          if (feats.contains(RunFeat.cleanOyVey)) bonus('cleanOy');
+          if (feats.contains(RunFeat.noJewishMisses)) bonus('noJewishMisses');
+        case Minigame.workshop:
+          if (feats.contains(RunFeat.efficientWorkshop)) {
+            bonus('workshop:${run.difficulty.name}');
+          }
+        case Minigame.cookies:
+          if (feats.contains(RunFeat.perfectCookie)) {
+            bonus('cookies:${run.difficulty.name}');
+          }
+        case Minigame.walkHome:
+          if (feats.contains(RunFeat.cleanWalk)) bonus('cleanWalk');
+          if (feats.contains(RunFeat.roughWalk)) bonus('roughWalk');
+        case Minigame.battery:
+          if (feats.contains(RunFeat.safeBattery)) bonus('safeBattery');
+          if (feats.contains(RunFeat.halfCharged)) bonus('halfCharged');
+        case Minigame.chimney:
+          if (feats.contains(RunFeat.santaEscaped)) bonus('santaUp');
+        case Minigame.bells:
+          for (final melody in bellMelodies) {
+            if (run.facts.completedBellSongs.contains(melody.id)) {
+              bonus('bells:${melody.id}');
+            }
+          }
+      }
     }
     await _write(tokens, {..._claimed}, {..._rewards});
-    return achievements
+    return achievementCatalog
         .where((a) => earned(a) && !before.contains(a.id))
         .toList();
   });

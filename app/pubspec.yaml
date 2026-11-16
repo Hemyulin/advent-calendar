@@ -25,3 +25,8 @@ flutter:
   uses-material-design: true
   assets:
     - assets/audio/bells/
+    - assets/fonts/grenze-gotisch/OFL.txt
+  fonts:
+    - family: GrenzeGotisch
+      fonts:
+        - asset: assets/fonts/grenze-gotisch/GrenzeGotisch.ttf

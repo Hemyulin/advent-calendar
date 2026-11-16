@@ -27,6 +27,56 @@ Future<void> lastPage(WidgetTester tester, {String id = 'candy'}) async {
 }
 
 void main() {
+  testWidgets(
+    'secret 100% is hidden until earned and stays outside the required counter',
+    (t) async {
+      final store = AchievementStore();
+      await store.ready;
+      addTearDown(store.dispose);
+      await t.pumpWidget(MaterialApp(home: AchievementsScreen(store: store)));
+      await t.pumpAndSettle();
+      t.widget<PageView>(find.byType(PageView)).controller!.jumpToPage(4);
+      await t.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('achievement-hundredPercent')),
+        findsNothing,
+      );
+      expect(
+        find.text('0 / ${achievements.length} freigeschaltet'),
+        findsOneWidget,
+      );
+      await store.record(
+        const AchievementRun(
+          day: null,
+          game: Minigame.battery,
+          difficulty: GameDifficulty.normal,
+          facts: RunFacts(won: false, feats: {RunFeat.hundredPercent}),
+        ),
+      );
+      await t.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('achievement-hundredPercent')),
+        findsOneWidget,
+      );
+      expect(find.text('GEHEIMER ZUSATZERFOLG'), findsOneWidget);
+      expect(
+        find.text('1 / ${achievements.length} freigeschaltet'),
+        findsOneWidget,
+      );
+      await t.tap(find.byKey(const ValueKey('achievement-hundredPercent')));
+      await t.pumpAndSettle();
+      expect(
+        find.textContaining('für den Weihnachtsbonus nicht nötig'),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('achievement-play-christmas-normal')),
+        findsOneWidget,
+      );
+      await t.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
   setUp(() => SharedPreferences.setMockInitialValues({}));
   testWidgets(
     'locked achievements explain goals but never reveal configured rewards',
@@ -169,8 +219,17 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('achievement-workshop')));
       await tester.pumpAndSettle();
       for (final difficulty in GameDifficulty.values) {
-        await tester.tap(find.widgetWithText(OutlinedButton, difficulty.label));
+        await tester.tap(
+          find.byKey(ValueKey('achievement-play-christmas-${difficulty.name}')),
+        );
         await tester.pumpAndSettle();
+        final introduction = find.byKey(
+          const ValueKey('hanukkah-unlock-understood'),
+        );
+        if (introduction.evaluate().isNotEmpty) {
+          await tester.tap(introduction);
+          await tester.pumpAndSettle();
+        }
         expect(
           tester
               .widget<WorkshopScreen>(find.byType(WorkshopScreen))
@@ -209,8 +268,17 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('1 / 3'), findsOneWidget);
       for (final difficulty in GameDifficulty.values) {
-        await tester.tap(find.widgetWithText(OutlinedButton, difficulty.label));
+        await tester.tap(
+          find.byKey(ValueKey('achievement-play-christmas-${difficulty.name}')),
+        );
         await tester.pumpAndSettle();
+        final introduction = find.byKey(
+          const ValueKey('hanukkah-unlock-understood'),
+        );
+        if (introduction.evaluate().isNotEmpty) {
+          await tester.tap(introduction);
+          await tester.pumpAndSettle();
+        }
         final screen = tester.widget<MazeScreen>(find.byType(MazeScreen));
         expect(
           screen.course!.layouts.single.cells,
@@ -263,8 +331,14 @@ void main() {
       while (game.secondsToTarget > .025) {
         await tester.pump(const Duration(milliseconds: 20));
       }
-      await tester.tap(
-        find.byKey(ValueKey('cookie-${game.target!.direction.name}')),
+      await tester.drag(
+        find.byKey(const ValueKey('cookie-swipe-area')),
+        switch (game.target!.direction) {
+          CutDirection.up => const Offset(0, -60),
+          CutDirection.down => const Offset(0, 60),
+          CutDirection.left => const Offset(-60, 0),
+          CutDirection.right => const Offset(60, 0),
+        },
       );
       for (var i = 0; i < 70; i++) {
         await tester.pump(const Duration(milliseconds: 50));
@@ -302,39 +376,27 @@ void main() {
         await tester.tap(find.byKey(const ValueKey('achievement-allExtras')));
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
-        expect(find.byType(SingleChildScrollView), findsNothing);
-        expect(find.byType(Chip), findsNothing);
-        await tester.tap(find.text('Teilziele ansehen'));
-        await tester.pumpAndSettle();
-        expect(tester.takeException(), isNull);
+        expect(find.byType(SingleChildScrollView), findsOneWidget);
+        expect(find.text('Teilziele ansehen'), findsNothing);
         expect(find.byType(FittedBox), findsNothing);
-        expect(find.byType(Scrollable), findsNothing);
-        final seen = <String>{};
-        for (var page = 0; page < 30; page++) {
-          for (final token in item('allExtras').requirements) {
-            final objective = find.byKey(ValueKey('objective-$token'));
-            if (objective.evaluate().isNotEmpty) {
-              seen.add(token);
-              expect(
-                tester.getRect(objective).bottom,
-                lessThanOrEqualTo(scenario.$1.height),
-              );
-              final text = find.descendant(
-                of: objective,
-                matching: find.byType(Text),
-              );
-              expect(tester.widget<Text>(text).style!.fontSize, 16);
-            }
-          }
-          final next = find.byWidgetPredicate(
-            (w) => w is IconButton && w.tooltip == 'Weitere Teilziele',
+        for (final token in item('allExtras').requirements) {
+          final objective = find.byKey(ValueKey('objective-$token'));
+          expect(objective, findsOneWidget);
+          final text = find.descendant(
+            of: objective,
+            matching: find.byType(Text),
           );
-          if (tester.widget<IconButton>(next).onPressed == null) break;
-          await tester.tap(next);
-          await tester.pumpAndSettle();
-          expect(tester.takeException(), isNull);
+          expect(tester.widget<Text>(text).style!.fontSize, 16);
         }
-        expect(seen, item('allExtras').requirements);
+        final last = find.byKey(
+          ValueKey('objective-${item('allExtras').requirements.last}'),
+        );
+        await tester.ensureVisible(last);
+        await tester.pumpAndSettle();
+        expect(
+          tester.getRect(last).bottom,
+          lessThanOrEqualTo(scenario.$1.height),
+        );
         await tester.pumpWidget(
           MaterialApp(home: AchievementRewardsScreen(store: store)),
         );
@@ -364,14 +426,16 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('achievement-allExtras')));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Teilziele ansehen'));
-      await tester.pumpAndSettle();
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('objective-bonus:menorahs')),
+      );
       await tester.tap(find.byKey(const ValueKey('objective-bonus:menorahs')));
       await tester.pumpAndSettle();
       expect(find.text(item('menorahs').description), findsOneWidget);
       await tester.tap(find.byType(BackButton));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Offen'));
+      await tester.ensureVisible(find.text('Nur offene'));
+      await tester.tap(find.text('Nur offene'));
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('objective-bonus:shoe')), findsNothing);
       await earnAllAchievements(store);

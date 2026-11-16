@@ -142,7 +142,7 @@ void main() {
       await frames(tester, 200);
       await tester.pumpAndSettle();
       expect(
-        store.earned(achievements.firstWhere((a) => a.id == 'santaUp')),
+        store.earned(achievementCatalog.firstWhere((a) => a.id == 'santaUp')),
         isTrue,
       );
       expect(completions, 1);

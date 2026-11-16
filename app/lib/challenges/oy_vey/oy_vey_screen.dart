@@ -360,6 +360,8 @@ class _OyVeyScreenState extends State<OyVeyScreen>
           facts: RunFacts(
             feats: {
               if (_game.mistakes == 0) RunFeat.cleanOyVey,
+              if (_game.collected >= 15 && _game.missedJewishItems == 0)
+                RunFeat.noJewishMisses,
               if (_game.mistakes == 0 &&
                   _game.menorahsCollected == _game.collected)
                 RunFeat.onlyMenorahs,

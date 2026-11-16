@@ -30,14 +30,12 @@ XCFramework; iOS camera access has a German permission description.
 
 The app displays a German Advent calendar with an illustrated door and a
 horizontal day carousel. Swipe left or right across the main door to select the
-next or previous available day; the carousel also remains independently scrollable. All 24 doors contain playable challenges. In **Advent-Verwaltung → Kalender
-bearbeiten**, choose a date, game and difficulty, then save. Assignments persist
-on this device; changing a game preserves that door’s completion status.
+next or previous available day; the carousel also remains independently scrollable. All 24 doors contain playable challenges. The sequence is defined in
+`app/lib/content/calendar_schedule.dart`.
 Each day has a festive paper door with a storybook ornament, a rotating warm
 colour palette, and fairy lights. Locked doors keep their colour and show a lock
 badge. All artwork is drawn in Flutter without image assets or new dependencies.
-For design testing, **all 24 doors are currently unlocked by default**. A German
-preview label identifies this mode. Each door swings open before showing its
+For design testing, **all 24 doors are currently unlocked by default**. The homepage keeps development controls in the hidden admin area. Each door swings open before showing its
 challenge screen; returning to the calendar closes it again. Reduced-motion
 settings skip the opening animation. Previewing does not mark a day completed.
 Screens fit the viewport without vertical scrolling. Success and failure messages
@@ -103,7 +101,7 @@ winter obstacles, calibration and held touch controls.
 Day 11 has **Akku-Panik**: keep five low-battery devices alive for 45 seconds
 with one cable, visible power-hungry events and plug-dragging controls on an illustrated
 Christmas desk. Optional vibration and a ticking final countdown add feedback.
-**Spiele ausprobieren** opens all games at configurable difficulty,
+**Advent-Verwaltung → Spiele testen** opens all games at configurable difficulty,
 independent of the device date and without changing daily progress. See
 [Minigame setup, controls and architecture](docs/minigames.md) for details.
 

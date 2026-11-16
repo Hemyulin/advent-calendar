@@ -35,7 +35,7 @@ Widget buildMinigame(
   GameDifficulty difficulty,
   ChallengeCompletion onComplete, {
   bool alreadyCompleted = false,
-  int mazeSeed = 1224,
+  int? mazeSeed,
   bool developmentPreview = false,
   GameSkin? skin,
   String? melodyId,
@@ -51,7 +51,12 @@ Widget buildMinigame(
     melodyId: melodyId,
   );
   if (!supportsHanukkah(kind)) return build(GameSkin.christmas);
-  return SkinnableGame(initialSkin: skin ?? GameSkin.christmas, builder: build);
+  return SkinnableGame(
+    initialSkin: skin ?? GameSkin.christmas,
+    builder: build,
+    isReplay: alreadyCompleted,
+    developmentPreview: developmentPreview,
+  );
 }
 
 Widget _buildMinigame(
@@ -59,7 +64,7 @@ Widget _buildMinigame(
   GameDifficulty difficulty,
   ChallengeCompletion onComplete, {
   required bool alreadyCompleted,
-  required int mazeSeed,
+  required int? mazeSeed,
   required bool developmentPreview,
   required GameSkin skin,
   String? melodyId,
@@ -136,7 +141,6 @@ Widget buildDailyChallenge(
     selected.difficulty,
     onComplete,
     alreadyCompleted: day.state == DayState.completed,
-    mazeSeed: 1221 + day.number,
     skin: selected.skin,
     melodyId: selected.melodyId,
   );

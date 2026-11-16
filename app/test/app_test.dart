@@ -1,4 +1,5 @@
 import 'package:advent_calendar/app.dart';
+import 'package:advent_calendar/presentation/calendar_awards_button.dart';
 import 'package:advent_calendar/progress/mock_progress_repository.dart';
 import 'package:advent_calendar/challenges/memory/memory_screen.dart';
 import 'package:advent_calendar/challenges/bells/bells_screen.dart';
@@ -22,7 +23,13 @@ void main() {
   testWidgets('before December all doors are locked', (tester) async {
     await start(tester, DateTime(2026, 11, 4));
     expect(find.text('Dein Adventskalender'), findsOneWidget);
-    expect(find.text('Ab 1. Dezember'), findsOneWidget);
+    expect(
+      tester
+          .widget<IllustratedDoor>(find.byType(IllustratedDoor))
+          .day
+          .isAvailable,
+      isFalse,
+    );
     await tester.tap(find.byType(IllustratedDoor));
     await tester.pumpAndSettle();
     expect(find.byType(ChallengeScreen), findsNothing);
@@ -34,7 +41,10 @@ void main() {
   ) async {
     await tester.pumpWidget(AdventCalendarApp(now: DateTime(2026, 11, 4)));
     await tester.pumpAndSettle();
-    expect(find.text('Vorschau'), findsOneWidget);
+    expect(find.text('Vorschau'), findsNothing);
+    expect(find.byTooltip('Spiele ausprobieren'), findsNothing);
+    expect(find.text('DEZEMBER'), findsNothing);
+    expect(find.byTooltip('Erfolge'), findsOneWidget);
     expect(
       tester
           .widget<IllustratedDoor>(find.byType(IllustratedDoor))
@@ -106,7 +116,7 @@ void main() {
 
   testWidgets('today opens its assigned game and can return', (tester) async {
     await start(tester, DateTime(2026, 12, 16));
-    expect(find.text('Heute'), findsOneWidget);
+    expect(find.bySemanticsLabel('16. Dezember, Heute'), findsOneWidget);
     await tester.tap(find.byType(IllustratedDoor));
     await tester.pumpAndSettle();
     expect(find.byType(MemoryScreen), findsOneWidget);
@@ -122,7 +132,10 @@ void main() {
     await start(tester, DateTime(2026, 12, 4));
     await tester.tap(find.bySemanticsLabel('2. Dezember, Noch offen'));
     await tester.pumpAndSettle();
-    expect(find.text('2. Dezember'), findsOneWidget);
+    expect(
+      tester.widget<IllustratedDoor>(find.byType(IllustratedDoor)).day.number,
+      2,
+    );
     await tester.tap(find.byType(IllustratedDoor));
     await tester.pumpAndSettle();
     expect(find.text('Plätzchen ausstechen'), findsOneWidget);
@@ -131,7 +144,10 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.bySemanticsLabel('3. Dezember, Geschafft'));
     await tester.pumpAndSettle();
-    expect(find.text('3. Dezember'), findsOneWidget);
+    expect(
+      tester.widget<IllustratedDoor>(find.byType(IllustratedDoor)).day.number,
+      3,
+    );
     await tester.tap(find.bySemanticsLabel('5. Dezember, Gesperrt'));
     await tester.pumpAndSettle();
     expect(
@@ -152,25 +168,28 @@ void main() {
     expect(find.byType(BellsScreen), findsOneWidget);
   });
 
-  testWidgets(
-    'small screen and large type remain scrollable without overflow',
-    (tester) async {
-      tester.view.physicalSize = const Size(320, 568);
-      tester.view.devicePixelRatio = 1;
-      tester.platformDispatcher.textScaleFactorTestValue = 2;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-      await start(tester, DateTime(2026, 12, 16));
-      expect(tester.takeException(), isNull);
-      expect(
-        tester.getRect(find.byType(IllustratedDoor)).bottom,
-        lessThanOrEqualTo(568),
-      );
-      await tester.tap(find.byType(IllustratedDoor));
-      await tester.pumpAndSettle();
-      expect(find.byType(MemoryScreen), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    },
-  );
+  testWidgets('small screen and large type fit without overflow', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 568);
+    tester.view.devicePixelRatio = 1;
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await start(tester, DateTime(2026, 12, 16));
+    expect(tester.takeException(), isNull);
+    expect(
+      tester.getSize(find.byType(CalendarAwardsButton)).height,
+      greaterThanOrEqualTo(48),
+    );
+    expect(
+      tester.getRect(find.byType(IllustratedDoor)).bottom,
+      lessThanOrEqualTo(568),
+    );
+    await tester.tap(find.byType(IllustratedDoor));
+    await tester.pumpAndSettle();
+    expect(find.byType(MemoryScreen), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }

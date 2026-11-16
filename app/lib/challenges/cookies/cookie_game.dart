@@ -7,7 +7,10 @@ enum CookieShape {
   star('Stern'),
   tree('Tannenbaum'),
   snowflake('Schneeflocke'),
-  israel('Israel-Umriss');
+  israel('Israel-Umriss'),
+  davidStar('Davidstern'),
+  temple('Tempel'),
+  hanukkiah('Chanukkiah');
 
   const CookieShape(this.label);
   final String label;
@@ -56,6 +59,77 @@ class CookieOutline {
   late final double totalLength;
 
   factory CookieOutline.forShape(CookieShape shape) {
+    if (shape == CookieShape.davidStar) {
+      return CookieOutline(
+        List.generate(12, (i) {
+          final radius = i.isEven ? .42 : .42 / math.sqrt(3);
+          final angle = -math.pi / 2 + i * math.pi / 6;
+          return CookiePoint(
+            .5 + math.cos(angle) * radius,
+            .5 + math.sin(angle) * radius,
+          );
+        }),
+      );
+    }
+    if (shape == CookieShape.temple) {
+      return CookieOutline(const [
+        CookiePoint(.37, .12),
+        CookiePoint(.63, .12),
+        CookiePoint(.63, .27),
+        CookiePoint(.8, .27),
+        CookiePoint(.8, .7),
+        CookiePoint(.85, .7),
+        CookiePoint(.85, .77),
+        CookiePoint(.91, .77),
+        CookiePoint(.91, .86),
+        CookiePoint(.09, .86),
+        CookiePoint(.09, .77),
+        CookiePoint(.15, .77),
+        CookiePoint(.15, .7),
+        CookiePoint(.2, .7),
+        CookiePoint(.2, .27),
+        CookiePoint(.37, .27),
+      ]);
+    }
+    if (shape == CookieShape.hanukkiah) {
+      final points = <CookiePoint>[];
+      for (var i = 0; i < 9; i++) {
+        final x = .14 + i * .09;
+        final top = i == 4 ? .13 : .25;
+        points.addAll([
+          CookiePoint(x - .018, top),
+          CookiePoint(x, top - .07),
+          CookiePoint(x + .018, top),
+        ]);
+        if (i < 8) {
+          final gapCenter = x + .045;
+          final valley = .56 + .1 * (1 - (gapCenter - .5).abs() / .36);
+          points.addAll([
+            CookiePoint(x + .018, valley),
+            CookiePoint(x + .072, valley),
+          ]);
+        }
+      }
+      points.addAll(const [
+        CookiePoint(.878, .54),
+        CookiePoint(.84, .64),
+        CookiePoint(.74, .71),
+        CookiePoint(.64, .75),
+        CookiePoint(.54, .77),
+        CookiePoint(.54, .83),
+        CookiePoint(.69, .83),
+        CookiePoint(.69, .91),
+        CookiePoint(.31, .91),
+        CookiePoint(.31, .83),
+        CookiePoint(.46, .83),
+        CookiePoint(.46, .77),
+        CookiePoint(.36, .75),
+        CookiePoint(.26, .71),
+        CookiePoint(.16, .64),
+        CookiePoint(.122, .54),
+      ]);
+      return CookieOutline(points);
+    }
     if (shape == CookieShape.israel) {
       return CookieOutline([
         for (final (x, y) in israelCookieOutline) CookiePoint(x, y),
@@ -143,7 +217,11 @@ class CookieLevel {
     if (hanukkah) {
       final base = CookieLevel.forDifficulty(difficulty);
       return CookieLevel(
-        shape: CookieShape.israel,
+        shape: switch (difficulty) {
+          GameDifficulty.easy => CookieShape.davidStar,
+          GameDifficulty.normal => CookieShape.temple,
+          GameDifficulty.hard => CookieShape.hanukkiah,
+        },
         speed: base.speed,
         checkpoints: base.checkpoints,
         timingWindowSeconds: base.timingWindowSeconds,

@@ -80,20 +80,29 @@ void main() {
         MaterialApp(
           home: CalendarScreen(
             now: DateTime(2026, 11, 14),
-            showGamePreview: true,
             progressRepository: progress,
             picoService: pico,
           ),
         ),
       );
       await t.pumpAndSettle();
-      await t.tap(find.byTooltip('Spiele ausprobieren'));
+      for (var i = 0; i < 5; i++) {
+        await t.tap(find.byKey(const ValueKey('admin-title-entry')));
+        await t.pump(const Duration(milliseconds: 50));
+      }
+      await t.pumpAndSettle();
+      await t.enterText(find.byKey(const ValueKey('admin-pin')), '0542');
+      await t.pump();
+      await t.tap(find.text('Öffnen'));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Spiele testen'));
       await t.pumpAndSettle();
       await t.tap(find.text('Paare finden'));
       await t.pumpAndSettle();
+      final beforeCompletion = requests;
       await t.widget<MemoryScreen>(find.byType(MemoryScreen)).onComplete();
       await t.pump();
-      expect(requests, 0);
+      expect(requests, beforeCompletion);
       expect(await progress.completedChallengeIds(), isEmpty);
       await t.pumpWidget(const SizedBox());
       pico.dispose();

@@ -76,8 +76,9 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('walk-start')));
     await tester.pump();
     final press = await tester.startGesture(
-      tester.getCenter(find.byKey(const ValueKey('walk-left'))),
+      tester.getCenter(find.byKey(const ValueKey('walk-touch-area'))),
     );
+    await press.moveBy(const Offset(-80, 0));
     await frames(tester, .5);
     expect(scene(tester).game.x, lessThan(0));
     expect(scene(tester).game.lean, lessThan(0));
@@ -180,7 +181,8 @@ void main() {
       final elapsed = scene(tester).game.elapsed;
       await tester.pump(const Duration(seconds: 4));
       await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('walk-left')), findsOneWidget);
+      expect(find.text('Touch'), findsOneWidget);
+      expect(find.byKey(const ValueKey('walk-left')), findsNothing);
       expect(scene(tester).game.elapsed, elapsed);
       await tester.pumpWidget(const SizedBox.shrink());
       expect(source.controller.hasListener, isFalse);

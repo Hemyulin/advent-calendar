@@ -12,7 +12,6 @@ import '../hardware/pico_service.dart';
 import '../challenges/games/game_catalog.dart';
 import '../challenges/games/gift_reward_scope.dart';
 import '../hardware/lock_gateway.dart';
-import '../challenges/games/game_preview_screen.dart';
 import '../content/calendar_day.dart';
 import '../content/calendar_schedule.dart';
 import '../progress/local_progress_repository.dart';
@@ -21,6 +20,7 @@ import '../achievements/achievement_scope.dart';
 import '../achievements/achievements_screen.dart';
 import '../progress/progress_repository.dart';
 import 'calendar_style.dart';
+import 'calendar_awards_button.dart';
 import 'festive_art.dart';
 import 'illustrated_door.dart';
 
@@ -34,7 +34,6 @@ class CalendarScreen extends StatefulWidget {
     this.lockGateway,
     this.achievementStore,
     this.previewAllDays = false,
-    this.showGamePreview = false,
     this.adminAuthenticator = const DevelopmentAdminAuthenticator(),
   });
 
@@ -46,7 +45,6 @@ class CalendarScreen extends StatefulWidget {
   final LockGateway? lockGateway;
   final AchievementStore? achievementStore;
   final bool previewAllDays;
-  final bool showGamePreview;
 
   @override
   State<CalendarScreen> createState() => _CalendarScreenState();
@@ -124,7 +122,6 @@ class _CalendarScreenState extends State<CalendarScreen>
         MaterialPageRoute<void>(
           builder: (_) => AdminScreen(
             picoService: _picoService,
-            schedule: _schedule,
             achievements: _achievements,
           ),
         ),
@@ -163,6 +160,67 @@ class _CalendarScreenState extends State<CalendarScreen>
     } catch (_) {
       /* A later victory can retry achievement storage. */
     }
+  }
+
+  Future<void> _openDay(int number) async {
+    await _schedule.ready;
+    await _loadProgress();
+    if (!mounted) return;
+    final day = calendarDays(
+      _now,
+      _completed,
+      unlockAll: widget.previewAllDays,
+    )[number - 1];
+    if (!day.isAvailable) return;
+    setState(() => _selected = number);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToSelected());
+    final assignment = _schedule.forDay(number);
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => AchievementScope(
+          record: (facts) => _achievements.record(
+            AchievementRun(
+              day: number,
+              game: assignment.game,
+              difficulty: assignment.difficulty,
+              facts: facts,
+            ),
+          ),
+          child: GiftRewardScope(
+            openGift: () =>
+                _completionHandler.openGift(day.content.challengeId),
+            child: buildDailyChallenge(
+              day,
+              () => _completionHandler.complete(day.content.challengeId),
+              assignment: assignment,
+            ),
+          ),
+        ),
+      ),
+    );
+    if (mounted) await _loadProgress();
+  }
+
+  Future<void> _openAchievements() async {
+    await _schedule.ready;
+    await _loadProgress();
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => AchievementsScreen(
+          store: _achievements,
+          calendar: AchievementCalendar(
+            days: () => calendarDays(
+              _now,
+              _completed,
+              unlockAll: widget.previewAllDays,
+            ),
+            openDay: _openDay,
+            titleForDay: (number) => _schedule.forDay(number).title,
+          ),
+        ),
+      ),
+    );
   }
 
   void _scrollToSelected() {
@@ -218,13 +276,6 @@ class _CalendarScreenState extends State<CalendarScreen>
     super.dispose();
   }
 
-  String _status(CalendarDay day) => switch (day.state) {
-    DayState.future => 'Ab ${day.number}. Dezember',
-    DayState.today => 'Heute',
-    DayState.available => '${day.number}. Dezember',
-    DayState.completed => '${day.number}. Dezember',
-  };
-
   @override
   Widget build(BuildContext context) {
     final days = calendarDays(
@@ -253,175 +304,88 @@ class _CalendarScreenState extends State<CalendarScreen>
               child: LayoutBuilder(
                 builder: (context, constraints) => Column(
                   children: [
-                    Expanded(
-                      child: ViewportFit(
-                        padding: const EdgeInsets.fromLTRB(24, 28, 24, 16),
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(
-                            minHeight: math.max(0, constraints.maxHeight - 176),
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              GestureDetector(
-                                key: const ValueKey('admin-title-entry'),
-                                behavior: HitTestBehavior.opaque,
-                                onTap: _tapAdminTitle,
-                                child: Text(
-                                  'Dein Adventskalender',
-                                  textAlign: TextAlign.center,
-                                  style: CalendarStyle.heading.copyWith(
-                                    fontSize: 32,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              IconButton(
-                                tooltip: 'Erfolge',
-                                icon: const Icon(
-                                  Icons.workspace_premium_outlined,
-                                  color: CalendarStyle.gold,
-                                ),
-                                onPressed: () => Navigator.of(context).push(
-                                  MaterialPageRoute<void>(
-                                    builder: (_) => AchievementsScreen(
-                                      store: _achievements,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              if (widget.showGamePreview)
-                                IconButton(
-                                  onPressed: () => Navigator.of(context).push(
-                                    MaterialPageRoute<void>(
-                                      builder: (_) => const GamePreviewScreen(),
-                                    ),
-                                  ),
-                                  icon: const Icon(
-                                    Icons.sports_esports_outlined,
-                                    size: 19,
-                                  ),
-                                  tooltip: 'Spiele ausprobieren',
-                                ),
-                              if (widget.previewAllDays) ...[
-                                const Text(
-                                  'Vorschau',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: CalendarStyle.gold,
-                                    fontSize: 11,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                              ],
-                              AnimatedSwitcher(
-                                duration: reduceMotion
-                                    ? Duration.zero
-                                    : const Duration(milliseconds: 280),
-                                switchInCurve: Curves.easeOut,
-                                switchOutCurve: Curves.easeIn,
-                                transitionBuilder: (child, animation) =>
-                                    FadeTransition(
-                                      opacity: animation,
-                                      child: SlideTransition(
-                                        position: Tween<Offset>(
-                                          begin: const Offset(0, 0.025),
-                                          end: Offset.zero,
-                                        ).animate(animation),
-                                        child: child,
-                                      ),
-                                    ),
-                                child: SizedBox(
-                                  key: ValueKey(day.number),
-                                  width: (constraints.maxHeight * 0.37).clamp(
-                                    192.0,
-                                    280.0,
-                                  ),
-                                  child: IllustratedDoor(
-                                    day: day,
-                                    onTap: day.isAvailable
-                                        ? () async {
-                                            if (_selected != day.number) return;
-                                            await _schedule.ready;
-                                            if (!context.mounted) return;
-                                            await Navigator.of(context).push(
-                                              MaterialPageRoute<void>(
-                                                builder: (_) => AchievementScope(
-                                                  record: (facts) =>
-                                                      _achievements.record(
-                                                        AchievementRun(
-                                                          day: day.number,
-                                                          game: _schedule
-                                                              .forDay(
-                                                                day.number,
-                                                              )
-                                                              .game,
-                                                          difficulty: _schedule
-                                                              .forDay(
-                                                                day.number,
-                                                              )
-                                                              .difficulty,
-                                                          facts: facts,
-                                                        ),
-                                                      ),
-                                                  child: GiftRewardScope(
-                                                    openGift: () =>
-                                                        _completionHandler
-                                                            .openGift(
-                                                              day
-                                                                  .content
-                                                                  .challengeId,
-                                                            ),
-                                                    child: buildDailyChallenge(
-                                                      day,
-                                                      () => _completionHandler
-                                                          .complete(
-                                                            day
-                                                                .content
-                                                                .challengeId,
-                                                          ),
-                                                      assignment: _schedule
-                                                          .forDay(day.number),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            );
-                                            if (mounted) await _loadProgress();
-                                          }
-                                        : null,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                _status(day),
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  color: CalendarStyle.green,
-                                  fontSize: 13,
-                                  height: 1.5,
-                                ),
-                              ),
-                            ],
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: ListenableBuilder(
+                          listenable: _achievements,
+                          builder: (context, _) => CalendarAwardsButton(
+                            earned: achievements
+                                .where(_achievements.earned)
+                                .length,
+                            total: achievements.length,
+                            onPressed: _openAchievements,
                           ),
                         ),
                       ),
                     ),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 28),
-                      child: Divider(color: CalendarStyle.line, height: 1),
-                    ),
-                    const SizedBox(height: 14),
-                    const Text(
-                      'DEZEMBER',
-                      style: TextStyle(
-                        fontSize: 10,
-                        letterSpacing: 2.5,
-                        color: CalendarStyle.muted,
+                    Expanded(
+                      child: ViewportFit(
+                        padding: const EdgeInsets.fromLTRB(24, 28, 24, 16),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            GestureDetector(
+                              key: const ValueKey('admin-title-entry'),
+                              behavior: HitTestBehavior.opaque,
+                              onTap: _tapAdminTitle,
+                              child: Text(
+                                'Dein Adventskalender',
+                                textAlign: TextAlign.center,
+                                style: CalendarStyle.heading.copyWith(
+                                  fontSize: 32,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            AnimatedSwitcher(
+                              duration: reduceMotion
+                                  ? Duration.zero
+                                  : const Duration(milliseconds: 280),
+                              switchInCurve: Curves.easeOut,
+                              switchOutCurve: Curves.easeIn,
+                              transitionBuilder: (child, animation) =>
+                                  FadeTransition(
+                                    opacity: animation,
+                                    child: SlideTransition(
+                                      position: Tween<Offset>(
+                                        begin: const Offset(0, 0.025),
+                                        end: Offset.zero,
+                                      ).animate(animation),
+                                      child: child,
+                                    ),
+                                  ),
+                              child: SizedBox(
+                                key: ValueKey(day.number),
+                                width: (constraints.maxHeight * 0.37).clamp(
+                                  192.0,
+                                  280.0,
+                                ),
+                                child: IllustratedDoor(
+                                  day: day,
+                                  onTap: day.isAvailable
+                                      ? () async {
+                                          if (_selected == day.number) {
+                                            await _openDay(day.number);
+                                          }
+                                        }
+                                      : null,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 28,
+                        vertical: 16,
+                      ),
+                      child: Divider(color: CalendarStyle.line, height: 1),
+                    ),
                     SizedBox(
                       height: tileHeight,
                       child: ListView.builder(

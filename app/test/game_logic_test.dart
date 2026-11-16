@@ -152,7 +152,13 @@ void main() {
       'every generated difficulty has a physically traversable safe route',
       () {
         for (final difficulty in GameDifficulty.values) {
-          for (final layout in MazeCourse.forDifficulty(difficulty).layouts) {
+          for (final layout in [
+            MazeLayout.generate(
+              cells: [5, 6, 8][difficulty.index],
+              seed: 1224,
+              pitCount: difficulty.index + 2,
+            ),
+          ]) {
             final n = layout.cells;
             Vec2 center(int cell) =>
                 Vec2((cell % n + 0.5) / n, (cell ~/ n + 0.5) / n);

@@ -5,6 +5,57 @@ import 'package:advent_calendar/challenges/games/difficulty.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test(
+    'Chanukka cookie silhouettes match the three requested difficulty motifs',
+    () {
+      final outlines = [
+        for (final d in GameDifficulty.values)
+          CookieGame(CookieLevel.forDifficulty(d, hanukkah: true)),
+      ];
+      expect(outlines.map((g) => g.level.shape), [
+        CookieShape.davidStar,
+        CookieShape.temple,
+        CookieShape.hanukkiah,
+      ]);
+      expect(outlines[0].outline.points.length, 12);
+      // Nine candle tips, with a single higher central shamash.
+      final points = outlines[2].outline.points;
+      final tips = [
+        for (var i = 0; i < points.length; i++)
+          if (points[i].y < points[(i + points.length - 1) % points.length].y &&
+              points[i].y < points[(i + 1) % points.length].y)
+            points[i],
+      ];
+      expect(tips.length, 9);
+      final middle = tips.singleWhere((p) => (p.x - .5).abs() < 1e-9);
+      expect(
+        tips.where((p) => p != middle).every((p) => p.y > middle.y),
+        isTrue,
+      );
+      for (final g in outlines) {
+        // Nonadjacent edges must not cross: the cutter follows one real outline.
+        final p = g.outline.points;
+        double cross(CookiePoint a, CookiePoint b, CookiePoint c) =>
+            (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+        for (var i = 0; i < p.length; i++) {
+          for (var j = i + 2; j < p.length; j++) {
+            if (i == 0 && j == p.length - 1) continue;
+            final a = p[i],
+                b = p[(i + 1) % p.length],
+                c = p[j],
+                d = p[(j + 1) % p.length];
+            expect(
+              cross(a, b, c) * cross(a, b, d) < -1e-12 &&
+                  cross(c, d, a) * cross(c, d, b) < -1e-12,
+              isFalse,
+              reason: '${g.level.shape} crosses itself at $i/$j',
+            );
+          }
+        }
+      }
+    },
+  );
+
   test('difficulty selects shape, speed, checkpoints and timing windows', () {
     final levels = GameDifficulty.values
         .map(CookieLevel.forDifficulty)

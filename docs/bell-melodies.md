@@ -74,5 +74,5 @@ repeat-listening, guidance, audio failures, completion/replay and layouts.
 ## Chanukka additions
 
 Three traditional hooks join the existing eight songs: Sevivon (easy, six notes),
-Maoz Tzur (classic, fifteen notes), and Hanerot Halalu (hard, twelve notes).
+Maoz Tzur (classic, sixteen notes, including two eighth-note high Cs), and Hanerot Halalu (hard, twelve notes).
 See [source scores, transpositions, guidance and verification](hanukkah.md#music-data-and-verification).

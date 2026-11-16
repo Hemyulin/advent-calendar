@@ -44,7 +44,7 @@ const defaultAssignments = <DayAssignment>[
   DayAssignment(Minigame.battery, GameDifficulty.easy),
   DayAssignment.themed(
     Minigame.chimney,
-    GameDifficulty.easy,
+    GameDifficulty.normal,
     skin: GameSkin.hanukkah,
   ),
   DayAssignment.themed(
@@ -53,7 +53,11 @@ const defaultAssignments = <DayAssignment>[
     skin: GameSkin.hanukkah,
     melodyId: 'maoz-tzur',
   ),
-  DayAssignment(Minigame.cookies),
+  DayAssignment.themed(
+    Minigame.walkHome,
+    GameDifficulty.normal,
+    skin: GameSkin.hanukkah,
+  ),
   DayAssignment.themed(
     Minigame.battery,
     GameDifficulty.normal,
@@ -61,11 +65,11 @@ const defaultAssignments = <DayAssignment>[
   ),
   DayAssignment(Minigame.maze),
   DayAssignment(Minigame.workshop, GameDifficulty.easy),
-  DayAssignment(Minigame.walkHome, GameDifficulty.easy),
-  DayAssignment(Minigame.memory, GameDifficulty.hard),
-  DayAssignment(Minigame.chimney),
-  DayAssignment(Minigame.workshop),
   DayAssignment(Minigame.walkHome),
+  DayAssignment(Minigame.memory, GameDifficulty.hard),
+  DayAssignment(Minigame.chimney, GameDifficulty.hard),
+  DayAssignment(Minigame.workshop),
+  DayAssignment(Minigame.walkHome, GameDifficulty.hard),
   DayAssignment(Minigame.cookies, GameDifficulty.hard),
   DayAssignment(Minigame.maze, GameDifficulty.hard),
   DayAssignment(Minigame.battery, GameDifficulty.hard),

@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:advent_calendar/admin/admin_authenticator.dart';
 import 'package:advent_calendar/admin/admin_pin_dialog.dart';
 import 'package:advent_calendar/admin/admin_screen.dart';
-import 'package:advent_calendar/admin/pico_connection_screen.dart';
 import 'package:advent_calendar/challenges/games/game_preview_screen.dart';
 import 'package:advent_calendar/challenges/memory/memory_screen.dart';
 import 'package:advent_calendar/presentation/calendar_screen.dart';
@@ -148,63 +147,27 @@ void main() {
     expect(find.byType(AdminScreen), findsNothing);
     expect(find.byType(CalendarScreen), findsOneWidget);
   });
-  testWidgets(
-    'admin opens the calendar editor, reuses preview and keeps diagnostics planned',
-    (t) async {
-      await t.pumpWidget(app());
-      await t.pumpAndSettle();
-      expect(find.byTooltip('Spiele ausprobieren'), findsNothing);
-      await enterAdmin(t);
-      for (final title in [
-        'Kalender bearbeiten',
-        'Spiele testen',
-        'Box-Steuerung',
-        'Diagnose & Fortschritt',
-      ]) {
-        expect(find.text(title), findsOneWidget);
-      }
-      await t.tap(find.text('Spiele testen'));
-      await t.pumpAndSettle();
-      expect(find.byType(GamePreviewScreen), findsOneWidget);
-      await t.tap(find.text('Paare finden'));
-      await t.pumpAndSettle();
-      expect(find.byType(MemoryScreen), findsOneWidget);
-      await t.tap(find.byType(BackButton));
-      await t.pumpAndSettle();
-      await t.tap(find.byType(BackButton));
-      await t.pumpAndSettle();
-      await t.tap(find.text('Kalender bearbeiten'));
-      await t.pumpAndSettle();
-      expect(find.byKey(const ValueKey('edit-day-24')), findsOneWidget);
-      expect(find.text('Speichern'), findsOneWidget);
-      await t.tap(find.byType(BackButton));
-      await t.pumpAndSettle();
-      for (final title in ['Diagnose & Fortschritt']) {
-        await t.tap(find.text(title));
-        await t.pumpAndSettle();
-        expect(
-          find.text('Dieser Bereich ist noch in Vorbereitung.'),
-          findsOneWidget,
-        );
-        expect(find.byType(FilledButton), findsNothing);
-        await t.tap(find.byType(BackButton));
-        await t.pumpAndSettle();
-      }
-      await t.tap(find.text('Box-Steuerung'));
-      await t.pumpAndSettle();
-      expect(find.byType(PicoConnectionScreen), findsOneWidget);
-      expect(find.text('Pico W · Verbindung'), findsOneWidget);
-      expect(find.text('Nicht verbunden'), findsOneWidget);
-      await t.tap(find.byType(BackButton));
-      await t.pumpAndSettle();
-      await t.tap(find.byType(BackButton));
-      await t.pumpAndSettle();
-      expect(find.byType(CalendarScreen), findsOneWidget);
-      await taps(t, 5);
-      await t.pumpAndSettle();
-      expect(find.byType(AdminPinDialog), findsOneWidget);
-    },
-  );
+  testWidgets('admin offers previews, box controls and rewards', (t) async {
+    await t.pumpWidget(app());
+    await t.pumpAndSettle();
+    expect(find.byTooltip('Spiele ausprobieren'), findsNothing);
+    await enterAdmin(t);
+    for (final title in ['Spiele testen', 'Box-Steuerung']) {
+      expect(find.text(title), findsOneWidget);
+    }
+    await t.tap(find.text('Spiele testen'));
+    await t.pumpAndSettle();
+    expect(find.byType(GamePreviewScreen), findsOneWidget);
+    await t.tap(find.text('Paare finden'));
+    await t.pumpAndSettle();
+    expect(find.byType(MemoryScreen), findsOneWidget);
+    await t.tap(find.byType(BackButton));
+    await t.pumpAndSettle();
+    await t.tap(find.byType(BackButton));
+    await t.pumpAndSettle();
+    expect(find.text('Kalender bearbeiten'), findsNothing);
+    expect(find.text('Diagnose & Fortschritt'), findsNothing);
+  });
   for (final scenario in [
     (const Size(390, 844), 1.0),
     (const Size(320, 568), 2.0),

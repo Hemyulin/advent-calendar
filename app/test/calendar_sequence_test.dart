@@ -34,7 +34,7 @@ void main() {
         Minigame.battery,
         Minigame.chimney,
         Minigame.bells,
-        Minigame.cookies,
+        Minigame.walkHome,
         Minigame.battery,
         Minigame.maze,
         Minigame.workshop,
@@ -56,15 +56,41 @@ void main() {
             .indexed
             .where((e) => e.$2)
             .map((e) => e.$1 + 1),
-        [5, 7, 9, 10, 12],
+        [5, 7, 9, 10, 11, 12],
       );
       final first = <Minigame>{};
       for (final a in defaultAssignments) {
-        if (first.add(a.game) && a.game != Minigame.shoe) {
+        if (first.add(a.game) &&
+            !{
+              Minigame.shoe,
+              Minigame.chimney,
+              Minigame.walkHome,
+            }.contains(a.game)) {
           expect(a.difficulty, GameDifficulty.easy);
         }
       }
       expect(first, Minigame.values.toSet());
+      expect(defaultAssignments[8].difficulty, GameDifficulty.normal);
+      expect(defaultAssignments[10].difficulty, GameDifficulty.normal);
+      final lastSeen = <Minigame, int>{};
+      final lastDifficulty = <Minigame, GameDifficulty>{};
+      for (final (index, assignment) in defaultAssignments.indexed) {
+        final previous = lastSeen[assignment.game];
+        if (previous != null) {
+          expect(
+            index - previous,
+            greaterThanOrEqualTo(4),
+            reason: '${assignment.game} repeated too soon on day ${index + 1}',
+          );
+          expect(
+            assignment.difficulty.index,
+            greaterThanOrEqualTo(lastDifficulty[assignment.game]!.index),
+          );
+        }
+        lastSeen[assignment.game] = index;
+        lastDifficulty[assignment.game] = assignment.difficulty;
+      }
+
       expect(
         defaultAssignments
             .skip(19)
@@ -247,14 +273,10 @@ void main() {
       expect(completions, 1);
       expect(store.tokenComplete('skin:shoe'), isTrue);
       expect(store.tokenComplete('bonus:shoe'), isFalse);
-      await tester.tap(
-        find.descendant(
-          of: find.byType(CompletionPanel),
-          matching: find.byKey(const ValueKey('hanukkah-skin-switch')),
-        ),
-      );
+      expect(find.byKey(const ValueKey('hanukkah-skin-switch')), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('completion-replay')));
       await tester.pumpAndSettle();
-      expect(find.text('Nikolausstiefel'), findsOneWidget);
+      expect(find.text('Schekel polieren'), findsOneWidget);
       expect(store.tokenComplete('skin:shoe'), isTrue);
       await tester.pumpWidget(const SizedBox.shrink());
     },

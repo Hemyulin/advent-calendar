@@ -15,7 +15,7 @@ class _PicoConnectionScreenState extends State<PicoConnectionScreen>
     with WidgetsBindingObserver {
   PicoService? _service;
   StreamSubscription<PicoConnectionStatus>? _subscription;
-  bool _active = true;
+  bool _active = true, _opening = false;
   String? _message;
   @override
   void initState() {
@@ -59,6 +59,32 @@ class _PicoConnectionScreenState extends State<PicoConnectionScreen>
     _service?.stopMonitoring();
     if (widget.service == null) _service?.dispose();
     super.dispose();
+  }
+
+  Future<void> _openBox() async {
+    final service = _service;
+    if (service == null || _opening) return;
+    setState(() {
+      _opening = true;
+      _message = null;
+    });
+    try {
+      await service.unlock();
+      if (mounted) setState(() => _message = 'Öffnungsimpuls bestätigt.');
+    } on PicoException catch (error) {
+      if (mounted) {
+        setState(() => _message = 'Öffnen nicht bestätigt. \n${error.message}');
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(
+          () => _message =
+              'Öffnen nicht bestätigt. Prüfe die Box vor einem erneuten Versuch.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _opening = false);
+    }
   }
 
   @override
@@ -167,17 +193,15 @@ class _PicoConnectionScreenState extends State<PicoConnectionScreen>
               ],
               const SizedBox(height: 24),
               FilledButton.icon(
-                // No unlock endpoint or device authorization exists yet.
-                // The development admin PIN never grants hardware authority.
-                onPressed: null,
-                icon: const Icon(Icons.lock_open_rounded),
-                label: const Text('Box öffnen'),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Noch nicht verfügbar. Die Pico-Firmware unterstützt das Öffnen noch nicht.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: CalendarStyle.muted, fontSize: 13),
+                onPressed: connected && !_opening ? _openBox : null,
+                icon: _opening
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.lock_open_rounded),
+                label: Text(_opening ? 'Öffnet…' : 'Box öffnen'),
               ),
             ],
           ),

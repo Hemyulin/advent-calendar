@@ -15,8 +15,8 @@ class ChallengeCompletionHandler {
   final ProgressRepository progress;
   final PicoService? pico;
 
-  /// Supply only a gateway with real device authorization. The admin PIN does
-  /// not authorize physical actions. No implementation exists in the firmware yet.
+  /// Hardware protocol and request bounds belong to the gateway; the admin
+  /// PIN only controls the admin UI, never the Pico's authorization policy.
   final LockGateway? lockGateway;
   final _completions = <String, Future<void>>{};
   final _newlyCompleted = <String>{};
@@ -49,7 +49,9 @@ class ChallengeCompletionHandler {
     if (_gifts.containsKey(challengeId)) return GiftOpenResult.replay;
     return _gifts.putIfAbsent(challengeId, () async {
       try {
-        await lockGateway!.unlock().timeout(const Duration(seconds: 3));
+        // The gateway bounds health and command requests. An outer timeout could
+        // abandon discovery while a later physical command was still pending.
+        await lockGateway!.unlock();
         return GiftOpenResult.boxOpened;
       } catch (_) {
         return GiftOpenResult.unconfirmed;

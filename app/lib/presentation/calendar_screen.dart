@@ -82,7 +82,7 @@ class _CalendarScreenState extends State<CalendarScreen>
     _completionHandler = ChallengeCompletionHandler(
       progress: _progressRepository,
       pico: _picoService,
-      lockGateway: widget.lockGateway,
+      lockGateway: widget.lockGateway ?? _picoService,
     );
     WidgetsBinding.instance.addObserver(this);
     _scheduleDateRefresh();

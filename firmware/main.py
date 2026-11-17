@@ -5,6 +5,18 @@ import time
 import json
 from machine import Pin
 from config import WIFI_NAME, WIFI_PASSWORD, AP_NAME, AP_PASSWORD
+from time import sleep_ms
+
+lock = Pin(15, Pin.OUT, value=0)
+
+def unlock():
+    try:
+        lock.value(1)
+        sleep_ms(200)
+    finally:
+        lock.value(0)
+
+
 
 # ==========================================
 # CONFIGURATION
@@ -255,6 +267,21 @@ def handle_request(client):
         )
         return
 
+    # Unlock the physical box
+    if method == "POST" and path == "/unlock":
+        unlock()
+
+        send_response(
+            client,
+            "200 OK",
+            {
+                "success": True,
+                "message": "Unlock pulse completed",
+                "duration_ms": 200
+            }
+        )
+        return
+
     # Game completion acknowledgement
     if method == "POST" and path == "/game/completed":
         victory_until = time.ticks_add(
@@ -299,15 +326,6 @@ def handle_request(client):
                 "mode": mode,
                 "ip": ip,
                 "uptime_seconds": time.ticks_ms() // 1000
-            }
-        )
-
-    elif path in ("/led/on", "/led/off"):
-        send_response(
-            client,
-            "410 Gone",
-            {
-                "error": "LED is now a status indicator"
             }
         )
 

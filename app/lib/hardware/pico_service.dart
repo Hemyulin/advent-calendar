@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'pico_response.dart';
+import 'lock_gateway.dart';
 import 'pico_transport_stub.dart'
     if (dart.library.io) 'pico_transport_io.dart'
     as transport;
@@ -56,8 +57,9 @@ class PicoHealth {
 }
 
 /// Existing Pico boundary, now with verified health and bounded reconnection.
-/// This service has no lock-unlock operation or device authorization capability.
-class PicoService {
+/// Unlock is an explicit command, separate from LED acknowledgement and health.
+/// The current firmware trusts its local network and accepts no auth token.
+class PicoService implements LockGateway {
   PicoService({
     String? baseUrl,
     List<String>? baseUrls,
@@ -120,6 +122,7 @@ class PicoService {
   Uri get baseUri => _activeUri ?? candidates.first;
   Timer? _timer;
   Future<bool>? _checking;
+  Future<void>? _unlocking;
   bool _monitoring = false, _disposed = false;
   int _epoch = 0, _failures = 0;
 
@@ -154,7 +157,7 @@ class PicoService {
       );
     } on UnsupportedError {
       throw const PicoException(
-        'Die Pico-Verbindung wird auf dieser Plattform nicht unterstützt. Nutze die Android-App.',
+        'Die Pico-Verbindung wird auf dieser Plattform nicht unterstützt. Nutze die mobile App.',
       );
     } catch (_) {
       throw const PicoException(
@@ -253,6 +256,49 @@ class PicoService {
     if (_disposed || uri == null) return;
     try {
       await _send(uri.resolve('/game/completed'), post: true);
+    } on PicoException catch (error) {
+      if (error.statusCode == null) {
+        _health = null;
+        _activeUri = null;
+        _lastError = error.message;
+        _publish(PicoConnectionStatus.disconnected);
+        _schedule();
+      }
+      rethrow;
+    }
+  }
+
+  /// A fresh DoorZero health check precedes each deliberate unlock. Share
+  /// overlapping button/gift taps, but never queue or retry a physical command.
+  @override
+  Future<void> unlock() =>
+      _unlocking ??= _unlockOnce().whenComplete(() => _unlocking = null);
+
+  Future<void> _unlockOnce() async {
+    if (_disposed || !await checkConnection()) {
+      throw PicoException(_lastError ?? 'Keine Verbindung zum Pico.');
+    }
+    final uri = _activeUri;
+    if (_disposed || uri == null) {
+      throw const PicoException('Keine Verbindung zum Pico.');
+    }
+    try {
+      final response = await _send(uri.resolve('/unlock'), post: true);
+      Object? body;
+      try {
+        body = jsonDecode(response.body);
+      } on FormatException {
+        throw const PicoException(
+          'Der Pico hat das Öffnen nicht bestätigt.',
+          statusCode: 200,
+        );
+      }
+      if (body is! Map || body['success'] != true) {
+        throw PicoException(
+          'Der Pico hat das Öffnen nicht bestätigt.',
+          statusCode: response.statusCode,
+        );
+      }
     } on PicoException catch (error) {
       if (error.statusCode == null) {
         _health = null;

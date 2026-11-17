@@ -13,20 +13,14 @@ again; nothing is saved as an authenticated session.
 
 The initial screen provides these sections:
 
-- **Kalender bearbeiten**: select any of the 24 dates, choose a game and difficulty,
-  then **Speichern**. All doors have playable defaults. Day 1 starts with the
-  easy Memory, day 2 with easy cookie cutting, and day 6 with Nikolaus; all can be reassigned. Changes persist on
-  this device using shared preferences, independently of completion state.
-  Editing a completed door keeps its completion; replay uses the new assignment.
 - **Spiele testen**: reuses `GamePreviewScreen`, with all games and difficulty
   settings, regardless of device date or homepage preview visibility. Preview
   completions do not change calendar progress.
-- **Box-Steuerung**: verified Pico health and automatic recovery; **Box öffnen** is
-  visible but disabled until firmware provides an authorized unlock endpoint.
+- **Box-Steuerung**: verified Pico health, automatic recovery and an explicit
+  **Box öffnen** button. It is disabled while disconnected or opening.
 - **Erfolge & Gutscheine**: configure the single hidden reward for earning all
-  16 achievements. Individual badges cannot have vouchers. Leave the text empty
+  17 achievements. Individual badges cannot have vouchers. Leave the text empty
   until the final surprise has been chosen.
-- **Diagnose & Fortschritt**: structure only, no completion overrides yet.
 
 `lib/admin/admin_authenticator.dart` isolates the authentication interface and
 initial development implementation. `CalendarScreen.adminAuthenticator` can
@@ -36,11 +30,19 @@ error without exposing provider details.
 
 This check grants access to the administration **UI** only. The hidden gesture
 and client-side development PIN are not authorization for physical unlocking.
-The admin code does not import the lock gateway. The Pico service checks `/health` and can send a completion LED acknowledgement
-to `/game/completed`; it cannot unlock the box. Future
-physical controls must obtain real device authorization independently, and the
-development credential should be replaced with the appropriate secure storage
-and authentication flow.
+`PicoService` implements the separate `LockGateway` contract using the firmware's
+`POST /unlock`. The firmware currently accepts commands on its local network
+without a token; it does not validate the app's PIN. Device authorization can be
+added at this hardware boundary when the firmware supports it.
+
+Before each unlock, the service checks `/health` and verifies `device: DoorZero`.
+It sends a bodyless POST to the verified address and requires a JSON response
+with `success: true`. GPIO 15 is pulsed for 200 ms; the response confirms that the
+pulse completed, not a separate door-position sensor. Concurrent taps share one
+request; each later deliberate admin tap can request another pulse. Network
+errors and timeouts show German feedback and never automatically resend an
+unlock. Polling/reconnection performs health checks only. The completion LED
+endpoint remains separate and never unlocks the box.
 
 ## Pico health and automatic recovery
 
@@ -85,7 +87,7 @@ flutter run --profile \
 
 The service publishes verified connection status and health. Manual LED controls
 and LED requests have been removed because the firmware uses the onboard LED
-as a network-status indicator. There is no manual lock-unlock operation, and the
+as a network-status indicator. Manual unlock uses its separate endpoint; the
 development PIN/device-name check is not physical-device authorization.
 
 Native Android debug/profile manifests already allow local cleartext HTTP;

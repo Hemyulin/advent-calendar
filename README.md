@@ -71,10 +71,10 @@ badges only, including collecting the labyrinth sweets. One final voucher stays
 hidden until all 17 achievements are earned. Configure its text in **Advent-Verwaltung → Erfolge &
 Gutscheine**. See [achievement rules and bonuses](docs/achievements.md).
 
-Day 1 starts with **Paare finden** on easy difficulty. Every win saves progress
+Day 1 starts with **Paare finden** on easy difficulty. A first win saves progress
 and shows an illustrated gift above the game. Tap the gift to lift its lid and
-reveal the reward. Replays and development previews can reveal the gift without
-reopening the physical box. Old present-only calendar assignments migrate to
+reveal the reward. Replay wins show a congratulations card with replay and calendar
+actions instead; achievements still count. Development previews never open the physical box. Old present-only calendar assignments migrate to
 easy Memory.
 
 The shared gift action is separate from game completion and the Pico LED
@@ -147,9 +147,9 @@ boundary](docs/admin.md).
 - `lib/presentation/`: calendar screen, vector door illustration, day carousel,
   and challenge placeholder. Reduced-motion preferences are respected.
 - `lib/challenges/`: challenge identities and types (puzzles, quizzes,
-  questionnaires, interactive minigames), shared gift rewards, and the ten playable
+  questionnaires, interactive minigames), shared gift rewards, and the playable
   games. Pure Dart mechanics are separate from screens and motion input.
-- `lib/content/`: daily content, editable calendar assignments and local storage.
+- `lib/content/`: daily content, calendar assignments and local storage.
 - `lib/progress/`: persistent calendar checkmarks and an injectable test mock.
 - `lib/achievements/`: reusable achievement rules, persistent progress, voucher claims and the collection.
 - `lib/hardware/`: lock communication contract. A future Wi-Fi adapter for the
@@ -188,3 +188,8 @@ The firmware exposes `/health` with the `DoorZero` identity and falls back to a
 hotspot if home Wi-Fi is unavailable. The LED now indicates network status;
 manual LED endpoints return HTTP 410. `old_main.py` preserves the earlier LED
 server for reference and also reads credentials from the local config.
+
+Calendar challenges now offer **Zu schwer?** for a gentler attempt or the optional
+**Müll rausbringen** alternative. Carry the full bag out, then fit a fresh bag to
+complete the door and earn a secret achievement. The trash game can also be
+launched in admin previews. See [minigames](docs/minigames.md).

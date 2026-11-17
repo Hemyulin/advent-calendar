@@ -530,8 +530,11 @@ void main() {
       await connect(t, 0);
       await frames(t, .5);
       await t.pumpAndSettle();
-      await t.tap(find.byKey(const ValueKey('completion-gift')));
-      await t.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('completion-congratulations')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const ValueKey('completion-gift')), findsNothing);
       expect(
         find.text('Du hast tatsächlich mal etwas rechtzeitig geladen!'),
         findsOneWidget,

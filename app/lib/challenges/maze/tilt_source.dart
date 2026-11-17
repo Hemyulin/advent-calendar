@@ -7,13 +7,15 @@ abstract interface class TiltSource {
   Stream<Vec2> get events;
 }
 
-/// The Android adapter is isolated from both physics and puzzle progress.
+/// The native motion adapter is isolated from both physics and puzzle progress.
 /// Unsupported hosts and devices without sensors fall back to touch controls.
 class DeviceTiltSource implements TiltSource {
   static const _channel = EventChannel('advent_calendar/tilt');
   @override
   Stream<Vec2> get events {
-    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
+    if (kIsWeb ||
+        (defaultTargetPlatform != TargetPlatform.android &&
+            defaultTargetPlatform != TargetPlatform.iOS)) {
       return Stream.error(UnsupportedError('No native tilt adapter'));
     }
     return _channel.receiveBroadcastStream().map((event) {

@@ -5,6 +5,7 @@ import '../../content/calendar_schedule.dart';
 import 'game_kind.dart';
 export 'game_kind.dart';
 import '../completion.dart';
+import '../trash/trash_screen.dart';
 import '../battery/battery_game.dart';
 import '../battery/battery_screen.dart';
 import '../walk_home/walk_game.dart';
@@ -39,6 +40,7 @@ Widget buildMinigame(
   bool developmentPreview = false,
   GameSkin? skin,
   String? melodyId,
+  bool relaxedCookies = false,
 }) {
   Widget build(GameSkin skin) => _buildMinigame(
     kind,
@@ -49,6 +51,7 @@ Widget buildMinigame(
     developmentPreview: developmentPreview,
     skin: skin,
     melodyId: melodyId,
+    relaxedCookies: relaxedCookies,
   );
   if (!supportsHanukkah(kind)) return build(GameSkin.christmas);
   return SkinnableGame(
@@ -68,6 +71,7 @@ Widget _buildMinigame(
   required bool developmentPreview,
   required GameSkin skin,
   String? melodyId,
+  required bool relaxedCookies,
 }) => switch (kind) {
   Minigame.memory => MemoryScreen(
     level: MemoryLevel.forDifficulty(difficulty),
@@ -91,10 +95,7 @@ Widget _buildMinigame(
     previewControls: developmentPreview,
   ),
   Minigame.cookies => CookieScreen(
-    level: CookieLevel.forDifficulty(
-      difficulty,
-      hanukkah: skin == GameSkin.hanukkah,
-    ),
+    level: _cookieLevel(difficulty, skin, relaxedCookies),
     onComplete: onComplete,
     alreadyCompleted: alreadyCompleted,
   ),
@@ -116,6 +117,10 @@ Widget _buildMinigame(
   ),
   Minigame.battery => BatteryScreen(
     level: BatteryLevel.forDifficulty(difficulty),
+    onComplete: onComplete,
+    alreadyCompleted: alreadyCompleted,
+  ),
+  Minigame.trash => TrashScreen(
     onComplete: onComplete,
     alreadyCompleted: alreadyCompleted,
   ),
@@ -161,5 +166,24 @@ BellsLevel _bellsLevel(
     rounds: [BellRound(index)],
     beatMilliseconds: base.beatMilliseconds,
     guidance: base.guidance,
+  );
+}
+
+CookieLevel _cookieLevel(
+  GameDifficulty difficulty,
+  GameSkin skin,
+  bool relaxed,
+) {
+  final base = CookieLevel.forDifficulty(
+    difficulty,
+    hanukkah: skin == GameSkin.hanukkah,
+  );
+  if (!relaxed) return base;
+  return CookieLevel(
+    shape: base.shape,
+    speed: base.speed * .65,
+    checkpoints: base.checkpoints,
+    timingWindowSeconds: base.timingWindowSeconds * 1.5,
+    mistakeLimit: base.mistakeLimit,
   );
 }

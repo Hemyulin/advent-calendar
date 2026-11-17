@@ -28,6 +28,7 @@ enum AchievementScene {
   santaUp,
   bells,
   hanukkah,
+  freshBag,
 }
 
 class AchievementIllustration extends StatelessWidget {
@@ -275,6 +276,22 @@ class AchievementPainter extends CustomPainter {
     oval(10, 12, 180, 112, tint.withValues(alpha: .12));
     oval(28, 121, 144, 9, ink.withValues(alpha: .08));
     switch (scene) {
+      case AchievementScene.freshBag:
+        oval(43, 119, 114, 10, dough.withValues(alpha: .35));
+        box(61, 48, 78, 74, mint, 10);
+        for (var i = 0; i < 4; i++) {
+          line(75 + i * 16, 66, 77 + i * 14, 111, cream, 3);
+        }
+        oval(57, 39, 86, 24, green);
+        oval(62, 42, 76, 16, cream);
+        oval(68, 45, 64, 11, mint);
+        box(151, 89, 33, 25, mint, 10);
+        oval(172, 89, 14, 25, green);
+        line(84, 80, 96, 92, cream, 5);
+        line(96, 92, 118, 68, cream, 5);
+        paintStar(canvas, const Offset(48, 36), 8, gold);
+        paintStar(canvas, const Offset(151, 26), 6, gold);
+
       case AchievementScene.allDays:
         box(45, 42, 110, 80, red, 4);
         polygon(const [Offset(33, 44), Offset(100, 9), Offset(167, 44)], green);

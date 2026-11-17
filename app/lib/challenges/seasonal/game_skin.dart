@@ -2,7 +2,8 @@ import '../games/game_kind.dart';
 
 enum GameSkin { christmas, hanukkah }
 
-bool supportsHanukkah(Minigame game) => game != Minigame.oyVey;
+bool supportsHanukkah(Minigame game) =>
+    game != Minigame.oyVey && game != Minigame.trash;
 
 const hanukkahGames = [
   Minigame.memory,

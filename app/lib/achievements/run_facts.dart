@@ -1,6 +1,7 @@
 /// Observations of an attempt. Game rules gather these without knowing about
 /// persistence, calendar dates, reward text or hardware.
 enum RunFeat {
+  freshBag,
   perfectMemory,
   onlyMenorahs,
   cleanOyVey,

@@ -1,8 +1,7 @@
 # Minigames
 
 Day 1 starts with easy Memory. The following daily assignments are defined in
-`app/lib/content/calendar_schedule.dart` (editable in **Advent-Verwaltung →
-Kalender bearbeiten**):
+`app/lib/content/calendar_schedule.dart`:
 
 | Day | Game | Difficulty | Appearance |
 | --- | --- | --- | --- |
@@ -366,7 +365,7 @@ Success and failure cards use `GameResultLayer`: a foreground card over a dimmed
 input-blocked game, including the app bar. The card contains replay/retry and
 **Zurück zum Kalender** controls. Result content also fits the viewport and does
 not require a swipe to reach its buttons. Background controls are excluded from
-interaction while the result is visible. All victories show a tappable illustrated
+interaction while the result is visible. First victories show a tappable illustrated
 gift. The shared lid-lift animation runs on tap, with reduced-motion support.
 Saving progress happens on victory; tapping the gift is a separate reward action.
 The victory card is present-first: a large illustrated gift and **Zum Öffnen
@@ -376,6 +375,12 @@ Game messages appear after the gift reveal. Newly earned achievements use an
 automatic illustrated toast and brief confetti overlay that never intercepts
 taps or requires dismissal; the present remains the main action. Save/retry and duplicate-opening protection
 remain shared by every game.
+
+Replay wins show **Großartig!** with the game's success message, replay and calendar
+actions. They have no gift to tap and never call the gift/box action. This applies
+to reopened completed doors, successive attempts in the same visit and seasonal
+replays. First victories retain the gift reveal; replay achievements still save
+and celebrate normally.
 
 ## Completion and separation
 
@@ -422,3 +427,39 @@ keeps the game complete and is not automatically retried. The UI confirms physic
 opening only after the gateway succeeds. Leaving mid-reveal does not resend the
 command. Calendar assignments saved with the retired `tutorial` identifier load
 as easy Memory without clearing completion state.
+
+## Gentler attempts and Müll rausbringen
+
+Calendar challenges offer **Zu schwer?** in the app bar and on defeat. **Etwas
+leichter** restarts only the current attempt at the next easier difficulty. At
+Leicht, the trash alternative remains available. For cookies, the same shape and
+checkpoint count stay in place: speed becomes 65% and timing windows 150% of the
+original. It can be relaxed once per attempt. Gentler wins complete their door,
+but do not report strict bonus feats or completed-song milestones.
+
+**Lieber Müll rausbringen** replaces this attempt with a kitchen chore. The
+kitchen bin visibly contains loose rubbish and an open liner. Swipe upward to
+lift it, then keep holding while carrying it to the door. Entering the doorway
+opens the door and carries the bag outside without requiring a release. Outside,
+drag/swipe the carried bag into the outdoor wheelie bin. Letting go of a lifted
+bag elsewhere makes it fall, scatter rubbish and leave dirty splashes before the
+normal retry card appears. Sideways swipes do not lift the rubbish, and OS
+interruptions restore the carried item without penalizing the player.
+
+The spare roll is already on the kitchen counter at the start. Tilting the phone
+rolls it along the counter with damped momentum and rotation; it stays within the
+counter edges. After throwing the rubbish away, the kitchen returns without
+instructions, progress text, highlights or help explaining the remaining task.
+Discover the roll and drag a fresh liner into the empty bin to finish. Removing
+the rubbish alone never finishes the game. The fresh liner animates into place
+before the normal result appears. Replay preserves prior completion.
+
+The original calendar sequence is unchanged. Alternative wins count for that
+day and for the trash game, never for the replaced game's bonuses. Trash is also
+available through **Spiele testen**. It has no time limit, theme toggle, new
+dependencies or Pico code. Motion reuses the shared tilt channel (Android gravity
+sensor / iOS Core Motion); missing sensors leave the roll draggable in place.
+Subscriptions and motion stop on backgrounding, covering the route, completion
+and disposal. Physics are suspended while the roll is grabbed. Pure rules live in
+`trash_game.dart`; sensors, gestures, rendering and finite throw/finish animations
+live in `trash_screen.dart`.

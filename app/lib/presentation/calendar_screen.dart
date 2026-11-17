@@ -9,14 +9,13 @@ import '../admin/admin_pin_dialog.dart';
 import '../admin/admin_screen.dart';
 import '../challenges/challenge_completion_handler.dart';
 import '../hardware/pico_service.dart';
-import '../challenges/games/game_catalog.dart';
+import '../challenges/games/challenge_assistance.dart';
 import '../challenges/games/gift_reward_scope.dart';
 import '../hardware/lock_gateway.dart';
 import '../content/calendar_day.dart';
 import '../content/calendar_schedule.dart';
 import '../progress/local_progress_repository.dart';
 import '../achievements/achievement_store.dart';
-import '../achievements/achievement_scope.dart';
 import '../achievements/achievements_screen.dart';
 import '../progress/progress_repository.dart';
 import 'calendar_style.dart';
@@ -177,22 +176,20 @@ class _CalendarScreenState extends State<CalendarScreen>
     final assignment = _schedule.forDay(number);
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => AchievementScope(
-          record: (facts) => _achievements.record(
-            AchievementRun(
-              day: number,
-              game: assignment.game,
-              difficulty: assignment.difficulty,
-              facts: facts,
-            ),
-          ),
-          child: GiftRewardScope(
-            openGift: () =>
-                _completionHandler.openGift(day.content.challengeId),
-            child: buildDailyChallenge(
-              day,
-              () => _completionHandler.complete(day.content.challengeId),
-              assignment: assignment,
+        builder: (_) => GiftRewardScope(
+          openGift: () => _completionHandler.openGift(day.content.challengeId),
+          child: FlexibleChallenge(
+            assignment: assignment,
+            alreadyCompleted: day.state == DayState.completed,
+            onComplete: () =>
+                _completionHandler.complete(day.content.challengeId),
+            record: (game, difficulty, facts) => _achievements.record(
+              AchievementRun(
+                day: number,
+                game: game,
+                difficulty: difficulty,
+                facts: facts,
+              ),
             ),
           ),
         ),

@@ -78,9 +78,10 @@ actions instead; achievements still count. Development previews never open the p
 easy Memory.
 
 The shared gift action is separate from game completion and the Pico LED
-acknowledgement. A future authorized `LockGateway` can open the box on this tap;
-the current firmware has no unlock endpoint, so the app explicitly reports that
-the physical box is not configured. No unlock request is invented or sent.
+acknowledgement. `PicoService` implements `LockGateway`: after a fresh DoorZero
+health check, the gift tap sends one `POST /unlock` and validates `success: true`.
+The firmware pulses GPIO 15 for 200 ms. Replay wins never offer another gift or
+send another unlock, and ambiguous requests are never retried automatically.
 
 Day 2 has **Plätzchen ausstechen** on easy difficulty and Day 3 **Kugellabyrinth** (one sensor-
 or touch-controlled maze per day). Day 4 has **Rettet den Weihnachtsmann!**, a rotating
@@ -152,11 +153,10 @@ boundary](docs/admin.md).
 - `lib/content/`: daily content, calendar assignments and local storage.
 - `lib/progress/`: persistent calendar checkmarks and an injectable test mock.
 - `lib/achievements/`: reusable achievement rules, persistent progress, voucher claims and the collection.
-- `lib/hardware/`: lock communication contract. A future Wi-Fi adapter for the
-  Pico W will implement `LockGateway` here.
+- `lib/hardware/`: verified Pico communication and the `LockGateway` contract.
 
 Daily assignments, progress and achievements are stored locally. `PicoService` verifies connectivity and acknowledges new completions
-over Wi-Fi. Physical unlocking is not implemented yet. Game logic stays
+over Wi-Fi. An explicit gift/admin action can send `POST /unlock`. Game logic stays
 independent of hardware.
 
 Runtime dependencies are Flutter, its SDK localization package, and
@@ -164,9 +164,10 @@ Runtime dependencies are Flutter, its SDK localization package, and
 `mediapipe_face_mesh` packages used by Brush Buddies for local mouth tracking,
 and `shared_preferences` for saved calendar assignments.
 
-**Box öffnen** appears in the admin box controls but remains disabled: the Pico
-firmware has no unlock endpoint yet. Physical unlocking requires a dedicated
-command and device authorization, independently of the development admin PIN.
+**Box öffnen** in admin sends a deliberate, health-verified `POST /unlock` to the
+connected Pico. The button is disabled while disconnected or opening. Home Wi-Fi
+and the Pico hotspot share the same service. The current firmware accepts local
+network requests without a token; the development PIN only protects the admin UI.
 The bundled face runtime raises Android minimum SDK to 24. Audio credits, melody sources
 and preview controls are documented in [Weihnachtsglocken](docs/bell-melodies.md).
 Typography uses platform serif fallbacks without network font downloads. Development uses

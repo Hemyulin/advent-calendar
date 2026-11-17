@@ -24,6 +24,8 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Die App verbindet sich im lokalen WLAN mit deiner Adventsbox, um sie auf deinen Wunsch zu öffnen.</string>
 	<key>NSMotionUsageDescription</key>
 	<string>Die Neigung bewegt Spielobjekte auf deinem Gerät.</string>
 	<key>NSCameraUsageDescription</key>

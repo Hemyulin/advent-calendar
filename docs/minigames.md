@@ -417,13 +417,14 @@ if saving failed. Once saved, repeated taps start only one reveal.
 
 `ChallengeCompletionHandler.openGift` is separate from its completion LED
 acknowledgement. Only a newly completed door can request physical opening;
-replays reveal the virtual gift without another command. An authorized
-`LockGateway` must be supplied separately; the development admin PIN never
-authorizes the device. No production gateway exists yet, since firmware has no
-unlock endpoint. The app reports this rather than claiming the box opened.
+replays show congratulations without a gift. `PicoService` implements
+`LockGateway` and is shared with admin controls. A fresh DoorZero health check
+precedes `POST /unlock`; the JSON response must confirm `success: true` after the
+200 ms GPIO 15 pulse. The firmware currently trusts local-network requests, not
+the development admin PIN.
 
-A future gateway call is bounded to three seconds. Failure or an uncertain outcome
-keeps the game complete and is not automatically retried. The UI confirms physical
+Health and POST requests have bounded transport timeouts. Failure or an uncertain
+outcome keeps the game complete and is not automatically retried. The UI confirms
 opening only after the gateway succeeds. Leaving mid-reveal does not resend the
 command. Calendar assignments saved with the retired `tutorial` identifier load
 as easy Memory without clearing completion state.

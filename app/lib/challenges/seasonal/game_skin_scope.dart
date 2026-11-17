@@ -10,8 +10,10 @@ class GameSkinScope extends InheritedWidget {
     required super.child,
     this.toggleReplayTheme,
     this.replay,
+    this.isReplay = false,
   });
   final GameSkin skin;
+  final bool isReplay;
   final VoidCallback? toggleReplayTheme;
   final void Function(VoidCallback restart)? replay;
   static GameSkinScope? maybeOf(BuildContext context) =>
@@ -21,6 +23,7 @@ class GameSkinScope extends InheritedWidget {
   @override
   bool updateShouldNotify(GameSkinScope oldWidget) =>
       oldWidget.skin != skin ||
+      oldWidget.isReplay != isReplay ||
       oldWidget.toggleReplayTheme != toggleReplayTheme;
 }
 
@@ -44,6 +47,7 @@ class SkinnableGame extends StatefulWidget {
 class _SkinnableGameState extends State<SkinnableGame> {
   late GameSkin _skin = widget.initialSkin;
   late bool _replaying = widget.isReplay;
+  bool _completedOnce = false;
   @override
   void initState() {
     super.initState();
@@ -100,7 +104,10 @@ class _SkinnableGameState extends State<SkinnableGame> {
   }
 
   void _replay(VoidCallback restart) {
-    setState(() => _replaying = true);
+    setState(() {
+      _replaying = true;
+      _completedOnce = true;
+    });
     restart();
     WidgetsBinding.instance.addPostFrameCallback((_) => _announce());
   }
@@ -118,6 +125,7 @@ class _SkinnableGameState extends State<SkinnableGame> {
   @override
   Widget build(BuildContext context) => GameSkinScope(
     skin: _skin,
+    isReplay: widget.isReplay || _completedOnce,
     replay: _replay,
     toggleReplayTheme:
         (widget.developmentPreview ||

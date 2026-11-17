@@ -199,7 +199,10 @@ void main() {
         await tester.pump(const Duration(milliseconds: 50));
       }
       await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('completion-gift')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('completion-congratulations')),
+        findsOneWidget,
+      );
       expect(completed, 1);
       expect(camera.stops, greaterThanOrEqualTo(1));
       await tester.tap(find.text('Noch einmal spielen'));

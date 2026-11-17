@@ -48,6 +48,12 @@ class _FlexibleChallengeState extends State<FlexibleChallenge> {
   late GameDifficulty _difficulty = widget.assignment.difficulty;
   bool _relaxed = false, _dialogOpen = false;
   int _attempt = 0;
+  late bool _completedOnce = widget.alreadyCompleted;
+
+  Future<void> _complete() async {
+    await widget.onComplete();
+    if (mounted) setState(() => _completedOnce = true);
+  }
 
   Future<void> _offer() async {
     if (_dialogOpen) return;
@@ -151,8 +157,8 @@ class _FlexibleChallengeState extends State<FlexibleChallenge> {
       child: buildMinigame(
         game,
         difficulty,
-        widget.onComplete,
-        alreadyCompleted: widget.alreadyCompleted,
+        _complete,
+        alreadyCompleted: _completedOnce,
         skin: game == Minigame.trash
             ? GameSkin.christmas
             : widget.assignment.skin,

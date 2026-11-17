@@ -71,10 +71,10 @@ badges only, including collecting the labyrinth sweets. One final voucher stays
 hidden until all 17 achievements are earned. Configure its text in **Advent-Verwaltung → Erfolge &
 Gutscheine**. See [achievement rules and bonuses](docs/achievements.md).
 
-Day 1 starts with **Paare finden** on easy difficulty. Every win saves progress
+Day 1 starts with **Paare finden** on easy difficulty. A first win saves progress
 and shows an illustrated gift above the game. Tap the gift to lift its lid and
-reveal the reward. Replays and development previews can reveal the gift without
-reopening the physical box. Old present-only calendar assignments migrate to
+reveal the reward. Replay wins show a congratulations card with replay and calendar
+actions instead; achievements still count. Development previews never open the physical box. Old present-only calendar assignments migrate to
 easy Memory.
 
 The shared gift action is separate from game completion and the Pico LED

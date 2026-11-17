@@ -4,10 +4,108 @@ import 'package:advent_calendar/challenges/games/gift_reward_scope.dart';
 import 'package:advent_calendar/challenges/gift_reward.dart';
 import 'package:advent_calendar/achievements/achievement_scope.dart';
 import 'package:advent_calendar/achievements/run_facts.dart';
+import 'package:advent_calendar/challenges/seasonal/game_skin_scope.dart';
+import 'package:advent_calendar/challenges/seasonal/game_skin.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  testWidgets(
+    'reopening an already completed game congratulates without a gift or box action',
+    (tester) async {
+      var saves = 0, opens = 0, records = 0;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: GiftRewardScope(
+            openGift: () async {
+              opens++;
+              return GiftOpenResult.boxOpened;
+            },
+            child: AchievementScope(
+              record: (_) async {
+                records++;
+                return [];
+              },
+              child: _ReplayGame(
+                alreadyCompleted: true,
+                save: () async {
+                  saves++;
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('test-win')));
+      await tester.pumpAndSettle();
+      expect(find.text('Großartig!'), findsOneWidget);
+      expect(find.text('Alle Paare gefunden.'), findsOneWidget);
+      expect(find.byKey(const ValueKey('completion-gift')), findsNothing);
+      expect(find.text('Zum Öffnen tippen'), findsNothing);
+      expect(find.byKey(const ValueKey('completion-replay')), findsOneWidget);
+      expect(find.byKey(const ValueKey('completion-calendar')), findsOneWidget);
+      expect((saves, records, opens), (1, 1, 0));
+      await tester.pumpWidget(const SizedBox());
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'first win keeps its gift; same-visit and switched-skin replays only congratulate',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({
+        SkinnableGame.unlockNoticeKey: true,
+      });
+      var records = 0, opens = 0;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: GiftRewardScope(
+            openGift: () async {
+              opens++;
+              return GiftOpenResult.boxOpened;
+            },
+            child: AchievementScope(
+              record: (_) async {
+                records++;
+                return [];
+              },
+              child: SkinnableGame(
+                initialSkin: GameSkin.christmas,
+                builder: (_) => _ReplayGame(save: () async {}),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('test-win')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('completion-gift')), findsOneWidget);
+      expect(find.text('Großartig!'), findsNothing);
+      for (final switchSkin in [false, true]) {
+        await tester.tap(find.byKey(const ValueKey('completion-replay')));
+        await tester.pumpAndSettle();
+        if (switchSkin) {
+          await tester.tap(find.byKey(const ValueKey('hanukkah-replay')));
+          await tester.pumpAndSettle();
+        }
+        await tester.tap(find.byKey(const ValueKey('test-win')));
+        await tester.pumpAndSettle();
+        expect(
+          find.byKey(const ValueKey('completion-congratulations')),
+          findsOneWidget,
+        );
+        expect(find.byKey(const ValueKey('completion-gift')), findsNothing);
+      }
+      expect(records, 3);
+      expect(opens, 0);
+      await tester.pumpWidget(const SizedBox());
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   Widget panel({
     required Future<void> Function() save,
     Future<GiftOpenResult> Function()? open,
@@ -203,4 +301,35 @@ void main() {
     await tester.pump();
     expect(find.text('Vorschau · ohne Box'), findsOneWidget);
   });
+}
+
+class _ReplayGame extends StatefulWidget {
+  const _ReplayGame({required this.save, this.alreadyCompleted = false});
+  final Future<void> Function() save;
+  final bool alreadyCompleted;
+  @override
+  State<_ReplayGame> createState() => _ReplayGameState();
+}
+
+class _ReplayGameState extends State<_ReplayGame> {
+  bool _won = false;
+  @override
+  Widget build(BuildContext context) => GameScaffold(
+    title: 'Paare finden',
+    instructions: '',
+    alreadyCompleted: widget.alreadyCompleted,
+    children: [
+      TextButton(
+        key: const ValueKey('test-win'),
+        onPressed: () => setState(() => _won = true),
+        child: const Text('Gewinnen'),
+      ),
+      if (_won)
+        CompletionPanel(
+          onComplete: widget.save,
+          onReplay: () => setState(() => _won = false),
+          message: 'Alle Paare gefunden.',
+        ),
+    ],
+  );
 }

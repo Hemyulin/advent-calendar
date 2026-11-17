@@ -75,7 +75,10 @@ void main() {
       }
     }
     await frames(tester, 250);
-    expect(find.byKey(const ValueKey('completion-gift')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('completion-congratulations')),
+      findsOneWidget,
+    );
     expect(completions, 1);
     await frames(tester, 10);
     expect(completions, 1);

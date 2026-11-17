@@ -77,7 +77,10 @@ void main() {
       expect(completions, 0);
       await tester.pump(const Duration(milliseconds: 1200));
       await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('completion-gift')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('completion-congratulations')),
+        findsOneWidget,
+      );
       expect(completions, 1);
       await tester.tap(find.text('Noch einmal spielen'));
       await tester.pumpAndSettle();

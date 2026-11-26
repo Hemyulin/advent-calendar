@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'presentation/calendar_screen.dart';
+import 'welcome/welcome_gate.dart';
 import 'presentation/calendar_style.dart';
 import 'progress/progress_repository.dart';
 
@@ -10,10 +11,7 @@ class AdventCalendarApp extends StatelessWidget {
     super.key,
     this.now,
     this.progressRepository,
-    this.previewAllDays = const bool.fromEnvironment(
-      'PREVIEW_ALL_DAYS',
-      defaultValue: true,
-    ),
+    this.previewAllDays = false,
   });
 
   final DateTime? now;
@@ -43,10 +41,12 @@ class AdventCalendarApp extends StatelessWidget {
           scrolledUnderElevation: 0,
         ),
       ),
-      home: CalendarScreen(
-        now: now,
-        progressRepository: progressRepository,
-        previewAllDays: previewAllDays,
+      home: WelcomeGate(
+        child: CalendarScreen(
+          now: now,
+          progressRepository: progressRepository,
+          previewAllDays: previewAllDays,
+        ),
       ),
     );
   }

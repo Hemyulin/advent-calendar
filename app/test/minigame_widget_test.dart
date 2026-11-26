@@ -1,3 +1,4 @@
+import 'package:shared_preferences/shared_preferences.dart';
 import 'support/game_configuration.dart';
 import 'dart:async';
 
@@ -28,6 +29,9 @@ class NoTiltSource implements TiltSource {
 }
 
 void main() {
+  setUp(
+    () => SharedPreferences.setMockInitialValues({'welcome.seen.v1': true}),
+  );
   testWidgets(
     'long game titles sit below the play area and leave the app bar clear',
     (tester) async {

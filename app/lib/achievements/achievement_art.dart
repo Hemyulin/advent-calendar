@@ -13,6 +13,7 @@ enum AchievementScene {
   shoe,
   menorahs,
   cleanOy,
+  goyVey,
   noJewishMisses,
   memory,
   workshop,
@@ -389,6 +390,34 @@ class AchievementPainter extends CustomPainter {
         line(91, 96, 99, 103, cream, 4);
         line(99, 103, 118, 84, cream, 4);
         fir(28, 100, .35);
+      case AchievementScene.goyVey:
+        paintCollectorSack(
+          canvas,
+          const Offset(100, 46),
+          24,
+          3,
+          christmasTargets: true,
+        );
+        paintFestiveObject(
+          canvas,
+          const Offset(48, 54),
+          23,
+          FestiveObject.tree,
+        );
+        paintFestiveObject(
+          canvas,
+          const Offset(102, 22),
+          20,
+          FestiveObject.hat,
+        );
+        paintFestiveObject(
+          canvas,
+          const Offset(152, 57),
+          22,
+          FestiveObject.cane,
+        );
+        oval(94, 28, 3, 3, gold);
+        oval(112, 38, 3, 3, gold);
       case AchievementScene.noJewishMisses:
         // A woven catching basket keeps the entire little collection safe.
         paintFestiveObject(

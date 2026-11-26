@@ -35,20 +35,15 @@ next or previous available day; the carousel also remains independently scrollab
 Each day has a festive paper door with a storybook ornament, a rotating warm
 colour palette, and fairy lights. Locked doors keep their colour and show a lock
 badge. All artwork is drawn in Flutter without image assets or new dependencies.
-For design testing, **all 24 doors are currently unlocked by default**. The homepage keeps development controls in the hidden admin area. Each door swings open before showing its
+Doors are **locked by date by default**. The hidden admin area has an explicit,
+persisted **Alle Türchen freischalten** test override, off on a fresh install. Each door swings open before showing its
 challenge screen; returning to the calendar closes it again. Reduced-motion
 settings skip the opening animation. Previewing does not mark a day completed.
 Screens fit the viewport without vertical scrolling. Success and failure messages
 float above a dimmed game with visible return and replay controls. Only the
 horizontal day carousel scrolls.
 
-To restore date-based availability, run from `app/`:
-
-```sh
-flutter run --dart-define=PREVIEW_ALL_DAYS=false
-```
-
-With preview disabled, availability follows the local date for December of the current year:
+Run normally with `flutter run`. Availability follows the local date for December of the current year:
 future days are locked, today and previous days are accessible, and completed
 days can be revisited. Availability refreshes at midnight and on app resume.
 Before December all doors are locked; after December 24 all are accessible.
@@ -56,10 +51,12 @@ Before December all doors are locked; after December 24 all are accessible.
 Calendar completion, achievements and voucher claims are stored locally and
 survive app restarts. Fresh installs start without sample completions. For
 development and tests, `AdventCalendarApp(now: DateTime(2026, 12, 8))` provides a
-fixed date; the normal entry point uses the device date with the preview override.
+fixed date; the normal entry point uses the device date. The old
+`PREVIEW_ALL_DAYS` build define no longer unlocks doors. Locked taps show
+**Heute noch nicht!**. Game practice follows the [shared unlock rules](docs/progression.md).
 
 Appearance now belongs to each door, independently of the current date. The
-Hanukkah appearances are deliberately scheduled on days 5, 7, 9, 10 and 12;
+Hanukkah appearances are deliberately scheduled on days 5, 7, 10 and 12;
 day 4 is Oy Vey, day 6 stays Nikolaus, and days 8/11 use regular Christmas games.
 Tap the David star to replay in the other appearance, including polishing a
 shekel instead of the boot. See the [full sequence](docs/minigames.md) and
@@ -68,7 +65,7 @@ shekel instead of the boot. See the [full sequence](docs/minigames.md) and
 The **Erfolge** button opens the achievement collection. Unearned badges are
 muted, with requirements and progress visible. Individual achievements award
 badges only, including collecting the labyrinth sweets. One final voucher stays
-hidden until all 17 achievements are earned. Configure its text in **Advent-Verwaltung → Erfolge &
+hidden until all 18 regular achievements are earned. Configure its text in **Advent-Verwaltung → Erfolge &
 Gutscheine**. See [achievement rules and bonuses](docs/achievements.md).
 
 Day 1 starts with **Paare finden** on easy difficulty. A first win saves progress
@@ -80,28 +77,21 @@ easy Memory.
 The shared gift action is separate from game completion and the Pico LED
 acknowledgement. `PicoService` implements `LockGateway`: after a fresh DoorZero
 health check, the gift tap sends one `POST /unlock` and validates `success: true`.
-The firmware pulses GPIO 15 for 200 ms. Replay wins never offer another gift or
+The firmware holds GPIO 15 HIGH for five seconds, then switches it LOW.
+The gift screen offers **Box erneut öffnen** if you missed the opening window. Replay wins never offer another gift or
 send another unlock, and ambiguous requests are never retried automatically.
 
-Day 2 has **Plätzchen ausstechen** on easy difficulty and Day 3 **Kugellabyrinth** (one sensor-
-or touch-controlled maze per day). Day 4 has **Rettet den Weihnachtsmann!**, a rotating
-chimney-pipe puzzle with a ten-second head start.
-Day 5 has **Weihnachtsglocken**, a melody-memory game using short, recognizable
-hooks from eight Christmas songs, including Carol of the Bells, Last Christmas
-and All I Want for Christmas Is You. Difficulty uses trickier pitch patterns and
-reduces visual help from every note to the first note to audio only.
-Day 6 celebrates Nikolaus with a muddy shoe to brush clean and polish.
-Day 7 has **Plätzchen ausstechen**: timed arrow inputs guide a moving pastry
-wheel around a cookie, followed by an illustrated lift out of the dough.
-Day 8 has **Wichtelwerkstatt**, a Sokoban-style present-pushing puzzle with
-handcrafted boards, undo, restart and swipe/button controls.
-Day 9 has **Oy Vey, Weihnachten!**, a locally processed front-camera mouth game
-adapted from Brush Buddies. See [camera reuse, privacy and testing](docs/oy-vey.md).
-Day 10 has **Ein Glühwein zu viel**, a 32–42 second walk home with tilt balance,
-winter obstacles, calibration and held touch controls.
-Day 11 has **Akku-Panik**: keep five low-battery devices alive for 45 seconds
-with one cable, visible power-hungry events and plug-dragging controls on an illustrated
-Christmas desk. Optional vibration and a ticking final countdown add feedback.
+Day 2 introduces **Plätzchen ausstechen** and Day 3 **Kugellabyrinth**. Day 4 has
+**Oy Vey, Weihnachten!**, a local front-camera catching game adapted from Brush
+Buddies. Day 6 celebrates Nikolaus with a muddy shoe to brush clean and polish.
+Day 7's Chanukka cookie depicts the Second Temple with a zigzag spiked roof.
+Day 8 introduces **Akku-Panik**, five devices and one charging cable.
+Day 9 uses regular Santa in **Rettet den Weihnachtsmann!**; Day 10 plays the
+corrected Maoz Tzur hook, and Day 11 is regular **Ein Glühwein zu viel**.
+Day 14 introduces the present-pushing **Wichtelwerkstatt**. Day 15 plays
+**Jingle Bells**. Day 22 is **GOY vey!**, catching Christmas objects instead of
+Hanukkah objects. A clean run earns its own regular achievement.
+See [the full sequence](docs/minigames.md) and [camera reuse and privacy](docs/oy-vey.md).
 **Advent-Verwaltung → Spiele testen** opens all games at configurable difficulty,
 independent of the device date and without changing daily progress. See
 [Minigame setup, controls and architecture](docs/minigames.md) for details.
@@ -166,8 +156,8 @@ and `shared_preferences` for saved calendar assignments.
 
 **Box öffnen** in admin sends a deliberate, health-verified `POST /unlock` to the
 connected Pico. The button is disabled while disconnected or opening. Home Wi-Fi
-and the Pico hotspot share the same service. The current firmware accepts local
-network requests without a token; the development PIN only protects the admin UI.
+and the Pico hotspot share the same service. The development PIN protects the admin UI; the restored firmware accepts
+commands on its local network without a device key. See the configuration below.
 The bundled face runtime raises Android minimum SDK to 24. Audio credits, melody sources
 and preview controls are documented in [Weihnachtsglocken](docs/bell-melodies.md).
 Typography uses platform serif fallbacks without network font downloads. Development uses
@@ -176,21 +166,75 @@ reproducible dependency resolution.
 
 ## Firmware
 
-`firmware/main.py` is the existing MicroPython entry point and currently blinks
-the Pico's onboard LED. App setup does not change the firmware. Flashing and
-future lock control will be designed separately.
+`main.py` uses the restored `old_main.py` architecture, with network credentials
+loaded from private `config.py`. Unlocking is synchronous: GPIO 15 stays HIGH for
+**five seconds**, then `finally` switches it LOW, including if the wait raises an
+exception. The HTTP success response is sent after the pulse finishes. The app
+allows seven seconds for this request; health checks retain their short timeout.
+`boot.py` initializes GP15 LOW before the main program starts.
+
+Verify the solenoid's five-second ON-time and duty-cycle rating. Software does not
+prove the MOSFET is off during power-up or establish whether the door is physically
+open; there is no position sensor. The restored firmware has no timer-based cutoff,
+unlock-token validation or cooldown.
+
+Run the firmware tests without networking or physical actuation:
+
+```sh
+python3 -m unittest discover -s firmware/tests -v
+```
 
 ## Pico network configuration
 
-Copy `firmware/config.example.py` to `firmware/config.py` and fill in your Wi-Fi
-and fallback hotspot credentials. `config.py` is ignored by Git. Copy both
-`main.py` and `config.py` to the Pico's filesystem before restarting it.
+Copy `firmware/config.example.py` to ignored `firmware/config.py` and fill in
+`WIFI_NAME`, `WIFI_PASSWORD`, `AP_NAME` and `AP_PASSWORD`. Preserve your existing
+private settings. Copy `boot.py`, `main.py` and `config.py` to the Pico and restart.
+The restored firmware does not use the additional unlock settings in older configs.
+
+The app matches the restored firmware: no device key or token build define is
+required. Run normally with `flutter run` from `app/`. Optional address overrides
+can still be supplied with `--dart-define-from-file=pico.local.json`.
+
 The firmware exposes `/health` with the `DoorZero` identity and falls back to a
-hotspot if home Wi-Fi is unavailable. The LED now indicates network status;
-manual LED endpoints return HTTP 410. `old_main.py` preserves the earlier LED
-server for reference and also reads credentials from the local config.
+hotspot if home Wi-Fi is unavailable. The LED indicates network status; the
+completion acknowledgement remains separate from unlocking.
 
 Calendar challenges now offer **Zu schwer?** for a gentler attempt or the optional
 **Müll rausbringen** alternative. Carry the full bag out, then fit a fresh bag to
 complete the door and earn a secret achievement. The trash game can also be
 launched in admin previews. See [minigames](docs/minigames.md).
+
+### XY-MOS unexpected activation diagnosis
+
+The lock control is **GP15 / physical pin 20**; Pico GND on physical pin 18 goes
+to the module's signal GND. `TRIG/PWM` is a control input, not the 12 V supply.
+Never connect VIN+ or OUT+ to a Pico GPIO. Check the actual module's terminal
+labels; variant boards need their own documentation.
+
+If the load energizes unexpectedly, disconnect the solenoid supply before moving
+wires. Thonny can run `firmware/diagnose_lock_off.py` after stopping the normal
+application. This script only drives GP15 LOW repeatedly; it never enables the
+output or starts networking. Measure GP15–Pico GND and TRIG/PWM–module GND with a
+multimeter. Both should be near 0 V for the active-high XY-MOS setup. A software
+flag or module LED alone does not verify the electrical output state.
+
+For an isolation test, remove both power sources first, disconnect the Pico's
+GP15 lead from TRIG/PWM, and connect the module's TRIG/PWM directly to its own GND.
+The Pico GPIO must not remain attached to that jumper. Briefly test with a
+suitable low-power 12 V test load instead of holding the solenoid energized:
+if switching remains on with TRIG grounded and the Pico isolated, inspect the
+module, reversed VIN/OUT terminals or a load path bypassing the switch. If it is
+off, investigate the GPIO, trigger lead and shared ground reference. Do not leave
+a trigger input floating for this test.
+
+With all power removed, verify the common-ground path and that OUT− is not being
+used as the Pico ground: it is the switched load return on the usual low-side
+XY-MOS topology. Verify the flyback diode across the coil: striped/cathode end to
+OUT+, other end to OUT−. Establish the actual input behavior before considering
+an additional pull-down resistor or reversing software polarity.
+
+## Icon and first launch
+
+The app has a matching chest icon, ivory splash screens and a one-time German
+welcome introducing Auszeichnungen and the bonus gift. Secret awards are explained
+as optional. See [branding and first-launch setup](docs/branding.md).

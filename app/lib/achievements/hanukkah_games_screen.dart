@@ -9,6 +9,7 @@ import '../presentation/calendar_style.dart';
 import '../presentation/viewport_fit.dart';
 import 'achievement_scope.dart';
 import 'achievement_store.dart';
+import '../content/game_access_scope.dart';
 
 /// Real replay attempts, not admin previews; never complete calendar doors.
 class HanukkahGamesScreen extends StatefulWidget {
@@ -31,26 +32,32 @@ class _HanukkahGamesScreenState extends State<HanukkahGamesScreen> {
   int _page = 0;
   void _play(Minigame game) {
     final difficulty = _difficulty;
+    if (!GameAccessScope.allow(context, game, difficulty, skin: widget.skin)) {
+      return;
+    }
+    final inherit = GameAccessScope.capture(context);
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => AchievementScope(
-          record: (facts) => widget.store.record(
-            AchievementRun(
-              day: null,
-              game: game,
-              difficulty: difficulty,
-              facts: facts,
+        builder: (_) => inherit(
+          AchievementScope(
+            record: (facts) => widget.store.record(
+              AchievementRun(
+                day: null,
+                game: game,
+                difficulty: difficulty,
+                facts: facts,
+              ),
             ),
-          ),
-          child: GiftRewardScope(
-            openGift: () async => GiftOpenResult.replay,
-            child: buildMinigame(
-              game,
-              difficulty,
-              () async {},
-              skin: widget.skin,
-              alreadyCompleted: widget.store.tokenComplete(
-                '$_prefix:${game.name}',
+            child: GiftRewardScope(
+              openGift: () async => GiftOpenResult.replay,
+              child: buildMinigame(
+                game,
+                difficulty,
+                () async {},
+                skin: widget.skin,
+                alreadyCompleted: widget.store.tokenComplete(
+                  '$_prefix:${game.name}',
+                ),
               ),
             ),
           ),
@@ -160,13 +167,16 @@ class _HanukkahGamesScreenState extends State<HanukkahGamesScreen> {
   );
   Widget _card(Minigame game) {
     final done = widget.store.tokenComplete('$_prefix:${game.name}');
+    final locked =
+        GameAccessScope.reason(context, game, _difficulty, skin: widget.skin) !=
+        null;
     return Padding(
       padding: const EdgeInsets.all(5),
       child: OutlinedButton(
         key: ValueKey(
           '${_hanukkah ? 'hanukkah' : 'practice'}-game-${game.name}',
         ),
-        onPressed: () => _play(game),
+        onPressed: locked ? null : () => _play(game),
         style: OutlinedButton.styleFrom(
           padding: EdgeInsets.zero,
           backgroundColor: done
@@ -184,7 +194,12 @@ class _HanukkahGamesScreenState extends State<HanukkahGamesScreen> {
               SizedBox(
                 width: 40,
                 height: 40,
-                child: _hanukkah
+                child: locked
+                    ? const Icon(
+                        Icons.lock_outline_rounded,
+                        color: CalendarStyle.muted,
+                      )
+                    : _hanukkah
                     ? CustomPaint(
                         painter: HanukkahMotifPainter(
                           game == Minigame.shoe ? 3 : game.index % 8,
@@ -194,7 +209,7 @@ class _HanukkahGamesScreenState extends State<HanukkahGamesScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                hanukkahTitle(game),
+                _hanukkah ? hanukkahTitle(game) : game.title,
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 15, color: hanukkahBlue),
               ),

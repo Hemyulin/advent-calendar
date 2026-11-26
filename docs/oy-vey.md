@@ -1,6 +1,6 @@
 # Oy Vey, Weihnachten!
 
-Day 9 and **Spiele ausprobieren** contain the head-controlled catching game.
+Day 4 and **Spiele ausprobieren** contain the head-controlled catching game.
 Collect 15 Sufganiyot, Sevivonim or Chanukkiot by moving the sack with the mouth position. Christmas trees,
 Santa hats and candy canes count as mistakes; three end the attempt. Missed good
 objects do not cost lives. Falling speed and spawn rate increase gradually.
@@ -94,3 +94,8 @@ and real native detector/mesh creation and inference on a synthetic blank frame.
 It does not replace the physical-phone tracking checks above. The compatible 2.x
 line is pinned because 3.x introduces API changes and newer releases require a
 newer Flutter/Dart toolchain. See the [upstream changes](https://pub.dev/packages/mediapipe_face_mesh/changelog).
+
+Day 22 adds **GOY vey!** using the same screen and rules with a reversed target
+pool. Christmas objects score; Hanukkah objects count as mistakes. A clean win
+earns **Ganz schön weihnachtlich**. The original Oy Vey goals are never awarded
+from the reversed variant. Admin previews expose both versions independently.

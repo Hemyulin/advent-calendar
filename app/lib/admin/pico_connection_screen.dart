@@ -70,7 +70,7 @@ class _PicoConnectionScreenState extends State<PicoConnectionScreen>
     });
     try {
       await service.unlock();
-      if (mounted) setState(() => _message = 'Öffnungsimpuls bestätigt.');
+      if (mounted) setState(() => _message = 'Entriegelung bestätigt.');
     } on PicoException catch (error) {
       if (mounted) {
         setState(() => _message = 'Öffnen nicht bestätigt. \n${error.message}');

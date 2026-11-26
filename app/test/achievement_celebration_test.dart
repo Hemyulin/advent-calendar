@@ -8,23 +8,31 @@ import 'package:advent_calendar/challenges/gift_reward.dart';
 
 Achievement award(String id) => achievements.firstWhere((a) => a.id == id);
 final toast = find.byKey(const ValueKey('achievement-celebration-toast'));
-final confetti = find.byKey(const ValueKey('achievement-confetti'));
+final confetti = find.byKey(const ValueKey('victory-confetti'));
+final summary = find.byKey(const ValueKey('completion-achievements'));
+Finder toastTitle(String id) =>
+    find.descendant(of: toast, matching: find.text(award(id).title));
 
 Widget won({
   required Future<List<Achievement>> Function() record,
   Future<GiftOpenResult> Function()? open,
+  bool alreadyCompleted = false,
 }) => MaterialApp(
   home: AchievementScope(
     record: (_) => record(),
     child: GiftRewardScope(
       openGift: open ?? () async => GiftOpenResult.preview,
-      child: GameResultLayer(
-        result: CompletionPanel(
-          onComplete: () async {},
-          onReplay: () {},
-          message: 'Alle Paare gefunden.',
-        ),
-        child: const Scaffold(),
+      child: GameScaffold(
+        title: 'Paare finden',
+        instructions: '',
+        alreadyCompleted: alreadyCompleted,
+        children: [
+          CompletionPanel(
+            onComplete: () async {},
+            onReplay: () {},
+            message: 'Alle Paare gefunden.',
+          ),
+        ],
       ),
     ),
   ),
@@ -72,7 +80,7 @@ void main() {
       );
       expect(confetti, findsOneWidget);
       expect(find.text('Erfolg freigeschaltet!'), findsOneWidget);
-      expect(find.text(award('memory').title), findsOneWidget);
+      expect(toastTitle('memory'), findsOneWidget);
       expect(opens, 0);
       await tester.tap(find.byKey(const ValueKey('completion-gift')));
       await tester.pump();
@@ -83,7 +91,9 @@ void main() {
       await expire(tester);
       expect(toast, findsNothing);
       expect(confetti, findsNothing);
-      expect(find.text('Die Box ist offen!'), findsOneWidget);
+      expect(find.text('Die Box wurde entriegelt.'), findsOneWidget);
+      expect(summary, findsOneWidget);
+      expect(find.text(award('memory').title), findsOneWidget);
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
@@ -95,23 +105,28 @@ void main() {
         tester,
         won(record: () async => [award('memory'), award('allGames')]),
       );
-      expect(find.text(award('memory').title), findsOneWidget);
+      expect(toastTitle('memory'), findsOneWidget);
       expect(find.text('1/2'), findsOneWidget);
       await tester.pump(const Duration(seconds: 3));
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pump(const Duration(milliseconds: 300));
-      expect(find.text(award('memory').title), findsNothing);
-      expect(find.text(award('allGames').title), findsOneWidget);
+      expect(toastTitle('memory'), findsNothing);
+      expect(toastTitle('allGames'), findsOneWidget);
       expect(find.text('2/2'), findsOneWidget);
       expect(confetti, findsNothing);
       await expire(tester);
       expect(toast, findsNothing);
+      expect(summary, findsOneWidget);
+      await tester.tap(find.byTooltip('Nächster Erfolg'));
+      await tester.pumpAndSettle();
+      expect(find.text('2 / 2'), findsOneWidget);
+      expect(find.text(award('allGames').title).hitTestable(), findsOneWidget);
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
 
   testWidgets(
-    'no new awards means no toast, and rebuilding the result never repeats an award',
+    'every win gets confetti even without a new award; rebuilding never restarts it',
     (tester) async {
       var records = 0;
       await show(
@@ -124,10 +139,15 @@ void main() {
         ),
       );
       expect(toast, findsNothing);
+      expect(confetti, findsOneWidget);
+      expect(summary, findsNothing);
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pump();
       expect(confetti, findsNothing);
       await tester.tap(find.text('Zum Öffnen tippen'));
       await tester.pumpAndSettle();
       expect(toast, findsNothing);
+      expect(confetti, findsNothing);
       expect(records, 1);
       await tester.pumpWidget(const SizedBox.shrink());
     },
@@ -162,6 +182,7 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump(const Duration(seconds: 10));
       expect(toast, findsNothing);
+      expect(confetti, findsNothing);
       expect(tester.takeException(), isNull);
       expect(tester.binding.transientCallbackCount, 0);
     },
@@ -192,6 +213,26 @@ void main() {
     },
   );
 
+  testWidgets(
+    'replay congratulations also display new badges and confetti without a gift',
+    (tester) async {
+      await show(
+        tester,
+        won(record: () async => [award('memory')], alreadyCompleted: true),
+      );
+      expect(
+        find.byKey(const ValueKey('completion-congratulations')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const ValueKey('completion-gift')), findsNothing);
+      expect(confetti, findsOneWidget);
+      await expire(tester);
+      expect(summary, findsOneWidget);
+      expect(find.text(award('memory').title), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
+
   for (final scenario in [
     (const Size(390, 844), 1.0),
     (const Size(320, 568), 2.0),
@@ -210,7 +251,7 @@ void main() {
       await show(
         tester,
         won(
-          record: () async => [award('memory')],
+          record: () async => [award('memory'), award('allGames')],
           open: () async {
             opens++;
             return GiftOpenResult.boxOpened;

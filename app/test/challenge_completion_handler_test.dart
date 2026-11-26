@@ -41,6 +41,64 @@ class TestLock implements LockGateway {
 Future<void> flush() => Future<void>.delayed(Duration.zero);
 void main() {
   test(
+    'explicit reopening shares concurrent taps and never repeats completion',
+    () async {
+      final progress = Progress();
+      Completer<void>? pending;
+      final lock = TestLock(() async {
+        await pending?.future;
+      });
+      final handler = ChallengeCompletionHandler(
+        progress: progress,
+        pico: null,
+        lockGateway: lock,
+      );
+      expect(await handler.reopenBox('day-1'), GiftOpenResult.replay);
+      await handler.complete('day-1');
+      expect(await handler.reopenBox('day-1'), GiftOpenResult.replay);
+      await handler.openGift('day-1');
+      pending = Completer<void>();
+      final a = handler.reopenBox('day-1'), b = handler.reopenBox('day-1');
+      await flush();
+      expect(lock.calls, 2);
+      pending.complete();
+      expect(await a, GiftOpenResult.boxOpened);
+      expect(await b, GiftOpenResult.boxOpened);
+      pending = null;
+      expect(await handler.reopenBox('day-1'), GiftOpenResult.boxOpened);
+      expect(lock.calls, 3);
+      expect(progress.writes, 1);
+      final replay = ChallengeCompletionHandler(
+        progress: progress,
+        pico: null,
+        lockGateway: lock,
+      );
+      await replay.complete('day-1');
+      expect(await replay.reopenBox('day-1'), GiftOpenResult.replay);
+      expect(lock.calls, 3);
+    },
+  );
+
+  test('an uncertain command is retried only on explicit reopening', () async {
+    final progress = Progress();
+    var fail = true;
+    final lock = TestLock(() async {
+      if (fail) throw TimeoutException('offline');
+    });
+    final handler = ChallengeCompletionHandler(
+      progress: progress,
+      pico: null,
+      lockGateway: lock,
+    );
+    await handler.complete('day-1');
+    expect(await handler.openGift('day-1'), GiftOpenResult.unconfirmed);
+    expect(lock.calls, 1);
+    fail = false;
+    expect(await handler.reopenBox('day-1'), GiftOpenResult.boxOpened);
+    expect(lock.calls, 2);
+    expect(progress.writes, 1);
+  });
+  test(
     'only a newly solved door can request its gift; repeated taps and replay never unlock twice',
     () async {
       final progress = Progress();

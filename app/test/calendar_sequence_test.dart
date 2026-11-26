@@ -10,6 +10,7 @@ import 'package:advent_calendar/challenges/games/difficulty.dart';
 import 'package:advent_calendar/challenges/seasonal/game_skin.dart';
 import 'package:advent_calendar/challenges/seasonal/game_skin_scope.dart';
 import 'package:advent_calendar/challenges/bells/bells_screen.dart';
+import 'package:advent_calendar/challenges/oy_vey/oy_vey_screen.dart';
 import 'package:advent_calendar/challenges/bells/bells_game.dart';
 import 'package:advent_calendar/challenges/shoe/shoe_game.dart';
 import 'package:advent_calendar/challenges/shoe/shoe_screen.dart';
@@ -38,14 +39,14 @@ void main() {
         Minigame.battery,
         Minigame.maze,
         Minigame.workshop,
-        Minigame.walkHome,
+        Minigame.bells,
         Minigame.memory,
         Minigame.chimney,
         Minigame.workshop,
         Minigame.walkHome,
         Minigame.cookies,
         Minigame.maze,
-        Minigame.battery,
+        Minigame.goyVey,
         Minigame.workshop,
         Minigame.bells,
       ];
@@ -56,7 +57,7 @@ void main() {
             .indexed
             .where((e) => e.$2)
             .map((e) => e.$1 + 1),
-        [5, 7, 9, 10, 11, 12],
+        [5, 7, 10, 12],
       );
       final first = <Minigame>{};
       for (final a in defaultAssignments) {
@@ -65,6 +66,7 @@ void main() {
               Minigame.shoe,
               Minigame.chimney,
               Minigame.walkHome,
+              Minigame.goyVey,
             }.contains(a.game)) {
           expect(a.difficulty, GameDifficulty.easy);
         }
@@ -76,6 +78,11 @@ void main() {
       expect(first, isNot(contains(Minigame.trash)));
       expect(defaultAssignments[8].difficulty, GameDifficulty.normal);
       expect(defaultAssignments[10].difficulty, GameDifficulty.normal);
+      expect(defaultAssignments[8].skin, GameSkin.christmas);
+      expect(defaultAssignments[10].skin, GameSkin.christmas);
+      expect(defaultAssignments[14].skin, GameSkin.christmas);
+      expect(defaultAssignments[14].melodyId, 'jingle');
+      expect(defaultAssignments[21].game, Minigame.goyVey);
       final lastSeen = <Minigame, int>{};
       final lastDifficulty = <Minigame, GameDifficulty>{};
       for (final (index, assignment) in defaultAssignments.indexed) {
@@ -122,6 +129,13 @@ void main() {
                 as BellsScreen;
         expect(bells.level.rounds.single.melody.id, 'maoz-tzur');
         expect(bells.level.guidance, BellGuidance.all);
+        final christmasSong =
+            configuredGame(buildDailyChallenge(days[14], () async {}))
+                as BellsScreen;
+        expect(christmasSong.level.rounds.single.melody.id, 'jingle');
+        final goy = buildDailyChallenge(days[21], () async {}) as OyVeyScreen;
+        expect(goy.level.christmasTargets, isTrue);
+        expect(goy.level.startSpeed, greaterThan(.16));
         final shoe =
             configuredGame(buildDailyChallenge(days[5], () async {}))
                 as ShoeScreen;

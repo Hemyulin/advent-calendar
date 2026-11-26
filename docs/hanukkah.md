@@ -1,18 +1,20 @@
 # Chanukka-Modus
 
 Skins are **assigned per calendar door**, never switched automatically by the
-current date. Days 5, 7, 9, 10, 11 and 12 have Hanukkah variants; day 4 is Oy Vey.
-Day 6 keeps the Nikolaus boot, and day 8 remains regular Akku-Panik.
+current date. Days 5, 7, 10 and 12 have Hanukkah variants; day 4 is Oy Vey.
+Day 6 keeps the Nikolaus boot, and day 8 remains regular Akku-Panik. Days 9 and 11 are regular Santa and Glühwein;
+day 15 plays Jingle Bells, and day 22 reverses Oy Vey as GOY vey.
 The [complete sequence](minigames.md) introduces all mechanics by day 14 and
 increases difficulty on later revisits, ending with five hard challenges.
 
-Nine games support both appearances. Only **Oy Vey** has no alternate skin.
+Nine games support both appearances. **Oy Vey**, **GOY vey** and the optional trash game have no alternate skin.
 Each attempt has a fixed appearance. Achievement details offer explicit play
 buttons for Christmas and Chanukka; first Christmas attempts keep their calendar assignment. The David-star button
 on regular replays and explicitly themed games switches in both directions,
 starting a fresh attempt. A highlighted star means Chanukka; tapping again
 returns to Christmas. The one-time discovery modal does not switch anything.
 Individual attempts and the Chanukka game collection default to Klassisch;
+all practice and theme switches respect calendar difficulty/song locks.
 three-difficulty goals offer Leicht, Klassisch and Knifflig in both appearances.
 Admin previews offer a separate Chanukka collection and remain isolated.
 Calendar routes keep the saved door appearance. No date manipulation
@@ -49,8 +51,8 @@ can earn achievements but never complete a calendar door or request a physical
 box action. Existing daily completion and the LED acknowledgement retain their
 normal shared, once-per-new-completion behavior.
 
-The overall bonus now requires 17 achievements. All 11 curated bell hooks count
-for the song collection, bringing the required bonus-objective checklist to 29. Rule
+The overall bonus now requires 18 achievements. All 11 curated bell hooks count
+for the song collection, bringing the required bonus-objective checklist to 30. Rule
 version 5 reevaluates only the affected aggregates/song collection; existing
 individual badges, daily completion, voucher text and previous voucher claims
 remain intact. A previously claimed physical voucher is never offered twice.
@@ -64,7 +66,7 @@ information, and replaying the hook never plays a full song.
 | Difficulty | Hook | Source pitches / adaptation | Guidance |
 | --- | --- | --- | --- |
 | Leicht | Sevivon, sov sov sov | D D E F F E; opening six notes, 4 beats. | All bells shown. |
-| Klassisch | Maoz Tzur | Opening two phrases, D major transposed up a minor third to F major so its low fifth fits existing samples. 16 notes, 16 beats; the repeated high C uses two eighth notes. | First bell only. |
+| Klassisch | Maoz Tzur | Opening two phrases, D major transposed up a minor third to F major so its low fifth fits existing samples. 16 notes, 16 beats; the first high C is an eighth-note pickup before the bar; the second is a quarter note on beat one. | First bell only. |
 | Knifflig | Hanerot Halalu | The leaping, repeated refrain figure at source beats 20–28, D major. 12 notes, 8 beats. | No demonstration highlights. |
 
 The traditional melody pitches and durations were checked against published

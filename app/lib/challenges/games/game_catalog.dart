@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../content/calendar_day.dart';
+import '../../content/game_access_scope.dart';
 import '../../content/calendar_schedule.dart';
 import 'game_kind.dart';
 export 'game_kind.dart';
@@ -59,6 +60,21 @@ Widget buildMinigame(
     builder: build,
     isReplay: alreadyCompleted,
     developmentPreview: developmentPreview,
+    canSwitchTo: developmentPreview
+        ? null
+        : (context, nextSkin) => GameAccessScope.allow(
+            context,
+            kind,
+            difficulty,
+            skin: nextSkin,
+            melodyId: kind == Minigame.bells
+                ? _bellsLevel(
+                    difficulty,
+                    nextSkin,
+                    melodyId,
+                  ).rounds.single.melody.id
+                : null,
+          ),
   );
 }
 
@@ -104,8 +120,11 @@ Widget _buildMinigame(
     onComplete: onComplete,
     alreadyCompleted: alreadyCompleted,
   ),
-  Minigame.oyVey => OyVeyScreen(
-    level: OyVeyLevel.forDifficulty(difficulty),
+  Minigame.oyVey || Minigame.goyVey => OyVeyScreen(
+    level: OyVeyLevel.forDifficulty(
+      difficulty,
+      christmasTargets: kind == Minigame.goyVey,
+    ),
     onComplete: onComplete,
     alreadyCompleted: alreadyCompleted,
     developmentPreview: developmentPreview,

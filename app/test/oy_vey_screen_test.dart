@@ -94,6 +94,80 @@ OyVeyPainter painter(WidgetTester tester) =>
 
 void main() {
   testWidgets(
+    'GOY vey wins report Christmas-only achievements and replay keeps the variant',
+    (tester) async {
+      for (final mistakes in [0, 1]) {
+        SharedPreferences.setMockInitialValues({});
+        final store = AchievementStore();
+        await store.ready;
+        final camera = FakeMouthCamera();
+        var completions = 0;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: AchievementScope(
+              record: (facts) => store.record(
+                AchievementRun(
+                  day: 22,
+                  game: Minigame.goyVey,
+                  difficulty: GameDifficulty.hard,
+                  facts: facts,
+                ),
+              ),
+              child: OyVeyScreen(
+                camera: camera,
+                level: const OyVeyLevel(
+                  christmasTargets: true,
+                  spawnSeconds: 999,
+                ),
+                onComplete: () async {
+                  completions++;
+                },
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('GOY vey!'), findsOneWidget);
+        final legend = tester
+            .widgetList<FestiveObjectIcon>(find.byType(FestiveObjectIcon))
+            .map((icon) => icon.kind)
+            .toList();
+        expect(legend.take(3), [
+          FestiveObject.tree,
+          FestiveObject.hat,
+          FestiveObject.cane,
+        ]);
+        await trackFace(tester, camera);
+        await tester.tap(find.byKey(const ValueKey('oy-vey-play')));
+        await tester.pump();
+        final g = painter(tester).game;
+        g.mistakes = mistakes;
+        g.objects.addAll([
+          for (var i = 0; i < 15; i++)
+            FallingObject(
+              id: i,
+              kind: FestiveObject.values[3 + i % 3],
+              x: .5,
+              y: .5,
+            ),
+        ]);
+        await tester.pump(const Duration(milliseconds: 30));
+        await tester.pumpAndSettle();
+        expect(completions, 1);
+        expect(store.tokenComplete('bonus:goyVey'), mistakes == 0);
+        expect(store.tokenComplete('bonus:cleanOy'), isFalse);
+        expect(store.tokenComplete('bonus:menorahs'), isFalse);
+        expect(store.tokenComplete('bonus:noJewishMisses'), isFalse);
+        await tester.tap(find.byKey(const ValueKey('completion-replay')));
+        await tester.pumpAndSettle();
+        expect(painter(tester).game.level.christmasTargets, isTrue);
+        expect(painter(tester).game.collected, 0);
+        await tester.pumpWidget(const SizedBox());
+        store.dispose();
+      }
+    },
+  );
+  testWidgets(
     'a fifteen-item win awards the secret only if no Jewish item escaped',
     (tester) async {
       for (final misses in [0, 1]) {

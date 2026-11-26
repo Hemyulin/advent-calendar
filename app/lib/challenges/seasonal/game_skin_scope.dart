@@ -35,10 +35,12 @@ class SkinnableGame extends StatefulWidget {
     required this.builder,
     this.isReplay = false,
     this.developmentPreview = false,
+    this.canSwitchTo,
   });
   final GameSkin initialSkin;
   final Widget Function(GameSkin) builder;
   final bool isReplay, developmentPreview;
+  final bool Function(BuildContext context, GameSkin skin)? canSwitchTo;
   static const unlockNoticeKey = 'replay.chanukkah-unlock-seen.v2';
   @override
   State<SkinnableGame> createState() => _SkinnableGameState();
@@ -85,7 +87,7 @@ class _SkinnableGameState extends State<SkinnableGame> {
           ),
           title: const Text('Chanukka-Modus freigeschaltet!'),
           content: const Text(
-            'Du kannst deine Spiele jetzt auch im jüdischen Modus spielen! '
+            'Du kannst deine freigeschalteten Spiele jetzt auch im jüdischen Modus spielen! '
             'Tippe auf den Davidstern oben in der App-Leiste, um zwischen beiden Varianten zu wechseln.',
           ),
           actions: [
@@ -114,10 +116,12 @@ class _SkinnableGameState extends State<SkinnableGame> {
 
   void _toggleTheme() {
     if (!mounted) return;
+    final next = _skin == GameSkin.hanukkah
+        ? GameSkin.christmas
+        : GameSkin.hanukkah;
+    if (widget.canSwitchTo?.call(context, next) == false) return;
     setState(() {
-      _skin = _skin == GameSkin.hanukkah
-          ? GameSkin.christmas
-          : GameSkin.hanukkah;
+      _skin = next;
       _replaying = true;
     });
   }

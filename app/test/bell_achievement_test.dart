@@ -191,7 +191,7 @@ void main() {
         find.byKey(const ValueKey('achievement-celebration-toast')),
         findsOneWidget,
       );
-      expect(find.text(concert.title), findsOneWidget);
+      expect(find.text(concert.title), findsWidgets);
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );

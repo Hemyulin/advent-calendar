@@ -349,10 +349,10 @@ class _CookiePainter extends CustomPainter {
       ..strokeWidth = .004
       ..strokeCap = StrokeCap.round
       ..color = const Color(0xFFBD8A4D).withValues(alpha: .38);
-    canvas.drawRect(const Rect.fromLTWH(.44, .4, .12, .3), paint);
-    canvas.drawLine(const Offset(.37, .21), const Offset(.63, .21), paint);
-    for (final x in [.25, .32, .68, .75]) {
-      canvas.drawLine(Offset(x, .34), Offset(x, .66), paint);
+    canvas.drawRect(const Rect.fromLTWH(.4, .36, .2, .34), paint);
+    canvas.drawLine(const Offset(.3, .25), const Offset(.7, .25), paint);
+    for (final x in [.23, .27, .73, .77]) {
+      canvas.drawLine(Offset(x, .37), Offset(x, .66), paint);
     }
     canvas.drawLine(const Offset(.18, .74), const Offset(.82, .74), paint);
     canvas.drawLine(const Offset(.12, .82), const Offset(.88, .82), paint);

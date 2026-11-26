@@ -10,8 +10,9 @@ import 'achievement_store.dart';
 /// leaving/replaying the result; dismissal is safe after automatic expiry.
 VoidCallback? showAchievementCelebration(
   BuildContext context,
-  List<Achievement> earned,
-) {
+  List<Achievement> earned, {
+  bool confetti = true,
+}) {
   final overlay = Overlay.maybeOf(context, rootOverlay: true);
   if (overlay == null || earned.isEmpty) return null;
   final reducedMotion = MediaQuery.disableAnimationsOf(context);
@@ -28,6 +29,7 @@ VoidCallback? showAchievementCelebration(
     builder: (_) => _AchievementCelebration(
       achievements: List.unmodifiable(earned),
       reducedMotion: reducedMotion,
+      confetti: confetti,
       onFinished: dismiss,
     ),
   );
@@ -35,12 +37,81 @@ VoidCallback? showAchievementCelebration(
   return dismiss;
 }
 
+/// A finite burst for every victory, independent of achievement unlocks.
+VoidCallback? showVictoryConfetti(BuildContext context) {
+  if (MediaQuery.disableAnimationsOf(context)) return null;
+  final overlay = Overlay.maybeOf(context, rootOverlay: true);
+  if (overlay == null) return null;
+  late OverlayEntry entry;
+  var active = true;
+  void dismiss() {
+    if (!active) return;
+    active = false;
+    entry.remove();
+    entry.dispose();
+  }
+
+  entry = OverlayEntry(builder: (_) => _VictoryConfetti(onFinished: dismiss));
+  overlay.insert(entry);
+  return dismiss;
+}
+
+class _VictoryConfetti extends StatefulWidget {
+  const _VictoryConfetti({required this.onFinished});
+  final VoidCallback onFinished;
+  @override
+  State<_VictoryConfetti> createState() => _VictoryConfettiState();
+}
+
+class _VictoryConfettiState extends State<_VictoryConfetti>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _effect;
+  @override
+  void initState() {
+    super.initState();
+    _effect =
+        AnimationController(
+            vsync: this,
+            duration: const Duration(milliseconds: 1500),
+          )
+          ..addStatusListener((status) {
+            if (status == AnimationStatus.completed) widget.onFinished();
+          })
+          ..forward();
+  }
+
+  @override
+  void dispose() {
+    _effect.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Positioned.fill(
+    child: IgnorePointer(
+      child: ExcludeSemantics(
+        child: RepaintBoundary(
+          child: AnimatedBuilder(
+            animation: _effect,
+            builder: (_, _) => CustomPaint(
+              key: const ValueKey('victory-confetti'),
+              painter: _ConfettiPainter(_effect.value),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
 class _AchievementCelebration extends StatefulWidget {
   const _AchievementCelebration({
     required this.achievements,
     required this.reducedMotion,
     required this.onFinished,
+    required this.confetti,
   });
+  final bool confetti;
   final List<Achievement> achievements;
   final bool reducedMotion;
   final VoidCallback onFinished;
@@ -120,7 +191,8 @@ class _AchievementCelebrationState extends State<_AchievementCelebration>
           final achievement = widget.achievements[_index];
           return Stack(
             children: [
-              if (!widget.reducedMotion &&
+              if (widget.confetti &&
+                  !widget.reducedMotion &&
                   !_closing &&
                   _index == 0 &&
                   progress < 1)

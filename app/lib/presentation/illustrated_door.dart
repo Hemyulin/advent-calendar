@@ -8,9 +8,15 @@ import 'festive_art.dart';
 
 /// A hinged paper door. Only the leaf moves; its frame and lights stay put.
 class IllustratedDoor extends StatefulWidget {
-  const IllustratedDoor({super.key, required this.day, this.onTap});
+  const IllustratedDoor({
+    super.key,
+    required this.day,
+    this.onTap,
+    this.onLockedTap,
+  });
 
   final CalendarDay day;
+  final VoidCallback? onLockedTap;
   final Future<void> Function()? onTap;
 
   @override
@@ -26,8 +32,13 @@ class _IllustratedDoorState extends State<IllustratedDoor>
   bool _opening = false;
 
   Future<void> _open() async {
+    if (_opening) return;
+    if (!widget.day.isAvailable) {
+      widget.onLockedTap?.call();
+      return;
+    }
     final onTap = widget.onTap;
-    if (_opening || !widget.day.isAvailable || onTap == null) return;
+    if (onTap == null) return;
     setState(() => _opening = true);
     try {
       if (!MediaQuery.disableAnimationsOf(context)) {
@@ -57,8 +68,8 @@ class _IllustratedDoorState extends State<IllustratedDoor>
     final locked = !day.isAvailable;
     return Semantics(
       button: true,
-      enabled: !locked && !_opening,
-      onTap: locked || _opening ? null : _open,
+      enabled: !_opening && (!locked || widget.onLockedTap != null),
+      onTap: _opening || (locked && widget.onLockedTap == null) ? null : _open,
       label:
           'Türchen ${day.number}, ${locked
               ? 'gesperrt'
@@ -68,7 +79,9 @@ class _IllustratedDoorState extends State<IllustratedDoor>
       child: ExcludeSemantics(
         child: InkWell(
           borderRadius: BorderRadius.circular(28),
-          onTap: locked || _opening ? null : _open,
+          onTap: _opening || (locked && widget.onLockedTap == null)
+              ? null
+              : _open,
           child: AspectRatio(
             aspectRatio: 0.84,
             child: LayoutBuilder(

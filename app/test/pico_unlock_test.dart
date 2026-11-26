@@ -10,9 +10,49 @@ const ready = PicoResponse(
   200,
   '{"device":"DoorZero","status":"ready","mode":"connected","ip":"192.168.178.68"}',
 );
-const opened = PicoResponse(200, '{"success":true,"duration_ms":200}');
+const opened = PicoResponse(200, '{"success":true,"duration_ms":5000}');
 
 void main() {
+  test(
+    'five-second firmware reply uses unlock timeout, not health timeout',
+    () async {
+      final service = PicoService(
+        baseUrl: 'http://pico',
+        request: (_, timeout) async {
+          expect(timeout, const Duration(milliseconds: 1500));
+          return ready;
+        },
+        postRequest: (_, timeout) async {
+          expect(timeout, const Duration(seconds: 7));
+          await Future<void>.delayed(const Duration(seconds: 5));
+          return opened;
+        },
+      );
+      addTearDown(service.dispose);
+      var finished = false;
+      final action = service.unlock().then((_) => finished = true);
+      await Future<void>.delayed(const Duration(seconds: 2));
+      expect(finished, isFalse);
+      await action;
+      expect(finished, isTrue);
+    },
+  );
+  test('unlock works without any device key', () async {
+    var calls = 0;
+    final service = PicoService(
+      request: (_, _) async {
+        calls++;
+        return ready;
+      },
+      postRequest: (_, _) async {
+        calls++;
+        return opened;
+      },
+    );
+    addTearDown(service.dispose);
+    await service.unlock();
+    expect(calls, 2);
+  });
   test(
     'native HTTP transport sends a bodyless POST only after verified health',
     () async {
@@ -21,6 +61,7 @@ void main() {
       addTearDown(() => server.close(force: true));
       server.listen((request) async {
         requests.add('${request.method} ${request.uri.path}');
+        expect(request.headers.value('Authorization'), isNull);
         expect(
           await request.fold<int>(0, (count, chunk) => count + chunk.length),
           0,
@@ -34,7 +75,8 @@ void main() {
       final service = PicoService(baseUrl: 'http://127.0.0.1:${server.port}');
       addTearDown(service.dispose);
       await service.unlock();
-      expect(requests, ['GET /health', 'POST /unlock']);
+      await service.acknowledgeGameCompletion();
+      expect(requests, ['GET /health', 'POST /unlock', 'POST /game/completed']);
     },
   );
 
@@ -96,6 +138,8 @@ void main() {
     const PicoResponse(200, '{"success":false}'),
     const PicoResponse(200, 'invalid'),
     const PicoResponse(503),
+    const PicoResponse(401),
+    const PicoResponse(429),
   ]) {
     test(
       'a failed/malformed command cannot claim success: ${response.body}/${response.statusCode}',
@@ -123,6 +167,7 @@ void main() {
     final service = PicoService(
       baseUrl: 'http://pico',
       timeout: const Duration(milliseconds: 20),
+      unlockTimeout: const Duration(milliseconds: 20),
       request: (_, _) async => ready,
       postRequest: (_, _) {
         posts++;

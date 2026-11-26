@@ -58,12 +58,13 @@ class PicoHealth {
 
 /// Existing Pico boundary, now with verified health and bounded reconnection.
 /// Unlock is an explicit command, separate from LED acknowledgement and health.
-/// The current firmware trusts its local network and accepts no auth token.
+/// Matches the restored local-network firmware; no device key is required.
 class PicoService implements LockGateway {
   PicoService({
     String? baseUrl,
     List<String>? baseUrls,
     this.timeout = const Duration(milliseconds: 1500),
+    this.unlockTimeout = const Duration(seconds: 7),
     this.pollInterval = const Duration(seconds: 15),
     this.retryInterval = const Duration(seconds: 5),
     this.maxRetryInterval = const Duration(seconds: 30),
@@ -91,6 +92,7 @@ class PicoService implements LockGateway {
         ) ||
         [
           timeout,
+          unlockTimeout,
           pollInterval,
           retryInterval,
           maxRetryInterval,
@@ -108,7 +110,11 @@ class PicoService implements LockGateway {
     defaultValue: 'http://192.168.4.1',
   );
   final List<Uri> candidates;
-  final Duration timeout, pollInterval, retryInterval, maxRetryInterval;
+  final Duration timeout,
+      unlockTimeout,
+      pollInterval,
+      retryInterval,
+      maxRetryInterval;
   final PicoRequest _request, _postRequest;
   final _changes = StreamController<PicoConnectionStatus>.broadcast();
   PicoConnectionStatus _state = PicoConnectionStatus.disconnected;
@@ -132,15 +138,22 @@ class PicoService implements LockGateway {
     _changes.add(state);
   }
 
-  Future<PicoResponse> _send(Uri uri, {bool post = false}) async {
+  Future<PicoResponse> _send(
+    Uri uri, {
+    bool post = false,
+    bool unlock = false,
+  }) async {
+    final requestTimeout = unlock ? unlockTimeout : timeout;
     try {
       final response = await (post ? _postRequest : _request)(
         uri,
-        timeout,
-      ).timeout(timeout);
+        requestTimeout,
+      ).timeout(requestTimeout);
       if (response.statusCode < 200 || response.statusCode >= 300) {
         throw PicoException(
-          'Der Pico meldet einen Fehler (HTTP ${response.statusCode}).',
+          response.statusCode == 429
+              ? 'Bitte warte kurz vor dem nächsten Öffnen.'
+              : 'Der Pico meldet einen Fehler (HTTP ${response.statusCode}).',
           statusCode: response.statusCode,
         );
       }
@@ -283,7 +296,11 @@ class PicoService implements LockGateway {
       throw const PicoException('Keine Verbindung zum Pico.');
     }
     try {
-      final response = await _send(uri.resolve('/unlock'), post: true);
+      final response = await _send(
+        uri.resolve('/unlock'),
+        post: true,
+        unlock: true,
+      );
       Object? body;
       try {
         body = jsonDecode(response.body);

@@ -215,11 +215,12 @@ class _OyVeyScreenState extends State<OyVeyScreen>
 
   @override
   Widget build(BuildContext context) => GameScaffold(
-    title: 'Oy Vey, Weihnachten!',
+    title: widget.level.christmasTargets ? 'GOY vey!' : 'Oy Vey, Weihnachten!',
     alreadyCompleted: widget.alreadyCompleted,
     onRestart: _restart,
-    instructions:
-        'Lenke den Sack mit kleinen Kopfbewegungen. Sammle Sufganiyot, Sevivonim und Chanukkiot. Meide Weihnachtsbäume, Weihnachtsmützen und Zuckerstangen. 15 richtige Objekte gewinnen, 3 Weihnachtsobjekte beenden den Versuch. Du musst den Mund nicht öffnen. Ohne erkanntes Gesicht fällt alles weiter; mit erkanntem Gesicht sammelst du automatisch. Die Kamera bleibt lokal: Es wird nichts aufgenommen oder hochgeladen.',
+    instructions: widget.level.christmasTargets
+        ? 'Lenke den Sack mit kleinen Kopfbewegungen. Sammle Weihnachtsbäume, Weihnachtsmützen und Zuckerstangen. Meide Sufganiyot, Sevivonim und Chanukkiot. 15 Weihnachtsgegenstände gewinnen, 3 falsche Gegenstände beenden den Versuch. Du musst den Mund nicht öffnen. Ohne erkanntes Gesicht fällt alles weiter. Die Kamera bleibt lokal: Es wird nichts aufgenommen oder hochgeladen.'
+        : 'Lenke den Sack mit kleinen Kopfbewegungen. Sammle Sufganiyot, Sevivonim und Chanukkiot. Meide Weihnachtsbäume, Weihnachtsmützen und Zuckerstangen. 15 richtige Objekte gewinnen, 3 Weihnachtsobjekte beenden den Versuch. Du musst den Mund nicht öffnen. Ohne erkanntes Gesicht fällt alles weiter; mit erkanntem Gesicht sammelst du automatisch. Die Kamera bleibt lokal: Es wird nichts aufgenommen oder hochgeladen.',
     children: [
       GameStats(
         text:
@@ -338,17 +339,17 @@ class _OyVeyScreenState extends State<OyVeyScreen>
             style: TextStyle(color: CalendarStyle.muted, fontSize: 12),
           ),
           const SizedBox(height: 14),
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              Icon(Icons.check_rounded, color: CalendarStyle.green),
-              FestiveObjectIcon(FestiveObject.sufganiyah),
-              FestiveObjectIcon(FestiveObject.dreidel),
-              FestiveObjectIcon(FestiveObject.hanukkiah),
-              Icon(Icons.close_rounded, color: Color(0xFFAF6A5B)),
-              FestiveObjectIcon(FestiveObject.tree),
-              FestiveObjectIcon(FestiveObject.hat),
-              FestiveObjectIcon(FestiveObject.cane),
+              const Icon(Icons.check_rounded, color: CalendarStyle.green),
+              for (final kind in FestiveObject.values.where(_game.isTarget))
+                FestiveObjectIcon(kind),
+              const Icon(Icons.close_rounded, color: Color(0xFFAF6A5B)),
+              for (final kind in FestiveObject.values.where(
+                (kind) => !_game.isTarget(kind),
+              ))
+                FestiveObjectIcon(kind),
             ],
           ),
         ],
@@ -359,21 +360,32 @@ class _OyVeyScreenState extends State<OyVeyScreen>
         CompletionPanel(
           facts: RunFacts(
             feats: {
-              if (_game.mistakes == 0) RunFeat.cleanOyVey,
-              if (_game.collected >= 15 && _game.missedJewishItems == 0)
+              if (_game.mistakes == 0)
+                if (widget.level.christmasTargets)
+                  RunFeat.cleanGoyVey
+                else
+                  RunFeat.cleanOyVey,
+              if (!widget.level.christmasTargets &&
+                  _game.collected >= 15 &&
+                  _game.missedJewishItems == 0)
                 RunFeat.noJewishMisses,
-              if (_game.mistakes == 0 &&
+              if (!widget.level.christmasTargets &&
+                  _game.mistakes == 0 &&
                   _game.menorahsCollected == _game.collected)
                 RunFeat.onlyMenorahs,
             },
           ),
           onComplete: widget.onComplete,
           onReplay: _restart,
-          message: 'Mazel tov! Alles eingesammelt!',
+          message: widget.level.christmasTargets
+              ? 'Ho, ho, ho! Weihnachten ist im Sack!'
+              : 'Mazel tov! Alles eingesammelt!',
         )
       else if (_game.lost)
         DefeatPanel(
-          message: 'Oy vey! Da war zu viel Weihnachten dabei.',
+          message: widget.level.christmasTargets
+              ? 'GOY vey! Das gehört nicht in den Weihnachtssack.'
+              : 'Oy vey! Da war zu viel Weihnachten dabei.',
           onRetry: _restart,
         ),
     ],

@@ -64,22 +64,28 @@ class OyVeyLevel {
     this.startSpeed = .16,
     this.spawnSeconds = .95,
     this.seed,
+    this.christmasTargets = false,
   });
   final int target, mistakeLimit;
   final double startSpeed, spawnSeconds;
   final int? seed;
-  factory OyVeyLevel.forDifficulty(GameDifficulty difficulty) =>
-      switch (difficulty) {
-        GameDifficulty.easy => const OyVeyLevel(
-          startSpeed: .13,
-          spawnSeconds: 1.05,
-        ),
-        GameDifficulty.normal => const OyVeyLevel(),
-        GameDifficulty.hard => const OyVeyLevel(
-          startSpeed: .21,
-          spawnSeconds: .8,
-        ),
-      };
+  final bool christmasTargets;
+  factory OyVeyLevel.forDifficulty(
+    GameDifficulty difficulty, {
+    bool christmasTargets = false,
+  }) => OyVeyLevel(
+    startSpeed: switch (difficulty) {
+      GameDifficulty.easy => .13,
+      GameDifficulty.normal => .16,
+      GameDifficulty.hard => .21,
+    },
+    spawnSeconds: switch (difficulty) {
+      GameDifficulty.easy => 1.05,
+      GameDifficulty.normal => .95,
+      GameDifficulty.hard => .8,
+    },
+    christmasTargets: christmasTargets,
+  );
 }
 
 /// Position-only collection. Missing tracking disables catches but objects keep
@@ -113,6 +119,8 @@ class OyVeyGame {
       (1 + math.min(.75, collected / level.target * .6 + elapsed / 180));
   double get spawnInterval =>
       math.max(.5, level.spawnSeconds * (1 - collected / level.target * .3));
+  bool isTarget(FestiveObject kind) =>
+      level.christmasTargets ? !kind.correct : kind.correct;
   void resetTracking() => _previous = null;
 
   void advance(double seconds, CatchMouth? mouth, {double aspectRatio = .75}) {
@@ -133,13 +141,15 @@ class OyVeyGame {
     _spawn += dt;
     if (_spawn >= spawnInterval) {
       _spawn -= spawnInterval;
-      final kind = _random.nextDouble() < .7
-          ? FestiveObject.values[_random.nextInt(3)]
-          : FestiveObject.values[3 + _random.nextInt(3)];
-      // A perfect run generates exactly the target number of Jewish items.
+      final target = _random.nextDouble() < .7;
+      final offset = target == level.christmasTargets ? 3 : 0;
+      final kind = FestiveObject.values[offset + _random.nextInt(3)];
+      // A perfect run generates exactly the target number of wanted items.
       // Misses free a slot for a replacement, so ordinary wins stay possible.
-      final outstanding = objects.where((object) => object.kind.correct).length;
-      if (!kind.correct || collected + outstanding < level.target) {
+      final outstanding = objects
+          .where((object) => isTarget(object.kind))
+          .length;
+      if (!isTarget(kind) || collected + outstanding < level.target) {
         objects.add(
           FallingObject(
             id: _nextId++,
@@ -156,13 +166,13 @@ class OyVeyGame {
       if (mouth != null &&
           _intersects(object, oldY, before!, mouth, aspectRatio)) {
         objects.remove(object);
-        if (object.kind.correct) {
+        if (isTarget(object.kind)) {
           collected++;
           if (object.kind == FestiveObject.hanukkiah) menorahsCollected++;
-          feedback = 'Mazel tov!';
+          feedback = level.christmasTargets ? 'Ho, ho, ho!' : 'Mazel tov!';
         } else {
           mistakes++;
-          feedback = 'Oy vey!';
+          feedback = level.christmasTargets ? 'GOY vey!' : 'Oy vey!';
         }
         feedbackLeft = .9;
         if (won || lost) break;

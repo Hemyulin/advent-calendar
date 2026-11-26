@@ -1,3 +1,4 @@
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:advent_calendar/app.dart';
 import 'package:advent_calendar/presentation/calendar_awards_button.dart';
 import 'package:advent_calendar/progress/mock_progress_repository.dart';
@@ -9,6 +10,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  setUp(
+    () => SharedPreferences.setMockInitialValues({'welcome.seen.v1': true}),
+  );
   Future<void> start(WidgetTester tester, DateTime date) async {
     await tester.pumpWidget(
       AdventCalendarApp(
@@ -39,7 +43,9 @@ void main() {
   testWidgets('preview unlocks the entire carousel before December', (
     tester,
   ) async {
-    await tester.pumpWidget(AdventCalendarApp(now: DateTime(2026, 11, 4)));
+    await tester.pumpWidget(
+      AdventCalendarApp(now: DateTime(2026, 11, 4), previewAllDays: true),
+    );
     await tester.pumpAndSettle();
     expect(find.text('Vorschau'), findsNothing);
     expect(find.byTooltip('Spiele ausprobieren'), findsNothing);

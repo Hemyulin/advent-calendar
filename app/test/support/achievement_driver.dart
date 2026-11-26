@@ -20,6 +20,7 @@ Future<void> earnAllAchievements(AchievementStore store) async {
     final feats = switch (game) {
       Minigame.maze => {RunFeat.allCandy},
       Minigame.chimney => <RunFeat>{},
+      Minigame.goyVey => {RunFeat.cleanGoyVey},
       Minigame.oyVey => {RunFeat.onlyMenorahs, RunFeat.cleanOyVey},
       Minigame.walkHome => {RunFeat.cleanWalk},
       Minigame.battery => {

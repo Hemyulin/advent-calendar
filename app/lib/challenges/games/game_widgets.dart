@@ -7,6 +7,7 @@ import '../../achievements/run_facts.dart';
 import '../../achievements/achievement_scope.dart';
 import '../../achievements/achievement_store.dart';
 import '../../achievements/achievement_celebration.dart';
+import '../../achievements/achievement_win_summary.dart';
 import '../gift_reward.dart';
 import '../seasonal/game_skin_scope.dart';
 import 'gift_art.dart';
@@ -303,6 +304,19 @@ class _CompletionPanelState extends State<CompletionPanel>
     }
   }
 
+  Future<void> _reopenBox() async {
+    if (_isReplay || !_saved || !_opened || _opening) return;
+    final reopen = GiftRewardScope.maybeOf(context)?.reopenBox;
+    if (reopen == null) return;
+    setState(() => _opening = true);
+    final result = await _requestGift(reopen);
+    if (!mounted) return;
+    setState(() {
+      _opening = false;
+      _giftResult = result;
+    });
+  }
+
   Future<GiftOpenResult> _requestGift(
     Future<GiftOpenResult> Function()? open,
   ) async {
@@ -316,11 +330,13 @@ class _CompletionPanelState extends State<CompletionPanel>
   @override
   void dispose() {
     _dismissCelebration?.call();
+    _dismissConfetti?.call();
     _giftAnimation.dispose();
     super.dispose();
   }
 
-  VoidCallback? _dismissCelebration;
+  VoidCallback? _dismissCelebration, _dismissConfetti;
+  List<Achievement> _earnedAchievements = const [];
   bool _saving = false;
   bool _saved = false;
   bool _failed = false;
@@ -338,6 +354,9 @@ class _CompletionPanelState extends State<CompletionPanel>
     _hanukkah = GameSkinScope.isHanukkah(context);
     _isReplay = _CompletionContext.of(context)?.isReplay ?? false;
     _saveStarted = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _dismissConfetti = showVictoryConfetti(context);
+    });
     _save();
   }
 
@@ -362,12 +381,17 @@ class _CompletionPanelState extends State<CompletionPanel>
       if (mounted) {
         setState(() {
           _saved = true;
+          _earnedAchievements = List.unmodifiable(earned);
         });
         if (earned.isNotEmpty) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (!mounted) return;
             _dismissCelebration?.call();
-            _dismissCelebration = showAchievementCelebration(context, earned);
+            _dismissCelebration = showAchievementCelebration(
+              context,
+              earned,
+              confetti: false,
+            );
           });
         }
       }
@@ -446,8 +470,8 @@ class _CompletionPanelState extends State<CompletionPanel>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     SizedBox(
-                      width: 240,
-                      height: 232,
+                      width: _earnedAchievements.isEmpty ? 240 : 188,
+                      height: _earnedAchievements.isEmpty ? 232 : 178,
                       child: AnimatedBuilder(
                         animation: _giftAnimation,
                         builder: (_, _) => CustomPaint(
@@ -458,7 +482,7 @@ class _CompletionPanelState extends State<CompletionPanel>
                     const SizedBox(height: 12),
                     Text(
                       _opening
-                          ? 'Öffnet …'
+                          ? 'Jetzt die Box öffnen'
                           : _opened
                           ? 'Geschenk geöffnet'
                           : _saving
@@ -486,7 +510,7 @@ class _CompletionPanelState extends State<CompletionPanel>
             liveRegion: true,
             child: Text(
               switch (_giftResult) {
-                GiftOpenResult.boxOpened => 'Die Box ist offen!',
+                GiftOpenResult.boxOpened => 'Die Box wurde entriegelt.',
                 GiftOpenResult.notConfigured =>
                   'Die Box ist noch nicht eingerichtet.',
                 GiftOpenResult.unconfirmed =>
@@ -501,8 +525,21 @@ class _CompletionPanelState extends State<CompletionPanel>
               style: const TextStyle(color: CalendarStyle.muted, fontSize: 13),
             ),
           ),
+          if (GiftRewardScope.maybeOf(context)?.reopenBox != null &&
+              (_giftResult == GiftOpenResult.boxOpened ||
+                  _giftResult == GiftOpenResult.unconfirmed)) ...[
+            const SizedBox(height: 8),
+            TextButton.icon(
+              key: const ValueKey('completion-reopen-box'),
+              onPressed: _opening ? null : _reopenBox,
+              icon: const Icon(Icons.lock_open_rounded, size: 18),
+              label: Text(_opening ? 'Öffnet …' : 'Box erneut öffnen'),
+            ),
+          ],
           if (widget.details != null) widget.details!,
         ],
+        if (_earnedAchievements.isNotEmpty)
+          AchievementWinSummary(achievements: _earnedAchievements),
         if (_saving) ...[
           const SizedBox(height: 12),
           Semantics(

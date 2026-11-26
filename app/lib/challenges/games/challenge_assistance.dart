@@ -3,6 +3,7 @@ import '../../achievements/achievement_scope.dart';
 import '../../achievements/achievement_store.dart';
 import '../../achievements/run_facts.dart';
 import '../../content/calendar_schedule.dart';
+import '../../content/game_access_scope.dart';
 import '../../presentation/calendar_style.dart';
 import '../../presentation/viewport_fit.dart';
 import '../completion.dart';
@@ -58,7 +59,19 @@ class _FlexibleChallengeState extends State<FlexibleChallenge> {
   Future<void> _offer() async {
     if (_dialogOpen) return;
     setState(() => _dialogOpen = true);
+    final lower =
+        GameDifficulty.values[(_difficulty.index - 1).clamp(
+          0,
+          GameDifficulty.values.length - 1,
+        )];
     final canRelax =
+        GameAccessScope.reason(
+              context,
+              _game,
+              _game == Minigame.cookies ? _difficulty : lower,
+              skin: widget.assignment.skin,
+            ) ==
+            null &&
         _game != Minigame.trash &&
         (_game == Minigame.cookies
             ? !_relaxed
@@ -123,6 +136,18 @@ class _FlexibleChallengeState extends State<FlexibleChallenge> {
     );
     if (mounted) setState(() => _dialogOpen = false);
     if (!mounted || choice == null) return;
+    if (!GameAccessScope.allow(
+      context,
+      choice == 'trash' ? Minigame.trash : _game,
+      choice == 'trash'
+          ? GameDifficulty.easy
+          : _game == Minigame.cookies
+          ? _difficulty
+          : lower,
+      skin: choice == 'trash' ? GameSkin.christmas : widget.assignment.skin,
+    )) {
+      return;
+    }
     setState(() {
       if (choice == 'trash') {
         _game = Minigame.trash;

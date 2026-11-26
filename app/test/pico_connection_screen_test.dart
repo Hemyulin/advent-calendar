@@ -81,7 +81,7 @@ void main() {
         const PicoResponse(200, '{"success":true,"duration_ms":200}'),
       );
       await t.pumpAndSettle();
-      expect(find.text('Öffnungsimpuls bestätigt.'), findsOneWidget);
+      expect(find.text('Entriegelung bestätigt.'), findsOneWidget);
       expect(paths.where((p) => p == 'POST /unlock').length, 1);
       await t.pumpWidget(const SizedBox());
       service.dispose();
@@ -103,7 +103,7 @@ void main() {
     await t.tap(find.text('Box öffnen'));
     await t.pumpAndSettle();
     expect(find.textContaining('Öffnen nicht bestätigt'), findsOneWidget);
-    expect(find.text('Öffnungsimpuls bestätigt.'), findsNothing);
+    expect(find.text('Entriegelung bestätigt.'), findsNothing);
     await t.pumpWidget(const SizedBox());
     service.dispose();
   });

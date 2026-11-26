@@ -21,3 +21,6 @@ venv/
 
 # Device-local Wi-Fi credentials
 /firmware/config.py
+
+# Device-local application authorization (never commit the shared key)
+/app/pico.local.json

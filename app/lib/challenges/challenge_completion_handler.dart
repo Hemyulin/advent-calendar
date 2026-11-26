@@ -20,6 +20,7 @@ class ChallengeCompletionHandler {
   final LockGateway? lockGateway;
   final _completions = <String, Future<void>>{};
   final _newlyCompleted = <String>{};
+  final _reopenings = <String, Future<GiftOpenResult>>{};
   final _gifts = <String, Future<GiftOpenResult>>{};
 
   Future<void> complete(String challengeId) => _completions.putIfAbsent(
@@ -47,16 +48,33 @@ class ChallengeCompletionHandler {
     if (!_newlyCompleted.contains(challengeId)) return GiftOpenResult.replay;
     if (lockGateway == null) return GiftOpenResult.notConfigured;
     if (_gifts.containsKey(challengeId)) return GiftOpenResult.replay;
-    return _gifts.putIfAbsent(challengeId, () async {
-      try {
-        // The gateway bounds health and command requests. An outer timeout could
-        // abandon discovery while a later physical command was still pending.
-        await lockGateway!.unlock();
-        return GiftOpenResult.boxOpened;
-      } catch (_) {
-        return GiftOpenResult.unconfirmed;
-      }
-    });
+    return _gifts.putIfAbsent(challengeId, _unlockBox);
+  }
+
+  /// Explicit retry from the current newly completed door's gift screen only.
+  /// Never triggered by replay, polling, an error or reconnecting automatically.
+  Future<GiftOpenResult> reopenBox(String challengeId) async {
+    final gift = _gifts[challengeId];
+    if (!_newlyCompleted.contains(challengeId) || gift == null) {
+      return GiftOpenResult.replay;
+    }
+    await gift;
+    return _reopenings.putIfAbsent(
+      challengeId,
+      () => _unlockBox().whenComplete(() {
+        _reopenings.remove(challengeId);
+      }),
+    );
+  }
+
+  Future<GiftOpenResult> _unlockBox() async {
+    if (lockGateway == null) return GiftOpenResult.notConfigured;
+    try {
+      await lockGateway!.unlock();
+      return GiftOpenResult.boxOpened;
+    } catch (_) {
+      return GiftOpenResult.unconfirmed;
+    }
   }
 
   Future<void> _acknowledge() async {

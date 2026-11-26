@@ -1,3 +1,4 @@
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:advent_calendar/app.dart';
 import 'package:advent_calendar/presentation/calendar_screen.dart';
 import 'package:advent_calendar/presentation/illustrated_door.dart';
@@ -5,6 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  setUp(
+    () => SharedPreferences.setMockInitialValues({'welcome.seen.v1': true}),
+  );
   int selected(WidgetTester tester) =>
       tester.widget<IllustratedDoor>(find.byType(IllustratedDoor)).day.number;
   Future<void> swipe(WidgetTester tester, double dx) async {
@@ -15,7 +19,9 @@ void main() {
   testWidgets(
     'main door swipes next and previous without opening a challenge',
     (tester) async {
-      await tester.pumpWidget(AdventCalendarApp(now: DateTime(2026, 11, 7)));
+      await tester.pumpWidget(
+        AdventCalendarApp(now: DateTime(2026, 11, 7), previewAllDays: true),
+      );
       await tester.pumpAndSettle();
       expect(selected(tester), 1);
       await swipe(tester, -200);
@@ -53,7 +59,9 @@ void main() {
   testWidgets(
     'carousel still scrolls independently and last-day swipes do not wrap',
     (tester) async {
-      await tester.pumpWidget(AdventCalendarApp(now: DateTime(2026, 11, 7)));
+      await tester.pumpWidget(
+        AdventCalendarApp(now: DateTime(2026, 11, 7), previewAllDays: true),
+      );
       await tester.pumpAndSettle();
       await tester.drag(find.byType(ListView), const Offset(-300, 0));
       await tester.pumpAndSettle();
@@ -85,7 +93,9 @@ void main() {
   testWidgets(
     'short drags in whitespace and vertical drags do not select another door',
     (tester) async {
-      await tester.pumpWidget(AdventCalendarApp(now: DateTime(2026, 11, 7)));
+      await tester.pumpWidget(
+        AdventCalendarApp(now: DateTime(2026, 11, 7), previewAllDays: true),
+      );
       await tester.pumpAndSettle();
       await tester.dragFrom(const Offset(25, 150), const Offset(-10, 0));
       await tester.pumpAndSettle();

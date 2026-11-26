@@ -51,7 +51,7 @@ void main() {
     expect(posts, ['/game/completed']);
     await tester.tap(find.byKey(const ValueKey('completion-gift')));
     await tester.pumpAndSettle();
-    expect(find.text('Die Box ist offen!'), findsOneWidget);
+    expect(find.text('Die Box wurde entriegelt.'), findsOneWidget);
     expect(posts, ['/game/completed', '/unlock']);
     await tester.tap(find.text('Zurück zum Kalender'));
     await tester.pumpAndSettle();

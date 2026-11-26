@@ -109,6 +109,7 @@ void main() {
   Widget panel({
     required Future<void> Function() save,
     Future<GiftOpenResult> Function()? open,
+    Future<GiftOpenResult> Function()? reopen,
   }) {
     final child = GameResultLayer(
       result: CompletionPanel(
@@ -121,9 +122,70 @@ void main() {
     return MaterialApp(
       home: open == null
           ? child
-          : GiftRewardScope(openGift: open, child: child),
+          : GiftRewardScope(openGift: open, reopenBox: reopen, child: child),
     );
   }
+
+  testWidgets(
+    'explicit retry on the same result does not replay or save twice',
+    (tester) async {
+      var saves = 0, opens = 0, retries = 0;
+      final pending = Completer<GiftOpenResult>();
+      await tester.pumpWidget(
+        panel(
+          save: () async {
+            saves++;
+          },
+          open: () async {
+            opens++;
+            return GiftOpenResult.boxOpened;
+          },
+          reopen: () {
+            retries++;
+            return pending.future;
+          },
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Box erneut öffnen'), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('completion-gift')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Box erneut öffnen'));
+      await tester.pump();
+      final button = tester.widget<TextButton>(
+        find.byKey(const ValueKey('completion-reopen-box')),
+      );
+      expect(button.onPressed, isNull);
+      expect(find.text('Jetzt die Box öffnen'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('completion-reopen-box')));
+      await tester.pump();
+      expect(retries, 1);
+      pending.complete(GiftOpenResult.boxOpened);
+      await tester.pumpAndSettle();
+      expect(find.text('Box erneut öffnen'), findsOneWidget);
+      expect(saves, 1);
+      expect(opens, 1);
+      expect(find.text('Die Box wurde entriegelt.'), findsOneWidget);
+    },
+  );
+
+  testWidgets('uncertain opening permits a deliberate retry after an error', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      panel(
+        save: () async {},
+        open: () async => GiftOpenResult.unconfirmed,
+        reopen: () async => GiftOpenResult.boxOpened,
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('completion-gift')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Box erneut öffnen'));
+    await tester.pumpAndSettle();
+    expect(find.text('Die Box wurde entriegelt.'), findsOneWidget);
+  });
 
   testWidgets(
     'leaving the result during a save still records the won attempt',
@@ -220,7 +282,7 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('completion-gift')));
       expect(opens, 1);
       await tester.pumpAndSettle();
-      expect(find.text('Die Box ist offen!'), findsOneWidget);
+      expect(find.text('Die Box wurde entriegelt.'), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('completion-gift')));
       await tester.pumpAndSettle();
       expect(opens, 1);
@@ -282,7 +344,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('completion-gift')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('completion-gift')), findsOneWidget);
-    expect(find.text('Die Box ist offen!'), findsNothing);
+    expect(find.text('Die Box wurde entriegelt.'), findsNothing);
     expect(
       find.text('Die Box hat das Öffnen nicht bestätigt.'),
       findsOneWidget,

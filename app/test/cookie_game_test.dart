@@ -18,6 +18,30 @@ void main() {
         CookieShape.hanukkiah,
       ]);
       expect(outlines[0].outline.points.length, 12);
+      final roof = outlines[1].outline.points;
+      final spikes = [
+        for (var i = 0; i < roof.length; i++)
+          if (roof[i].y < .2 &&
+              roof[i].y < roof[(i + roof.length - 1) % roof.length].y &&
+              roof[i].y < roof[(i + 1) % roof.length].y)
+            roof[i],
+      ];
+      expect(spikes.length, 8);
+      for (final tip in spikes) {
+        final i = roof.indexOf(tip);
+        final left = roof[(i + roof.length - 1) % roof.length] - tip;
+        final right = roof[(i + 1) % roof.length] - tip;
+        final cosine =
+            (left.x * right.x + left.y * right.y) /
+            (left.length * right.length);
+        expect(
+          cosine,
+          closeTo(0, 1e-9),
+          reason: 'Roof tips should meet at 90 degrees',
+        );
+      }
+      expect(spikes.first.x, closeTo(.325, 1e-9));
+      expect(spikes.last.x, closeTo(.675, 1e-9));
       // Nine candle tips, with a single higher central shamash.
       final points = outlines[2].outline.points;
       final tips = [

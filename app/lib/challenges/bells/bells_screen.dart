@@ -6,6 +6,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../presentation/calendar_style.dart';
+import '../../presentation/app_haptics.dart';
 import '../completion.dart';
 import '../games/game_widgets.dart';
 import 'bell_audio.dart';
@@ -152,13 +153,18 @@ class _BellsScreenState extends State<BellsScreen> with WidgetsBindingObserver {
     if (!_valid(generation) || _game.phase != BellsPhase.answering) return;
     try {
       await _audio.play(note);
-      if (!_valid(generation)) return;
+      if (!mounted || !_valid(generation)) return;
       setState(() {
         _active = note;
         _strikes[note] = _strikes[note]! + 1;
         _game.tap(note);
+        if (_game.phase != BellsPhase.mistake &&
+            _game.phase != BellsPhase.won) {
+          AppHaptics.selection(context);
+        }
       });
       if (_game.phase == BellsPhase.mistake) {
+        AppHaptics.error(context);
         _generation++; // Discard any taps queued before the mistake.
         _timer?.cancel();
         _timer = Timer(const Duration(milliseconds: 850), () {

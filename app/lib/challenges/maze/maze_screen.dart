@@ -10,6 +10,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 
 import '../../presentation/calendar_style.dart';
+import '../../presentation/app_haptics.dart';
 import '../completion.dart';
 import '../games/difficulty.dart';
 import '../games/game_widgets.dart';
@@ -127,10 +128,17 @@ class _MazeScreenState extends State<MazeScreen>
       _ticker.stop();
       return;
     }
+    final lives = _game.livesLeft;
+    final candy = _game.collectedCandy.length;
     setState(
       () =>
           _game.advance((elapsed - previous).inMicroseconds / 1000000, control),
     );
+    if (_game.livesLeft < lives) {
+      AppHaptics.error(context);
+    } else if (_game.collectedCandy.length > candy && !_game.won) {
+      AppHaptics.selection(context);
+    }
     if (_game.won || _game.lost) _ticker.stop();
   }
 

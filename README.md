@@ -52,8 +52,7 @@ Calendar completion, achievements and voucher claims are stored locally and
 survive app restarts. Fresh installs start without sample completions. For
 development and tests, `AdventCalendarApp(now: DateTime(2026, 12, 8))` provides a
 fixed date; the normal entry point uses the device date. The old
-`PREVIEW_ALL_DAYS` build define no longer unlocks doors. Locked taps show
-**Heute noch nicht!**. Game practice follows the [shared unlock rules](docs/progression.md).
+`PREVIEW_ALL_DAYS` build define no longer unlocks doors. Locked taps give the door a short rattle and a haptic cue, without a bottom toast. Game practice follows the [shared unlock rules](docs/progression.md).
 
 Appearance now belongs to each door, independently of the current date. The
 Hanukkah appearances are deliberately scheduled on days 5, 7, 10 and 12;

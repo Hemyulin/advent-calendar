@@ -56,7 +56,7 @@ void main() {
   }
 
   testWidgets(
-    'app defaults to dated locks; tapping a locked door only shows its message',
+    'app defaults to dated locks; tapping a locked door rattles without a toast',
     (t) async {
       expect(const AdventCalendarApp().previewAllDays, isFalse);
       await t.pumpWidget(AdventCalendarApp(now: DateTime(2026, 11, 26)));
@@ -67,11 +67,11 @@ void main() {
       );
       await t.tap(find.byType(IllustratedDoor));
       await t.pumpAndSettle();
-      expect(find.text('Heute noch nicht!'), findsOneWidget);
+      expect(find.byType(SnackBar), findsNothing);
       expect(find.byType(MemoryScreen), findsNothing);
       await t.tap(find.bySemanticsLabel('2. Dezember, Gesperrt'));
       await t.pumpAndSettle();
-      expect(find.text('Heute noch nicht!'), findsOneWidget);
+      expect(find.byType(SnackBar), findsNothing);
       expect(
         t.widget<IllustratedDoor>(find.byType(IllustratedDoor)).day.number,
         1,

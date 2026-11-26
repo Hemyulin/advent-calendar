@@ -7,6 +7,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../presentation/calendar_style.dart';
+import '../../presentation/app_haptics.dart';
 import '../completion.dart';
 import '../games/game_widgets.dart';
 import 'memory_game.dart';
@@ -66,7 +67,17 @@ class _MemoryScreenState extends State<MemoryScreen> {
   }
 
   void _reveal(int index) {
+    final pairs = _game.pairsFound;
     if (!_game.reveal(index)) return;
+    if (!_game.won) {
+      if (_game.pairsFound > pairs) {
+        AppHaptics.tap(context);
+      } else if (_game.second != null) {
+        AppHaptics.error(context);
+      } else {
+        AppHaptics.selection(context);
+      }
+    }
     setState(() {});
     if (_game.second != null) {
       // Even with reduced motion, keep the mismatch visible long enough to read.

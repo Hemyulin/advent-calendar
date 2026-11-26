@@ -8,6 +8,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 
 import '../../presentation/calendar_style.dart';
+import '../../presentation/app_haptics.dart';
 import '../completion.dart';
 import '../games/game_widgets.dart';
 import 'cookie_game.dart';
@@ -75,6 +76,7 @@ class _CookieScreenState extends State<CookieScreen>
         ),
       );
       if (_game.mistakes != mistakes) {
+        AppHaptics.error(context);
         _feedback.forward(from: 0);
       }
       _finishIfNeeded();
@@ -135,6 +137,11 @@ class _CookieScreenState extends State<CookieScreen>
     final cutFrom = _game.cutUntil;
     final result = _game.press(direction);
     if (result == CutInput.ignored) return;
+    if (result == CutInput.correct) {
+      AppHaptics.selection(context);
+    } else {
+      AppHaptics.error(context);
+    }
     setState(() => _cutFrom = cutFrom);
     _feedback.forward(from: 0);
     _finishIfNeeded();

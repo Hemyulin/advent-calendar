@@ -3,6 +3,7 @@ import '../challenges/games/difficulty.dart';
 import '../challenges/games/game_kind.dart';
 import '../challenges/seasonal/game_skin.dart';
 import 'calendar_access.dart';
+import '../presentation/app_haptics.dart';
 
 class GameAccessScope extends InheritedNotifier<CalendarAccess> {
   const GameAccessScope({
@@ -61,6 +62,7 @@ class GameAccessScope extends InheritedNotifier<CalendarAccess> {
       melodyId: melodyId,
     );
     if (locked == null) return true;
+    AppHaptics.locked(context);
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(locked)));

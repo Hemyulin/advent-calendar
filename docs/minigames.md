@@ -489,3 +489,18 @@ starts GOY vey, not the original Oy Vey. Both are available in development previ
 The Chanukka cookie's medium outline now depicts the Second Temple, with eight
 shallow roof points with 90-degree tips, a raised sanctuary, broad wings and stepped foundation.
 The cutter follows the actual zigzag polygon; gameplay settings remain unchanged.
+
+## Tactile feedback
+
+`AppHaptics` uses Flutter's native feedback API with short, per-event rate limits
+and a safe fallback on unsupported platforms. Calendar selection, opening doors,
+gift/replay actions and help/restart controls have light cues. Card flips, pipe
+rotations, bell answers, cookie inputs, workshop moves, catches, collectibles and
+collisions provide event-based feedback; scrolling and continuous sensor movement
+do not vibrate. Shared result overlays give one success/error cue on appearance,
+without repeating it on rebuilds.
+
+Akku-Panik and Öl-Panik keep their existing vibration opt-in switch. Their
+`HapticsScope` also disables the shared result and navigation cues when that switch
+is off. The calendar's finite `ShakeFeedback` animation replaces locked-door
+snackbars and respects reduced-motion preferences. There are no new dependencies.

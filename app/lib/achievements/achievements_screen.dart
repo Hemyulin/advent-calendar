@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../presentation/calendar_style.dart';
+import '../presentation/app_haptics.dart';
 import '../presentation/viewport_fit.dart';
 import '../challenges/games/difficulty.dart';
 import 'achievement_store.dart';
@@ -326,6 +327,7 @@ class _AchievementDetailState extends State<_AchievementDetail> {
     )) {
       return;
     }
+    AppHaptics.tap(context);
     final inherit = GameAccessScope.capture(context);
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
@@ -673,6 +675,7 @@ class _AchievementDetailState extends State<_AchievementDetail> {
       ),
       onPressed: enabled
           ? () async {
+              AppHaptics.tap(context);
               await widget.calendar!.openDay(day.number);
               if (mounted) setState(() {});
             }

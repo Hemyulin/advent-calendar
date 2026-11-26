@@ -276,12 +276,12 @@ void main() {
     }
     await tester.pumpWidget(const SizedBox.shrink());
   });
-  test('Day 15 shares completion and replay state', () {
+  test('Day 11 shares completion and replay state', () {
     Future<void> complete() async {}
     final screen =
         configuredGame(
               buildDailyChallenge(
-                calendarDays(DateTime(2026, 12, 24), {'day-15'})[14],
+                calendarDays(DateTime(2026, 12, 24), {'day-11'})[10],
                 complete,
               ),
             )

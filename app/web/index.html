@@ -18,21 +18,29 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="24 Türchen voller Rätsel und kleiner Überraschungen.">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="advent_calendar">
+  <meta name="apple-mobile-web-app-title" content="Adventskalender">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>advent_calendar</title>
+  <title>Adventskalender</title>
   <link rel="manifest" href="manifest.json">
 </head>
-<body>
+<body style="margin:0;background:#FFF8EE">
+  <div id="brand-splash" aria-label="Adventskalender wird geladen" style="position:fixed;inset:0;display:grid;place-items:center;background:#FFF8EE">
+    <img src="icons/Icon-192.png" width="192" height="192" alt="">
+  </div>
+  <script>
+    window.addEventListener('flutter-first-frame', () => {
+      document.getElementById('brand-splash')?.remove();
+    });
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

@@ -1,3 +1,4 @@
+import 'package:shared_preferences/shared_preferences.dart';
 import 'support/game_configuration.dart';
 import 'package:advent_calendar/app.dart';
 import 'package:advent_calendar/challenges/games/difficulty.dart';
@@ -13,6 +14,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  setUp(
+    () => SharedPreferences.setMockInitialValues({'welcome.seen.v1': true}),
+  );
   test('all dirt belongs to the shoe; levels are repeatable', () {
     for (final difficulty in GameDifficulty.values) {
       final a = ShoeGame(ShoeLevel.forDifficulty(difficulty));

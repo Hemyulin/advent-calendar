@@ -5,6 +5,7 @@ enum RunFeat {
   perfectMemory,
   onlyMenorahs,
   cleanOyVey,
+  cleanGoyVey,
   noJewishMisses,
   efficientWorkshop,
   cleanWalk,

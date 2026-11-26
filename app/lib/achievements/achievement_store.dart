@@ -18,6 +18,7 @@ final bonusObjectives = <String>{
   'shoe',
   'menorahs',
   'cleanOy',
+  'goyVey',
   'memory',
   'workshop:easy',
   'workshop:normal',
@@ -46,7 +47,7 @@ final achievements = <Achievement>[
   Achievement(
     'allGames',
     'Weihnachts-Alleskönnerin',
-    'Meistere jede der zehn Spielarten mindestens einmal.',
+    'Meistere jede Spielart mindestens einmal.',
     {
       for (final game in Minigame.values.where(
         (game) => game != Minigame.trash,
@@ -77,6 +78,12 @@ final achievements = <Achievement>[
     'Koscher durch Weihnachten',
     'Gewinne Oy Vey ohne einen Weihnachtsgegenstand einzusammeln.',
     {'bonus:cleanOy'},
+  ),
+  const Achievement(
+    'goyVey',
+    'Ganz schön weihnachtlich',
+    'Gewinne GOY vey, ohne einen Chanukka-Gegenstand einzusammeln. Nur Weihnachten gehört in den Sack!',
+    {'bonus:goyVey'},
   ),
   const Achievement(
     'memory',
@@ -274,6 +281,11 @@ class AchievementStore extends ChangeNotifier {
           // Before v8, this token certified 100%, so preserve that accomplishment.
           _tokens.addAll({'bonus:fullyCharged', 'bonus:hundredPercent'});
         }
+        if ((json['rulesVersion'] as int? ?? 1) < 10) {
+          // GOY vey adds one game and one regular bonus objective. Preserve
+          // individual awards and claimed rewards, but recalculate totals.
+          _earned.removeAll({'allGames', 'allExtras', finalReward.id});
+        }
         _claimed = (json['claimed'] as List)
             .whereType<String>()
             .where((id) => id == finalReward.id)
@@ -319,7 +331,7 @@ class AchievementStore extends ChangeNotifier {
     final saved = await (await _preferences()).setString(
       storageKey,
       jsonEncode({
-        'rulesVersion': 9,
+        'rulesVersion': 10,
         'tokens': tokens.toList(),
         'earned': earned.toList(),
         'claimed': claims.toList(),
@@ -387,6 +399,8 @@ class AchievementStore extends ChangeNotifier {
           if (feats.contains(RunFeat.onlyMenorahs)) bonus('menorahs');
           if (feats.contains(RunFeat.cleanOyVey)) bonus('cleanOy');
           if (feats.contains(RunFeat.noJewishMisses)) bonus('noJewishMisses');
+        case Minigame.goyVey:
+          if (feats.contains(RunFeat.cleanGoyVey)) bonus('goyVey');
         case Minigame.workshop:
           if (feats.contains(RunFeat.efficientWorkshop)) {
             bonus('workshop:${run.difficulty.name}');

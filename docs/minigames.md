@@ -11,28 +11,29 @@ Day 1 starts with easy Memory. The following daily assignments are defined in
 | 4 | Oy Vey, Weihnachten! | Leicht | Original |
 | 5 | Paare finden | Klassisch | Chanukka |
 | 6 | Nikolausstiefel | Klassisch | Weihnachten |
-| 7 | Plätzchen · Tempel | Klassisch | Chanukka |
+| 7 | Plätzchen · Zweiter Tempel | Klassisch | Chanukka |
 | 8 | Akku-Panik | Leicht | Weihnachten |
-| 9 | Rettet Eliyahu HaNavi! | Klassisch | Chanukka |
+| 9 | Rettet den Weihnachtsmann! | Klassisch | Weihnachten |
 | 10 | Chanukka-Klänge · Maoz Tzur | Leicht · alle Hinweise | Chanukka |
-| 11 | Ein Kiddusch-Wein zu viel | Klassisch | Chanukka |
+| 11 | Ein Glühwein zu viel | Klassisch | Weihnachten |
 | 12 | Öl-Panik | Klassisch | Chanukka |
 | 13 | Kugellabyrinth | Klassisch | Weihnachten |
 | 14 | Wichtelwerkstatt | Leicht | Weihnachten |
-| 15 | Ein Glühwein zu viel | Klassisch | Weihnachten |
+| 15 | Weihnachtsglocken · Jingle Bells | Klassisch | Weihnachten |
 | 16 | Paare finden | Knifflig | Weihnachten |
 | 17 | Rettet den Weihnachtsmann! | Knifflig | Weihnachten |
 | 18 | Wichtelwerkstatt | Klassisch | Weihnachten |
 | 19 | Ein Glühwein zu viel | Knifflig | Weihnachten |
 | 20 | Plätzchen ausstechen | Knifflig | Weihnachten |
 | 21 | Kugellabyrinth | Knifflig | Weihnachten |
-| 22 | Akku-Panik | Knifflig | Weihnachten |
+| 22 | GOY vey! | Knifflig | Weihnachten sammeln |
 | 23 | Wichtelwerkstatt | Knifflig | Weihnachten |
 | 24 | Weihnachtsglocken | Knifflig | Weihnachten |
 
 Appearance is assigned per door, independently of the date. Early doors introduce
-mechanics; later doors revisit them at higher difficulty. All ten game types have
-appeared by day 14, and the final five challenges are hard. Repeat appearances
+mechanics; later doors revisit them at higher difficulty. The ten original game types have
+appeared by day 14; Day 22 introduces the reversed GOY vey variant. The final
+five challenges are hard. Repeat appearances
 leave at least three intervening games, including across different skins.
 Difficulty never decreases on a later appearance. Explicit admin assignments
 remain preserved. The editor can select
@@ -41,7 +42,7 @@ appearance and, for bells, a specific melody independently of guidance/difficult
 Game assignments, calendar wins and achievement progress persist locally. A new
 installation starts without sample completions. Replay can earn missing bonus
 objectives without resetting completion or issuing another physical unlock.
-See [achievements](achievements.md) for the 29 required bonus objectives, difficulty
+See [achievements](achievements.md) for the 30 required bonus objectives, difficulty
 practice routes, hidden voucher configuration and persistence details.
 
 ## Development preview
@@ -51,11 +52,10 @@ Open **Advent-Verwaltung → Spiele testen**, choose **Leicht**, **Klassisch** o
 times within three seconds, then entering the development PIN `0542`.
 Preview victories do not change daily progress. The homepage has no preview controls.
 
-Date restrictions can be tested independently of admin previews:
-
-```sh
-flutter run --dart-define=PREVIEW_ALL_DAYS=false
-```
+Date restrictions are on by default with ordinary `flutter run`.
+**Alle Türchen freischalten** in admin is the explicit persisted test override.
+Turning it off restores date rules without clearing progress. Achievement
+practice respects [game, difficulty and melody reservations](progression.md).
 
 ## Difficulty and reusable levels
 
@@ -222,7 +222,7 @@ Tests cover every solution, illegal moves, pushing without pulling, target
 occupancy, full undo histories, reset, gestures/keyboard, completion/replay and
 small-screen layouts with enlarged text. No dependencies or hardware calls added.
 
-## Oy Vey, Weihnachten! (Day 9)
+## Oy Vey, Weihnachten! (Day 4)
 
 The mirrored front camera drives a narrow-necked sack using mouth position.
 Horizontal head movement is amplified 1.7×, so the player can reach the edges
@@ -267,7 +267,7 @@ Tests cover recoverable collisions, ice, sustained falls, seeded route clearance
 successful controlled navigation at every difficulty, calibration, sensor loss,
 held controls, lifecycle pauses, completion/replay and responsive layouts.
 
-## Akku-Panik (Day 11)
+## Akku-Panik (Day 8)
 
 Drag the loose plug onto the first device to start the round. There is no
 start button and tapping devices does not change charging. Once plugged in,
@@ -372,8 +372,11 @@ The victory card is present-first: a large illustrated gift and **Zum Öffnen
 tippen** form one tappable area. A small **Noch einmal spielen** text control
 sits at the top right; **Zurück zum Kalender** is a muted text link below.
 Game messages appear after the gift reveal. Newly earned achievements use an
-automatic illustrated toast and brief confetti overlay that never intercepts
-taps or requires dismissal; the present remains the main action. Save/retry and duplicate-opening protection
+automatic illustrated toast and stay visible inside the modal with their own
+art and title. Multiple badges use a horizontal pager without vertical scrolling.
+Every win also gets a finite, pointer-transparent confetti burst, including wins
+without a new badge; reduced-motion settings skip flying particles. The present
+remains the main action. Save/retry and duplicate-opening protection
 remain shared by every game.
 
 Replay wins show **Großartig!** with the game's success message, replay and calendar
@@ -419,14 +422,17 @@ if saving failed. Once saved, repeated taps start only one reveal.
 acknowledgement. Only a newly completed door can request physical opening;
 replays show congratulations without a gift. `PicoService` implements
 `LockGateway` and is shared with admin controls. A fresh DoorZero health check
-precedes `POST /unlock`; the JSON response must confirm `success: true` after the
-200 ms GPIO 15 pulse. The firmware currently trusts local-network requests, not
-the development admin PIN.
+precedes a bodyless `POST /unlock`; JSON `success: true` confirms that the
+five-second GPIO 15 pulse completed. The restored firmware waits synchronously
+and switches LOW in `finally`. The app allows seven seconds for its reply.
+See [configuration](../README.md#pico-network-configuration).
 
-Health and POST requests have bounded transport timeouts. Failure or an uncertain
-outcome keeps the game complete and is not automatically retried. The UI confirms
-opening only after the gateway succeeds. Leaving mid-reveal does not resend the
-command. Calendar assignments saved with the retired `tutorial` identifier load
+**Box erneut öffnen** on this result screen explicitly requests another pulse if
+the opening window was missed, or the previous attempt was unconfirmed. It does
+not replay the gift animation, save progress again or issue another LED ack.
+Concurrent taps share one request. Replays of completed games cannot unlock.
+Leaving, errors and reconnecting do not automatically resend a command.
+Calendar assignments saved with the retired `tutorial` identifier load
 as easy Memory without clearing completion state.
 
 ## Gentler attempts and Müll rausbringen
@@ -464,3 +470,22 @@ Subscriptions and motion stop on backgrounding, covering the route, completion
 and disposal. Physics are suspended while the roll is grabbed. Pure rules live in
 `trash_game.dart`; sensors, gestures, rendering and finite throw/finish animations
 live in `trash_screen.dart`.
+
+## GOY vey! (Day 22)
+
+The Christmas-only counterpart reuses Oy Vey's local camera, head-position
+tracking, collision checks and difficulty settings. Trees, Santa hats and candy
+canes are targets; Sufganiyot, Sevivonim and Chanukkiot are mistakes. Collect 15
+targets to win; three mistakes lose. Seventy percent of generated items come
+from the current target pool in either version, and the outstanding-target cap
+still prevents spawning more than needed. Mouth opening is never required.
+
+The sack crosses out חנוכה and labels itself Weihnachten. Wins report through the
+shared completion mechanism and replay preserves the variant. The regular
+**Ganz schön weihnachtlich** achievement requires a win without catching any
+Hanukkah object and has its own illustrated catching scene. Its launch button
+starts GOY vey, not the original Oy Vey. Both are available in development preview.
+
+The Chanukka cookie's medium outline now depicts the Second Temple, with eight
+shallow roof points with 90-degree tips, a raised sanctuary, broad wings and stepped foundation.
+The cutter follows the actual zigzag polygon; gameplay settings remain unchanged.

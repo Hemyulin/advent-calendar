@@ -26,10 +26,11 @@ The paged collection and games keep their fixed layouts; award details scroll.
 | Achievement | Requirement |
 | --- | --- |
 | 24 kleine Weihnachtswunder | Complete 24 distinct calendar doors. |
-| Weihnachts-Alleskönnerin | Win each of the ten game types at least once. |
-| Mit Liebe zum Detail | Complete all 29 required bonus objectives below. |
+| Weihnachts-Alleskönnerin | Win each of the eleven required game types, including GOY vey, at least once. |
+| Mit Liebe zum Detail | Complete all 30 required bonus objectives below. |
 | Blank für den Nikolaus | Clean and polish the Nikolaus boot, in door 6 or its achievement attempt. |
 | Lichterfest | Win Oy Vey collecting only Chanukkiot, with no Christmas mistakes. |
+| Ganz schön weihnachtlich | Win GOY vey without collecting any Hanukkah objects. Christmas-only catches. |
 | Koscher durch Weihnachten | Win Oy Vey with zero Christmas mistakes. Other correct objects are allowed. |
 | Einmal gesehen, nie vergessen | Win Memory without missing an available known twin. |
 | Wichtel mit Köpfchen | Solve each difficulty within its bonus move budget. Three objectives. |
@@ -44,7 +45,7 @@ The paged collection and games keep their fixed layouts; award details scroll.
 | Neun Spiele, ein Lichterfest | Win all nine supported games in Chanukka mode; difficulty is freely selectable. |
 | Feierabend, Weihnachtsmann! | Return to the starting pipe and leave northward through the rooftop chimney. An optional secret successful ending, excluded from required objectives. |
 
-The required bonus objectives total 29. Repeated wins never inflate counters.
+The required bonus objectives total 30. Repeated wins never inflate counters.
 Replays can earn missed bonuses even when the calendar door is already complete.
 
 ### Fairness and measurement
@@ -102,7 +103,10 @@ Standalone preview routes have no achievement writer.
 `AchievementStore` persists token sets, earned badges, optional reward text and
 claims in one local shared-preferences record. Writes are serialized and applied
 in memory only after successful storage. New achievements automatically show an illustrated, pointer-transparent toast
-above the shared win card, with one short burst of confetti. Each toast fades
+above the shared win card. Newly earned awards also remain inside the win card,
+with their own illustration and title; a horizontal pager keeps simultaneous
+unlocks readable. Every victory gets one short burst of confetti, even without
+new achievements. Mid-run milestone toasts keep their own confetti. Each toast fades
 after three seconds; multiple awards queue automatically without extra taps or
 repeat confetti bursts. Reduced-motion mode skips moving particles and
 transitions, while retaining the announcement. Short landscape screens place
@@ -226,7 +230,7 @@ but the secret is disqualified for that attempt. Completion reports the new fact
 through the shared achievement interface. Admin previews award nothing.
 
 The secret has its own woven-basket illustration, appears only once earned,
-and is excluded from the 17 required achievements, 29 bonus objectives and final
+and is excluded from the 18 required achievements, 30 bonus objectives and final
 voucher. Historical wins have no miss observations and are not backfilled.
 
 ## Optional fresh-bag secret
@@ -234,7 +238,23 @@ voucher. Historical wins have no miss observations and are not backfilled.
 **Und der neue Beutel?** unlocks when Müll rausbringen is finished with a fresh
 liner actually installed. It has its own illustrated bin and liner scene, appears
 only after earning, and is excluded from the final bonus and all extra-objective
-requirements. The ten original game types remain the requirement for
-Weihnachts-Alleskönnerin; the optional escape game does not add a required win.
+requirements. The required game collection includes GOY vey alongside the ten original types; the optional escape game does not add a required win.
 Admin previews do not persist this secret. Calendar alternatives still report the
 real game played, and prior completions survive replays.
+
+## GOY vey
+
+The new regular **Ganz schön weihnachtlich** award requires `cleanGoyVey` from a
+winning GOY vey attempt. A loss, ordinary win with mistakes or original Oy Vey
+attempt cannot award it. It is included in bonus objectives and the final reward.
+Rules version 10 preserves existing individual awards, progress and redeemed
+rewards while recalculating aggregate game/bonus completion for the new objective.
+
+## Calendar-aware practice access
+
+Award progress remains inspectable before a game is available. Practice buttons
+show all difficulties, with locks on unavailable choices. Games require a first
+calendar play; any difficulty or song used by the calendar requires completing a
+matching, date-available door. Skins share the same reservations. The song goal
+has a difficulty selector, and game checklist entries offer difficulty choices.
+See [the shared progression policy](progression.md) for examples and override behavior.

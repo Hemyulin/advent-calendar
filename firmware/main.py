@@ -4,15 +4,15 @@ import socket
 import time
 import json
 from machine import Pin
-from config import WIFI_NAME, WIFI_PASSWORD, AP_NAME, AP_PASSWORD
+
 from time import sleep_ms
 
-lock = Pin(15, Pin.OUT, value=0)
+lock = Pin(15, Pin.OUT, pull=Pin.PULL_DOWN, value=0)
 
 def unlock():
     try:
         lock.value(1)
-        sleep_ms(200)
+        sleep_ms(5000)
     finally:
         lock.value(0)
 
@@ -30,6 +30,7 @@ CONNECT_TIMEOUT_MS = 12000
 AP_RETRY_INTERVAL_MS = 120000
 LOOP_DELAY_MS = 100
 
+from config import WIFI_NAME, WIFI_PASSWORD, AP_NAME, AP_PASSWORD
 # ==========================================
 # HARDWARE
 # ==========================================
@@ -277,7 +278,7 @@ def handle_request(client):
             {
                 "success": True,
                 "message": "Unlock pulse completed",
-                "duration_ms": 200
+                "duration_ms": 5000
             }
         )
         return

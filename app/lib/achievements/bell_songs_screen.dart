@@ -12,6 +12,7 @@ import '../presentation/calendar_style.dart';
 import '../presentation/viewport_fit.dart';
 import 'achievement_scope.dart';
 import 'achievement_store.dart';
+import '../content/game_access_scope.dart';
 
 /// Real bonus attempts, separate from date assignments and development previews.
 class BellSongsScreen extends StatefulWidget {
@@ -32,45 +33,76 @@ class _BellSongsScreenState extends State<BellSongsScreen> {
   ];
   void _play(int index) {
     final difficulty = _difficulty;
+    if (!GameAccessScope.allow(
+      context,
+      Minigame.bells,
+      difficulty,
+      melodyId: bellMelodies[index].id,
+      skin: index >= 8 ? GameSkin.hanukkah : GameSkin.christmas,
+    )) {
+      return;
+    }
     final base = BellsLevel.forDifficulty(difficulty);
+    final inherit = GameAccessScope.capture(context);
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => AchievementScope(
-          record: (facts) => widget.store.record(
-            AchievementRun(
-              day: null,
-              game: Minigame.bells,
-              difficulty: difficulty,
-              facts: facts,
-            ),
-          ),
-          child: GiftRewardScope(
-            openGift: () async => GiftOpenResult.replay,
-            child: SkinnableGame(
-              isReplay: widget.store.tokenComplete(
-                'bonus:bells:${bellMelodies[index].id}',
+        builder: (_) => inherit(
+          AchievementScope(
+            record: (facts) => widget.store.record(
+              AchievementRun(
+                day: null,
+                game: Minigame.bells,
+                difficulty: difficulty,
+                facts: facts,
               ),
-              initialSkin: index >= 8 ? GameSkin.hanukkah : GameSkin.christmas,
-              builder: (skin) {
-                final selected = (skin == GameSkin.hanukkah) == (index >= 8);
-                final level = selected
-                    ? BellsLevel(
-                        rounds: [BellRound(index)],
-                        beatMilliseconds: base.beatMilliseconds,
-                        guidance: base.guidance,
-                      )
-                    : BellsLevel.forDifficulty(
-                        difficulty,
-                        hanukkah: skin == GameSkin.hanukkah,
-                      );
-                return BellsScreen(
-                  level: level,
-                  alreadyCompleted: widget.store.tokenComplete(
-                    'bonus:bells:${level.rounds.single.melody.id}',
-                  ),
-                  onComplete: () async {},
-                );
-              },
+            ),
+            child: GiftRewardScope(
+              openGift: () async => GiftOpenResult.replay,
+              child: SkinnableGame(
+                canSwitchTo: (context, nextSkin) {
+                  final selected =
+                      (nextSkin == GameSkin.hanukkah) == (index >= 8);
+                  final song = selected
+                      ? bellMelodies[index].id
+                      : BellsLevel.forDifficulty(
+                          difficulty,
+                          hanukkah: nextSkin == GameSkin.hanukkah,
+                        ).rounds.single.melody.id;
+                  return GameAccessScope.allow(
+                    context,
+                    Minigame.bells,
+                    difficulty,
+                    skin: nextSkin,
+                    melodyId: song,
+                  );
+                },
+                isReplay: widget.store.tokenComplete(
+                  'bonus:bells:${bellMelodies[index].id}',
+                ),
+                initialSkin: index >= 8
+                    ? GameSkin.hanukkah
+                    : GameSkin.christmas,
+                builder: (skin) {
+                  final selected = (skin == GameSkin.hanukkah) == (index >= 8);
+                  final level = selected
+                      ? BellsLevel(
+                          rounds: [BellRound(index)],
+                          beatMilliseconds: base.beatMilliseconds,
+                          guidance: base.guidance,
+                        )
+                      : BellsLevel.forDifficulty(
+                          difficulty,
+                          hanukkah: skin == GameSkin.hanukkah,
+                        );
+                  return BellsScreen(
+                    level: level,
+                    alreadyCompleted: widget.store.tokenComplete(
+                      'bonus:bells:${level.rounds.single.melody.id}',
+                    ),
+                    onComplete: () async {},
+                  );
+                },
+              ),
             ),
           ),
         ),
@@ -198,14 +230,28 @@ class _BellSongsScreenState extends State<BellSongsScreen> {
   Widget _song(int index) {
     final melody = bellMelodies[index];
     final done = widget.store.tokenComplete('bonus:bells:${melody.id}');
+    final locked =
+        GameAccessScope.reason(
+          context,
+          Minigame.bells,
+          _difficulty,
+          melodyId: melody.id,
+          skin: index >= 8 ? GameSkin.hanukkah : GameSkin.christmas,
+        ) !=
+        null;
     return Padding(
       padding: const EdgeInsets.all(5),
       child: Semantics(
-        label: '${melody.title}, ${done ? 'gemeistert' : 'noch offen'}',
+        label:
+            '${melody.title}, ${locked
+                ? 'gesperrt'
+                : done
+                ? 'gemeistert'
+                : 'noch offen'}',
         button: true,
         child: OutlinedButton(
           key: ValueKey('bell-song-${melody.id}'),
-          onPressed: () => _play(index),
+          onPressed: locked ? null : () => _play(index),
           style: OutlinedButton.styleFrom(
             padding: EdgeInsets.zero,
             backgroundColor: done
@@ -222,7 +268,9 @@ class _BellSongsScreenState extends State<BellSongsScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    done
+                    locked
+                        ? Icons.lock_outline_rounded
+                        : done
                         ? Icons.check_circle_outline_rounded
                         : Icons.notifications_active_outlined,
                     color: done ? CalendarStyle.green : CalendarStyle.gold,

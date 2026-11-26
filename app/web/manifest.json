@@ -1,35 +1,35 @@
 {
-    "name": "advent_calendar",
-    "short_name": "advent_calendar",
-    "start_url": ".",
-    "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
-    "orientation": "portrait-primary",
-    "prefer_related_applications": false,
-    "icons": [
-        {
-            "src": "icons/Icon-192.png",
-            "sizes": "192x192",
-            "type": "image/png"
-        },
-        {
-            "src": "icons/Icon-512.png",
-            "sizes": "512x512",
-            "type": "image/png"
-        },
-        {
-            "src": "icons/Icon-maskable-192.png",
-            "sizes": "192x192",
-            "type": "image/png",
-            "purpose": "maskable"
-        },
-        {
-            "src": "icons/Icon-maskable-512.png",
-            "sizes": "512x512",
-            "type": "image/png",
-            "purpose": "maskable"
-        }
-    ]
+  "name": "Dein Adventskalender",
+  "short_name": "Adventskalender",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#FFF8EE",
+  "theme_color": "#315F50",
+  "description": "24 Türchen voller Rätsel und kleiner Überraschungen.",
+  "orientation": "portrait-primary",
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "icons/Icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/Icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/Icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icons/Icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
 }

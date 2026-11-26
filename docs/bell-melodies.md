@@ -74,5 +74,10 @@ repeat-listening, guidance, audio failures, completion/replay and layouts.
 ## Chanukka additions
 
 Three traditional hooks join the existing eight songs: Sevivon (easy, six notes),
-Maoz Tzur (classic, sixteen notes, including two eighth-note high Cs), and Hanerot Halalu (hard, twelve notes).
+Maoz Tzur (classic, sixteen notes, including an eighth-note high-C pickup before the next bar
+and a repeated quarter-note high C on beat one), and Hanerot Halalu (hard, twelve notes).
 See [source scores, transpositions, guidance and verification](hanukkah.md#music-data-and-verification).
+
+Maoz Tzur timing correction: the first repeated high C starts at beat offset 7.5,
+the next at offset 8 (beat one), and high D at offset 9. The preceding F lasts
+1.5 beats, preserving sixteen notes and sixteen beats overall.

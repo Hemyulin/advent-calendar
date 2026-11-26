@@ -236,6 +236,7 @@ class OyVeyPainter extends CustomPainter {
       Offset(m.x * size.width, m.y * size.height),
       m.halfWidth * size.width,
       m.halfHeight * size.height,
+      christmasTargets: game.level.christmasTargets,
     );
   }
 
@@ -249,8 +250,9 @@ void paintCollectorSack(
   Canvas canvas,
   Offset center,
   double halfWidth,
-  double halfHeight,
-) {
+  double halfHeight, {
+  bool christmasTargets = false,
+}) {
   canvas.save();
   canvas.translate(center.dx, center.dy);
   // Keep the writing legible while the narrow neck matches the catch area.
@@ -345,7 +347,12 @@ void paintCollectorSack(
 
   canvas.save();
   canvas.rotate(-.07);
-  handwriting('Weihnachten', 29, 8.5, TextDirection.ltr);
+  handwriting(
+    christmasTargets ? 'חנוכה' : 'Weihnachten',
+    29,
+    christmasTargets ? 12 : 8.5,
+    christmasTargets ? TextDirection.rtl : TextDirection.ltr,
+  );
   // Two wonky pen strokes cross out the original label.
   canvas.drawPath(
     Path()
@@ -357,7 +364,12 @@ void paintCollectorSack(
       ..color = const Color(0xFFA35248)
       ..strokeWidth = 1.6,
   );
-  handwriting('חנוכה', 45, 18, TextDirection.rtl);
+  handwriting(
+    christmasTargets ? 'Weihnachten' : 'חנוכה',
+    45,
+    christmasTargets ? 9 : 18,
+    christmasTargets ? TextDirection.ltr : TextDirection.rtl,
+  );
   canvas.drawPath(
     Path()
       ..moveTo(-20, 66)

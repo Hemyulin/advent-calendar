@@ -10,6 +10,7 @@ import 'package:advent_calendar/challenges/cookies/cookie_game.dart';
 import 'package:advent_calendar/challenges/cookies/cookie_screen.dart';
 import 'package:advent_calendar/challenges/workshop/workshop_screen.dart';
 import 'package:advent_calendar/challenges/maze/maze_screen.dart';
+import 'package:advent_calendar/challenges/oy_vey/oy_vey_screen.dart';
 import 'package:advent_calendar/admin/achievement_rewards_screen.dart';
 import 'package:advent_calendar/presentation/calendar_screen.dart';
 import 'package:flutter/material.dart';
@@ -27,6 +28,36 @@ Future<void> lastPage(WidgetTester tester, {String id = 'candy'}) async {
 }
 
 void main() {
+  testWidgets('the GOY vey award launches the Christmas-catching variant', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final store = AchievementStore();
+    await store.ready;
+    addTearDown(store.dispose);
+    await store.record(
+      const AchievementRun(
+        day: 22,
+        game: Minigame.goyVey,
+        difficulty: GameDifficulty.hard,
+      ),
+    );
+    await tester.pumpWidget(
+      MaterialApp(home: AchievementsScreen(store: store)),
+    );
+    await tester.pumpAndSettle();
+    await lastPage(tester, id: 'goyVey');
+    await tester.tap(find.byKey(const ValueKey('achievement-goyVey')));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('achievement-play-christmas-normal')),
+    );
+    await tester.pumpAndSettle();
+    final screen = tester.widget<OyVeyScreen>(find.byType(OyVeyScreen));
+    expect(screen.level.christmasTargets, isTrue);
+    expect(screen.alreadyCompleted, isTrue);
+    await tester.pumpWidget(const SizedBox());
+  });
   testWidgets(
     'secret 100% is hidden until earned and stays outside the required counter',
     (t) async {
@@ -214,8 +245,7 @@ void main() {
         MaterialApp(home: AchievementsScreen(store: store)),
       );
       await tester.pumpAndSettle();
-      tester.widget<PageView>(find.byType(PageView)).controller!.jumpToPage(1);
-      await tester.pumpAndSettle();
+      await lastPage(tester, id: 'workshop');
       await tester.tap(find.byKey(const ValueKey('achievement-workshop')));
       await tester.pumpAndSettle();
       for (final difficulty in GameDifficulty.values) {

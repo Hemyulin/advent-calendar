@@ -13,13 +13,16 @@ again; nothing is saved as an authenticated session.
 
 The initial screen provides these sections:
 
+- **Alle Türchen freischalten**: a persisted test switch, off by default. It
+  releases all dates, games, difficulties and songs; switching it off restores
+  date/progression rules without clearing wins.
 - **Spiele testen**: reuses `GamePreviewScreen`, with all games and difficulty
   settings, regardless of device date or homepage preview visibility. Preview
   completions do not change calendar progress.
 - **Box-Steuerung**: verified Pico health, automatic recovery and an explicit
   **Box öffnen** button. It is disabled while disconnected or opening.
 - **Erfolge & Gutscheine**: configure the single hidden reward for earning all
-  17 achievements. Individual badges cannot have vouchers. Leave the text empty
+  18 regular achievements. Individual badges cannot have vouchers. Leave the text empty
   until the final surprise has been chosen.
 
 `lib/admin/admin_authenticator.dart` isolates the authentication interface and
@@ -31,18 +34,20 @@ error without exposing provider details.
 This check grants access to the administration **UI** only. The hidden gesture
 and client-side development PIN are not authorization for physical unlocking.
 `PicoService` implements the separate `LockGateway` contract using the firmware's
-`POST /unlock`. The firmware currently accepts commands on its local network
-without a token; it does not validate the app's PIN. Device authorization can be
-added at this hardware boundary when the firmware supports it.
+`POST /unlock`. The restored firmware accepts local-network commands without
+validating a token or the development PIN. The app does not require or send a device key. See [local configuration](../README.md#pico-network-configuration).
 
 Before each unlock, the service checks `/health` and verifies `device: DoorZero`.
-It sends a bodyless POST to the verified address and requires a JSON response
-with `success: true`. GPIO 15 is pulsed for 200 ms; the response confirms that the
-pulse completed, not a separate door-position sensor. Concurrent taps share one
-request; each later deliberate admin tap can request another pulse. Network
-errors and timeouts show German feedback and never automatically resend an
-unlock. Polling/reconnection performs health checks only. The completion LED
-endpoint remains separate and never unlocks the box.
+It sends a bodyless POST and requires JSON `success: true`. GPIO 15 stays HIGH
+for five seconds, with `finally` returning it LOW. The firmware replies after that
+wait, so unlocking has a seven-second request timeout while health checks retain
+their short timeout. Success confirms the command completed, not a position sensor.
+
+The gift screen offers **Box erneut öffnen** after an opening or an unconfirmed
+attempt. Only an explicit tap sends another command; overlapping taps share one
+request. Progress, rewards and completion LED acknowledgements are not repeated.
+Replaying a completed game still shows congratulations without physical unlocking.
+Errors, timeouts and reconnecting never automatically resend a command.
 
 ## Pico health and automatic recovery
 
@@ -61,7 +66,7 @@ is metadata; requests use a configured, verified candidate URL.
 
 Default candidates are `http://192.168.178.68` and `http://192.168.4.1`. The last
 working candidate is tried first on later checks. If it fails, the other is
-checked. Each request has a 1.5-second whole-request deadline; checking two
+checked. Each health request has a 1.5-second whole-request deadline; checking two
 unreachable candidates takes at most roughly three seconds. Response bodies
 are capped at 8 KiB and redirects are not followed.
 

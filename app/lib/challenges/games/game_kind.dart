@@ -36,6 +36,11 @@ enum Minigame {
     'Kopf bewegen und richtig einsammeln.',
     Icons.face_outlined,
   ),
+  goyVey(
+    'GOY vey!',
+    'Diesmal gehört Weihnachten in den Sack.',
+    Icons.face_outlined,
+  ),
   walkHome(
     'Ein Glühwein zu viel',
     'Schwankend durch den Schnee nach Hause.',

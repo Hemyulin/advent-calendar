@@ -6,10 +6,17 @@ import 'pico_connection_screen.dart';
 import 'achievement_rewards_screen.dart';
 import '../achievements/achievement_store.dart';
 import '../hardware/pico_service.dart';
+import '../content/calendar_access.dart';
 
 class AdminScreen extends StatelessWidget {
-  const AdminScreen({super.key, this.picoService, required this.achievements});
+  const AdminScreen({
+    super.key,
+    this.picoService,
+    required this.achievements,
+    this.access,
+  });
   final AchievementStore achievements;
+  final CalendarAccess? access;
   final PicoService? picoService;
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -26,6 +33,7 @@ class AdminScreen extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (access != null) _UnlockAllSwitch(access: access!),
             _section(
               context,
               title: 'Spiele testen',
@@ -106,6 +114,51 @@ class AdminScreen extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    ),
+  );
+}
+
+class _UnlockAllSwitch extends StatefulWidget {
+  const _UnlockAllSwitch({required this.access});
+  final CalendarAccess access;
+  @override
+  State<_UnlockAllSwitch> createState() => _UnlockAllSwitchState();
+}
+
+class _UnlockAllSwitchState extends State<_UnlockAllSwitch> {
+  bool _saving = false;
+  Future<void> _set(bool value) async {
+    setState(() => _saving = true);
+    try {
+      await widget.access.setUnlockAll(value);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Die Einstellung konnte nicht gespeichert werden.'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 14),
+    child: ListenableBuilder(
+      listenable: widget.access,
+      builder: (context, _) => SwitchListTile(
+        key: const ValueKey('admin-unlock-all'),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+        title: const Text('Alle Türchen freischalten'),
+        subtitle: const Text(
+          'Nur zum Testen: auch spätere Spiele, Stufen und Lieder freigeben.',
+        ),
+        value: widget.access.unlockAll,
+        onChanged: _saving ? null : _set,
       ),
     ),
   );

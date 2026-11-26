@@ -1,3 +1,4 @@
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:advent_calendar/app.dart';
 import 'package:advent_calendar/challenges/games/game_preview_screen.dart';
 import 'package:advent_calendar/challenges/games/game_widgets.dart';
@@ -17,6 +18,9 @@ class _NoTilt implements TiltSource {
 }
 
 void main() {
+  setUp(
+    () => SharedPreferences.setMockInitialValues({'welcome.seen.v1': true}),
+  );
   void size(WidgetTester tester, Size viewport, double scale) {
     tester.view.physicalSize = viewport;
     tester.view.devicePixelRatio = 1;

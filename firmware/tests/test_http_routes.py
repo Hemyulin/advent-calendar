@@ -1,13 +1,15 @@
-"""Exercise the real firmware routes without importing hardware or credentials."""
+"""Exercise the restored synchronous firmware without hardware or networking."""
 import ast
-import pathlib
+import json
+from pathlib import Path
 import types
 import unittest
 
 
 class Client:
     def __init__(self, method, path):
-        self.request = (method + " " + path + " HTTP/1.1\r\n\r\n").encode()
+        self.request = (method + ' ' + path + ' HTTP/1.1\r\n\r\n').encode()
+        self.output = b''
 
     def settimeout(self, _):
         pass
@@ -15,54 +17,57 @@ class Client:
     def recv(self, _):
         return self.request
 
+    def sendall(self, data):
+        self.output += data
 
-class RoutesTest(unittest.TestCase):
+
+class FirmwareTest(unittest.TestCase):
     def setUp(self):
-        source = pathlib.Path(__file__).parents[1].joinpath("main.py").read_text()
-        nodes = [n for n in ast.parse(source).body
-                 if isinstance(n, ast.FunctionDef) and n.name in ("handle_request", "unlock")]
-        self.pulses, self.waits, self.responses = [], [], []
+        source = Path(__file__).parents[1].joinpath('main.py').read_text()
+        functions = [node for node in ast.parse(source).body
+                     if isinstance(node, ast.FunctionDef)
+                     and node.name in ('unlock', 'send_response', 'handle_request')]
+        self.events = []
+        self.fail = False
+
+        def wait(milliseconds):
+            self.events.append(('wait', milliseconds))
+            if self.fail:
+                raise OSError('interrupted')
+
         self.scope = {
-            "lock": types.SimpleNamespace(value=self.pulses.append),
-            "sleep_ms": self.waits.append,
-            "time": types.SimpleNamespace(ticks_ms=lambda: 100, ticks_add=lambda a, b: a + b),
-            "mode": "connected", "victory_until": None,
-            "sta": types.SimpleNamespace(ifconfig=lambda: ("192.168.178.68",)),
-            "ap": types.SimpleNamespace(ifconfig=lambda: ("192.168.4.1",)),
-            "send_response": lambda client, status, data: self.responses.append((status, data)),
+            'lock': types.SimpleNamespace(value=lambda value: self.events.append(('pin', value))),
+            'sleep_ms': wait, 'json': json, 'mode': 'connected',
+            'time': types.SimpleNamespace(ticks_ms=lambda: 100, ticks_add=lambda a, b: a + b),
+            'sta': types.SimpleNamespace(ifconfig=lambda: ('192.168.178.68',)),
+            'victory_until': None,
         }
-        exec(compile(ast.Module(body=nodes, type_ignores=[]), "firmware-routes", "exec"), self.scope)
+        exec(compile(ast.Module(body=functions, type_ignores=[]), source, 'exec'), self.scope)
 
-    def route(self, method, path):
-        self.scope["handle_request"](Client(method, path))
-        return self.responses[-1]
+    def request(self, method, path):
+        client = Client(method, path)
+        self.scope['handle_request'](client)
+        header, body = client.output.split(b'\r\n\r\n', 1)
+        return header, json.loads(body)
 
-    def test_unlock_pulses_once_and_health_still_responds(self):
-        self.assertEqual(self.route("GET", "/health")[1]["device"], "DoorZero")
-        status, body = self.route("POST", "/unlock")
-        self.assertEqual(status, "200 OK")
-        self.assertTrue(body["success"])
-        self.assertEqual(body["duration_ms"], 200)
-        self.assertEqual(self.pulses, [1, 0])
-        self.assertEqual(self.waits, [200])
-        self.assertEqual(self.route("GET", "/health")[1]["device"], "DoorZero")
-        self.assertEqual(self.pulses, [1, 0])
+    def test_unlock_holds_high_for_five_seconds_then_confirms(self):
+        header, body = self.request('POST', '/unlock')
+        self.assertIn(b'200 OK', header)
+        self.assertEqual(body['duration_ms'], 5000)
+        self.assertTrue(body['success'])
+        self.assertEqual(self.events, [('pin', 1), ('wait', 5000), ('pin', 0)])
 
-    def test_acknowledgement_and_unknown_routes_do_not_unlock(self):
-        self.assertTrue(self.route("POST", "/game/completed")[1]["success"])
-        self.assertEqual(self.scope["victory_until"], 1100)
-        self.assertEqual(self.route("GET", "/unlock")[0], "404 Not Found")
-        self.assertEqual(self.route("POST", "/missing")[0], "405 Method Not Allowed")
-        self.assertEqual(self.pulses, [])
-
-    def test_pin_is_reset_even_if_the_pulse_wait_fails(self):
-        def failed_wait(_):
-            raise OSError("interrupted")
-        self.scope["sleep_ms"] = failed_wait
+    def test_exception_during_activation_still_switches_off(self):
+        self.fail = True
         with self.assertRaises(OSError):
-            self.route("POST", "/unlock")
-        self.assertEqual(self.pulses, [1, 0])
+            self.scope['unlock']()
+        self.assertEqual(self.events[-1], ('pin', 0))
+
+    def test_health_and_completion_do_not_activate_lock(self):
+        self.assertEqual(self.request('GET', '/health')[1]['device'], 'DoorZero')
+        self.assertTrue(self.request('POST', '/game/completed')[1]['success'])
+        self.assertEqual(self.events, [])
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()

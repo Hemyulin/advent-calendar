@@ -186,6 +186,8 @@ final bellMelodies = [
     'maoz-tzur',
     'Maoz Tzur',
     [
+      // The first high C is an eighth-note pickup at beat 7.5;
+      // the second lands on the next bar's beat one (offset 8).
       ..._phrase('f c f bFlat a g f highC highC highD g a bFlat a g f', [
         1,
         1,
@@ -193,9 +195,9 @@ final bellMelodies = [
         1,
         1,
         1,
-        2,
+        1.5,
         .5,
-        .5,
+        1,
         1,
         1,
         .5,

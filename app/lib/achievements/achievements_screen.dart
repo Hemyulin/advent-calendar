@@ -8,6 +8,7 @@ import '../challenges/bells/bell_melodies.dart';
 import 'achievement_art.dart';
 import 'achievement_scope.dart';
 import '../content/calendar_day.dart';
+import '../content/game_access_scope.dart';
 import '../challenges/games/game_catalog.dart';
 import '../challenges/games/gift_reward_scope.dart';
 import '../challenges/gift_reward.dart';
@@ -15,6 +16,7 @@ import '../challenges/gift_reward.dart';
 // Individual goals launch the relevant game; aggregate goals use collections.
 Minigame? gameForAchievement(String id) => switch (id) {
   'freshBag' => Minigame.trash,
+  'goyVey' => Minigame.goyVey,
   'shoe' => Minigame.shoe,
   'menorahs' || 'cleanOy' || 'noJewishMisses' => Minigame.oyVey,
   'memory' => Minigame.memory,
@@ -187,15 +189,20 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           key: ValueKey('achievement-${achievement.id}'),
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (_) => _AchievementDetail(
-                store: widget.store,
-                achievement: achievement,
-                calendar: widget.calendar,
+          onTap: () {
+            final inherit = GameAccessScope.capture(context);
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => inherit(
+                  _AchievementDetail(
+                    store: widget.store,
+                    achievement: achievement,
+                    calendar: widget.calendar,
+                  ),
+                ),
               ),
-            ),
-          ),
+            );
+          },
           child: ViewportFit(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -310,27 +317,39 @@ class _AchievementDetailState extends State<_AchievementDetail> {
     GameSkin skin = GameSkin.christmas,
     String? melodyId,
   }) async {
+    if (!GameAccessScope.allow(
+      context,
+      game,
+      difficulty,
+      skin: skin,
+      melodyId: melodyId,
+    )) {
+      return;
+    }
+    final inherit = GameAccessScope.capture(context);
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => AchievementScope(
-          record: (facts) => widget.store.record(
-            AchievementRun(
-              day: null,
-              game: game,
-              difficulty: difficulty,
-              facts: facts,
+        builder: (_) => inherit(
+          AchievementScope(
+            record: (facts) => widget.store.record(
+              AchievementRun(
+                day: null,
+                game: game,
+                difficulty: difficulty,
+                facts: facts,
+              ),
             ),
-          ),
-          child: GiftRewardScope(
-            openGift: () async => GiftOpenResult.replay,
-            child: buildMinigame(
-              game,
-              difficulty,
-              () async {},
-              skin: skin,
-              melodyId: melodyId,
-              alreadyCompleted: widget.store.tokenComplete(
-                '${skin == GameSkin.hanukkah ? 'skin' : 'game'}:${game.name}',
+            child: GiftRewardScope(
+              openGift: () async => GiftOpenResult.replay,
+              child: buildMinigame(
+                game,
+                difficulty,
+                () async {},
+                skin: skin,
+                melodyId: melodyId,
+                alreadyCompleted: widget.store.tokenComplete(
+                  '${skin == GameSkin.hanukkah ? 'skin' : 'game'}:${game.name}',
+                ),
               ),
             ),
           ),
@@ -345,9 +364,9 @@ class _AchievementDetailState extends State<_AchievementDetail> {
       'workshop',
       'candy',
     }.contains(widget.achievement.id);
-    final difficulties = multiple
-        ? GameDifficulty.values
-        : [GameDifficulty.normal];
+    final difficulties = game == Minigame.trash
+        ? [GameDifficulty.normal]
+        : GameDifficulty.values;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -355,7 +374,7 @@ class _AchievementDetailState extends State<_AchievementDetail> {
           GameSkin.christmas,
           if (supportsHanukkah(game)) GameSkin.hanukkah,
         ]) ...[
-          if (multiple) ...[
+          if (supportsHanukkah(game)) ...[
             Text(
               skin == GameSkin.hanukkah ? 'Chanukka' : 'Weihnachten',
               style: const TextStyle(color: CalendarStyle.muted),
@@ -372,11 +391,29 @@ class _AchievementDetailState extends State<_AchievementDetail> {
                   key: ValueKey(
                     'achievement-play-${skin.name}-${difficulty.name}',
                   ),
-                  onPressed: () => _practice(game, difficulty, skin: skin),
+                  onPressed:
+                      GameAccessScope.reason(
+                            context,
+                            game,
+                            difficulty,
+                            skin: skin,
+                          ) ==
+                          null
+                      ? () => _practice(game, difficulty, skin: skin)
+                      : null,
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      if (multiple) ...[
+                      if (GameAccessScope.reason(
+                            context,
+                            game,
+                            difficulty,
+                            skin: skin,
+                          ) !=
+                          null) ...[
+                        const Icon(Icons.lock_outline_rounded, size: 16),
+                        const SizedBox(width: 6),
+                      ] else if (multiple) ...[
                         Icon(
                           widget.store.tokenComplete(
                                 'bonus:${game == Minigame.maze ? 'candy' : game.name}:${difficulty.name}',
@@ -388,10 +425,8 @@ class _AchievementDetailState extends State<_AchievementDetail> {
                         const SizedBox(width: 6),
                       ],
                       Text(
-                        multiple
+                        difficulties.length > 1
                             ? difficulty.label
-                            : skin == GameSkin.hanukkah
-                            ? 'Chanukka · ${difficulty.label}'
                             : 'Jetzt ausprobieren',
                       ),
                     ],
@@ -407,15 +442,20 @@ class _AchievementDetailState extends State<_AchievementDetail> {
 
   bool _onlyOpen = false;
 
-  void _openAward(Achievement award) => Navigator.of(context).push(
-    MaterialPageRoute<void>(
-      builder: (_) => _AchievementDetail(
-        store: widget.store,
-        achievement: award,
-        calendar: widget.calendar,
+  void _openAward(Achievement award) {
+    final inherit = GameAccessScope.capture(context);
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => inherit(
+          _AchievementDetail(
+            store: widget.store,
+            achievement: award,
+            calendar: widget.calendar,
+          ),
+        ),
       ),
-    ),
-  );
+    );
+  }
 
   Achievement? _related(String token) {
     if (token.startsWith('achievement:')) {
@@ -429,15 +469,60 @@ class _AchievementDetailState extends State<_AchievementDetail> {
         .firstOrNull;
   }
 
-  VoidCallback? _openObjective(String token) {
+  GameDifficulty? _songDifficulty;
+  GameDifficulty get _selectedSongDifficulty =>
+      _songDifficulty ??
+      (GameAccessScope.maybeOf(context) == null
+          ? GameDifficulty.normal
+          : GameDifficulty.easy);
+
+  String? _objectiveReason(String token) {
     if (token.startsWith('game:') || token.startsWith('skin:')) {
       final game = Minigame.values.byName(token.split(':').last);
-      return () => _practice(
-        game,
-        GameDifficulty.normal,
-        skin: token.startsWith('skin:')
-            ? GameSkin.hanukkah
-            : GameSkin.christmas,
+      final skin = token.startsWith('skin:')
+          ? GameSkin.hanukkah
+          : GameSkin.christmas;
+      final reasons = [
+        for (final d in GameDifficulty.values)
+          GameAccessScope.reason(context, game, d, skin: skin),
+      ];
+      return reasons.contains(null) ? null : reasons.first;
+    }
+    if (token.startsWith('bonus:bells:')) {
+      final id = token.substring(12);
+      final index = bellMelodies.indexWhere((m) => m.id == id);
+      return GameAccessScope.reason(
+        context,
+        Minigame.bells,
+        _selectedSongDifficulty,
+        melodyId: id,
+        skin: index >= 8 ? GameSkin.hanukkah : GameSkin.christmas,
+      );
+    }
+    return null;
+  }
+
+  VoidCallback? _openObjective(String token) {
+    final locked = _objectiveReason(token);
+    if (locked != null) {
+      return () => ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(locked)));
+    }
+    if (token.startsWith('game:') || token.startsWith('skin:')) {
+      final game = Minigame.values.byName(token.split(':').last);
+      return () => showDialog<void>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: Text(game.title),
+          content: _launchOptions(game),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Schließen'),
+            ),
+          ],
+        ),
       );
     }
     if (token.startsWith('bonus:bells:')) {
@@ -445,7 +530,7 @@ class _AchievementDetailState extends State<_AchievementDetail> {
       final index = bellMelodies.indexWhere((m) => m.id == id);
       return () => _practice(
         Minigame.bells,
-        GameDifficulty.normal,
+        _selectedSongDifficulty,
         melodyId: id,
         skin: index >= 8 ? GameSkin.hanukkah : GameSkin.christmas,
       );
@@ -467,6 +552,21 @@ class _AchievementDetailState extends State<_AchievementDetail> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (a.id == 'bells') ...[
+          DropdownButtonFormField<GameDifficulty>(
+            key: const ValueKey('achievement-song-difficulty'),
+            initialValue: _selectedSongDifficulty,
+            decoration: const InputDecoration(labelText: 'Schwierigkeit'),
+            items: [
+              for (final d in GameDifficulty.values)
+                DropdownMenuItem(value: d, child: Text(d.label)),
+            ],
+            onChanged: (d) {
+              if (d != null) setState(() => _songDifficulty = d);
+            },
+          ),
+          const SizedBox(height: 8),
+        ],
         if (a.requirements.length > 6)
           Align(
             alignment: Alignment.centerLeft,
@@ -491,16 +591,20 @@ class _AchievementDetailState extends State<_AchievementDetail> {
                   vertical: 4,
                 ),
                 leading: Icon(
-                  _complete(token)
+                  _objectiveReason(token) != null
+                      ? Icons.lock_outline_rounded
+                      : _complete(token)
                       ? Icons.check_circle_outline
                       : Icons.circle_outlined,
                   color: CalendarStyle.green,
                 ),
                 title: Text(
                   objectiveLabel(token),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
-                    color: CalendarStyle.green,
+                    color: _objectiveReason(token) != null
+                        ? CalendarStyle.muted
+                        : CalendarStyle.green,
                   ),
                 ),
                 trailing: _openObjective(token) == null

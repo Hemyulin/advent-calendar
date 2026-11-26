@@ -28,12 +28,66 @@ void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
   test(
+    'GOY vey award is earned only by a clean winning Christmas run',
+    () async {
+      final store = AchievementStore();
+      await store.ready;
+      addTearDown(store.dispose);
+      await store.record(run(Minigame.oyVey, feats: {RunFeat.cleanGoyVey}));
+      expect(store.earned(achievement('goyVey')), isFalse);
+      await store.record(run(Minigame.goyVey));
+      expect(store.earned(achievement('goyVey')), isFalse);
+      await store.record(
+        const AchievementRun(
+          day: 22,
+          game: Minigame.goyVey,
+          difficulty: GameDifficulty.hard,
+          facts: RunFacts(won: false, feats: {RunFeat.cleanGoyVey}),
+        ),
+      );
+      expect(store.earned(achievement('goyVey')), isFalse);
+      final earned = await store.record(
+        run(Minigame.goyVey, feats: {RunFeat.cleanGoyVey}),
+      );
+      expect(earned.map((a) => a.id), contains('goyVey'));
+      expect(store.tokenComplete('bonus:cleanOy'), isFalse);
+      expect(store.tokenComplete('bonus:noJewishMisses'), isFalse);
+      final reloaded = AchievementStore();
+      await reloaded.ready;
+      addTearDown(reloaded.dispose);
+      expect(reloaded.earned(achievement('goyVey')), isTrue);
+    },
+  );
+
+  test(
+    'existing awards and claimed rewards survive the new GOY vey requirement',
+    () async {
+      SharedPreferences.setMockInitialValues({
+        AchievementStore.storageKey: jsonEncode({
+          'rulesVersion': 9,
+          'tokens': ['bonus:memory'],
+          'earned': ['memory', 'allGames', 'allExtras', 'allAchievements'],
+          'claimed': ['allAchievements'],
+          'rewards': {},
+        }),
+      });
+      final store = AchievementStore();
+      await store.ready;
+      addTearDown(store.dispose);
+      expect(store.earned(achievement('memory')), isTrue);
+      expect(store.earned(achievement('allGames')), isFalse);
+      expect(store.earned(finalReward), isFalse);
+      expect(store.claimed(finalReward), isTrue);
+    },
+  );
+
+  test(
     'all rules have a finite checklist and all extras cover the complete finite checklist',
     () {
       expect(achievements.map((a) => a.id).toSet().length, achievements.length);
       expect(
         achievement('allExtras').requirements.length,
-        18 + bellMelodies.length,
+        19 + bellMelodies.length,
       );
       final individual = achievements
           .skip(3)
@@ -282,7 +336,7 @@ void main() {
   );
 
   test(
-    '24 distinct days and ten distinct games; repeats never inflate progress',
+    '24 distinct days and all distinct games; repeats never inflate progress',
     () async {
       final store = AchievementStore();
       await store.ready;
@@ -297,7 +351,10 @@ void main() {
       final reloaded = AchievementStore();
       await reloaded.ready;
       expect(reloaded.progress(achievement('allDays')), 24);
-      expect(reloaded.progress(achievement('allGames')), 10);
+      expect(
+        reloaded.progress(achievement('allGames')),
+        Minigame.values.length - 1,
+      );
       store.dispose();
       reloaded.dispose();
     },
@@ -320,6 +377,7 @@ void main() {
       await store.record(
         run(Minigame.oyVey, feats: {RunFeat.onlyMenorahs, RunFeat.cleanOyVey}),
       );
+      await store.record(run(Minigame.goyVey, feats: {RunFeat.cleanGoyVey}));
       await store.record(run(Minigame.walkHome, feats: {RunFeat.cleanWalk}));
       await store.record(run(Minigame.walkHome, feats: {RunFeat.roughWalk}));
       await store.record(
@@ -366,7 +424,7 @@ void main() {
       expect(store.earned(achievement('allExtras')), isTrue);
       expect(
         store.progress(achievement('allExtras')),
-        18 + bellMelodies.length,
+        19 + bellMelodies.length,
       );
       store.dispose();
     },

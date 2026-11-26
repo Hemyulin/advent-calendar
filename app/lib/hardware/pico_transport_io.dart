@@ -5,14 +5,23 @@ import 'pico_response.dart';
 
 Future<PicoResponse> getResponse(Uri uri, Duration timeout) =>
     _response('GET', uri, timeout);
-Future<PicoResponse> postResponse(Uri uri, Duration timeout) =>
-    _response('POST', uri, timeout);
+Future<PicoResponse> postResponse(
+  Uri uri,
+  Duration timeout, {
+  Map<String, String> headers = const {},
+}) => _response('POST', uri, timeout, headers: headers);
 
-Future<PicoResponse> _response(String method, Uri uri, Duration timeout) async {
+Future<PicoResponse> _response(
+  String method,
+  Uri uri,
+  Duration timeout, {
+  Map<String, String> headers = const {},
+}) async {
   final client = HttpClient()..connectionTimeout = timeout;
   try {
     return await (() async {
       final request = await client.openUrl(method, uri);
+      headers.forEach(request.headers.set);
       if (method == 'POST') request.contentLength = 0;
       request.followRedirects = false;
       final response = await request.close();

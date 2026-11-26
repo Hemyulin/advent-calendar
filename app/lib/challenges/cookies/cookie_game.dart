@@ -9,7 +9,7 @@ enum CookieShape {
   snowflake('Schneeflocke'),
   israel('Israel-Umriss'),
   davidStar('Davidstern'),
-  temple('Tempel'),
+  temple('Zweiter Tempel'),
   hanukkiah('Chanukkiah');
 
   const CookieShape(this.label);
@@ -72,23 +72,28 @@ class CookieOutline {
       );
     }
     if (shape == CookieShape.temple) {
-      return CookieOutline(const [
-        CookiePoint(.37, .12),
-        CookiePoint(.63, .12),
-        CookiePoint(.63, .27),
-        CookiePoint(.8, .27),
-        CookiePoint(.8, .7),
-        CookiePoint(.85, .7),
-        CookiePoint(.85, .77),
-        CookiePoint(.91, .77),
-        CookiePoint(.91, .86),
-        CookiePoint(.09, .86),
-        CookiePoint(.09, .77),
-        CookiePoint(.15, .77),
-        CookiePoint(.15, .7),
-        CookiePoint(.2, .7),
-        CookiePoint(.2, .27),
-        CookiePoint(.37, .27),
+      // Second Temple silhouette with shallow roof points (90-degree tips),
+      // broad lower wings and a stepped platform. The cutter follows the roof.
+      return CookieOutline([
+        const CookiePoint(.3, .2),
+        for (var tooth = 0; tooth < 8; tooth++) ...[
+          CookiePoint(.325 + tooth * .05, .175),
+          CookiePoint(.35 + tooth * .05, .2),
+        ],
+        const CookiePoint(.7, .31),
+        const CookiePoint(.82, .31),
+        const CookiePoint(.82, .7),
+        const CookiePoint(.85, .7),
+        const CookiePoint(.85, .77),
+        const CookiePoint(.91, .77),
+        const CookiePoint(.91, .86),
+        const CookiePoint(.09, .86),
+        const CookiePoint(.09, .77),
+        const CookiePoint(.15, .77),
+        const CookiePoint(.15, .7),
+        const CookiePoint(.18, .7),
+        const CookiePoint(.18, .31),
+        const CookiePoint(.3, .31),
       ]);
     }
     if (shape == CookieShape.hanukkiah) {

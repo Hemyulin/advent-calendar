@@ -13,6 +13,8 @@ import '../challenges/games/challenge_assistance.dart';
 import '../challenges/games/gift_reward_scope.dart';
 import '../hardware/lock_gateway.dart';
 import '../content/calendar_day.dart';
+import '../content/calendar_access.dart';
+import '../content/game_access_scope.dart';
 import '../content/calendar_schedule.dart';
 import '../progress/local_progress_repository.dart';
 import '../achievements/achievement_store.dart';
@@ -60,6 +62,7 @@ class _CalendarScreenState extends State<CalendarScreen>
   double _swipeDistance = 0;
   late final ProgressRepository _progressRepository;
   late final CalendarSchedule _schedule;
+  late final CalendarAccess _access;
   late final AchievementStore _achievements;
   late final PicoService? _picoService;
   late final ChallengeCompletionHandler _completionHandler;
@@ -73,6 +76,12 @@ class _CalendarScreenState extends State<CalendarScreen>
     _schedule = widget.schedule ?? CalendarSchedule();
     _progressRepository =
         widget.progressRepository ?? LocalProgressRepository();
+    _access = CalendarAccess(
+      schedule: _schedule,
+      now: () => _now,
+      designPreview: widget.previewAllDays,
+    );
+    _access.addListener(_accessChanged);
     try {
       _picoService = widget.picoService ?? PicoService();
     } catch (_) {
@@ -90,6 +99,14 @@ class _CalendarScreenState extends State<CalendarScreen>
     _loadProgress();
     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToSelected());
   }
+
+  void _accessChanged() {
+    if (mounted) setState(() {});
+  }
+
+  void _lockedDay() => ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(const SnackBar(content: Text('Heute noch nicht!')));
 
   void _resetAdminTaps() {
     _adminTapTimer?.cancel();
@@ -122,6 +139,7 @@ class _CalendarScreenState extends State<CalendarScreen>
           builder: (_) => AdminScreen(
             picoService: _picoService,
             achievements: _achievements,
+            access: _access,
           ),
         ),
       );
@@ -137,6 +155,7 @@ class _CalendarScreenState extends State<CalendarScreen>
     final midnight = DateTime(now.year, now.month, now.day + 1);
     _midnightTimer = Timer(midnight.difference(now), () {
       if (!mounted) return;
+      _access.refreshDate();
       setState(() {});
       _scheduleDateRefresh();
     });
@@ -146,6 +165,7 @@ class _CalendarScreenState extends State<CalendarScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state != AppLifecycleState.resumed) _resetAdminTaps();
     if (state == AppLifecycleState.resumed) {
+      _access.refreshDate();
       setState(() {});
       _scheduleDateRefresh();
     }
@@ -153,6 +173,7 @@ class _CalendarScreenState extends State<CalendarScreen>
 
   Future<void> _loadProgress() async {
     final completed = await _progressRepository.completedChallengeIds();
+    _access.updateCompleted(completed);
     if (mounted) setState(() => _completed = completed);
     try {
       await _achievements.importCompletedDays(completed);
@@ -162,33 +183,47 @@ class _CalendarScreenState extends State<CalendarScreen>
   }
 
   Future<void> _openDay(int number) async {
-    await _schedule.ready;
+    await _access.ready;
     await _loadProgress();
     if (!mounted) return;
     final day = calendarDays(
       _now,
       _completed,
-      unlockAll: widget.previewAllDays,
+      unlockAll: _access.unlockAll,
     )[number - 1];
-    if (!day.isAvailable) return;
+    if (!day.isAvailable) {
+      _lockedDay();
+      return;
+    }
+    await _access.markPlayed(_schedule.forDay(number).game);
+    if (!mounted) return;
     setState(() => _selected = number);
     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToSelected());
     final assignment = _schedule.forDay(number);
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => GiftRewardScope(
-          openGift: () => _completionHandler.openGift(day.content.challengeId),
-          child: FlexibleChallenge(
-            assignment: assignment,
-            alreadyCompleted: day.state == DayState.completed,
-            onComplete: () =>
-                _completionHandler.complete(day.content.challengeId),
-            record: (game, difficulty, facts) => _achievements.record(
-              AchievementRun(
-                day: number,
-                game: game,
-                difficulty: difficulty,
-                facts: facts,
+        builder: (_) => GameAccessScope(
+          access: _access,
+          activeDay: number,
+          child: GiftRewardScope(
+            openGift: () =>
+                _completionHandler.openGift(day.content.challengeId),
+            reopenBox: () =>
+                _completionHandler.reopenBox(day.content.challengeId),
+            child: FlexibleChallenge(
+              assignment: assignment,
+              alreadyCompleted: day.state == DayState.completed,
+              onComplete: () async {
+                await _completionHandler.complete(day.content.challengeId);
+                await _loadProgress();
+              },
+              record: (game, difficulty, facts) => _achievements.record(
+                AchievementRun(
+                  day: number,
+                  game: game,
+                  difficulty: difficulty,
+                  facts: facts,
+                ),
               ),
             ),
           ),
@@ -199,21 +234,21 @@ class _CalendarScreenState extends State<CalendarScreen>
   }
 
   Future<void> _openAchievements() async {
-    await _schedule.ready;
+    await _access.ready;
     await _loadProgress();
     if (!mounted) return;
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => AchievementsScreen(
-          store: _achievements,
-          calendar: AchievementCalendar(
-            days: () => calendarDays(
-              _now,
-              _completed,
-              unlockAll: widget.previewAllDays,
+        builder: (_) => GameAccessScope(
+          access: _access,
+          child: AchievementsScreen(
+            store: _achievements,
+            calendar: AchievementCalendar(
+              days: () =>
+                  calendarDays(_now, _completed, unlockAll: _access.unlockAll),
+              openDay: _openDay,
+              titleForDay: (number) => _schedule.forDay(number).title,
             ),
-            openDay: _openDay,
-            titleForDay: (number) => _schedule.forDay(number).title,
           ),
         ),
       ),
@@ -244,7 +279,7 @@ class _CalendarScreenState extends State<CalendarScreen>
     final day = calendarDays(
       _now,
       _completed,
-      unlockAll: widget.previewAllDays,
+      unlockAll: _access.unlockAll,
     )[number - 1];
     if (!day.isAvailable) return;
     setState(() => _selected = number);
@@ -267,6 +302,8 @@ class _CalendarScreenState extends State<CalendarScreen>
     _midnightTimer?.cancel();
     _resetAdminTaps();
     _scrollController.dispose();
+    _access.removeListener(_accessChanged);
+    _access.dispose();
     if (widget.schedule == null) _schedule.dispose();
     if (widget.achievementStore == null) _achievements.dispose();
     if (widget.picoService == null) _picoService?.dispose();
@@ -275,11 +312,7 @@ class _CalendarScreenState extends State<CalendarScreen>
 
   @override
   Widget build(BuildContext context) {
-    final days = calendarDays(
-      _now,
-      _completed,
-      unlockAll: widget.previewAllDays,
-    );
+    final days = calendarDays(_now, _completed, unlockAll: _access.unlockAll);
     final day = days[_selected - 1];
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
     final tileHeight = math.max(
@@ -362,6 +395,7 @@ class _CalendarScreenState extends State<CalendarScreen>
                                 ),
                                 child: IllustratedDoor(
                                   day: day,
+                                  onLockedTap: _lockedDay,
                                   onTap: day.isAvailable
                                       ? () async {
                                           if (_selected == day.number) {
@@ -397,7 +431,7 @@ class _CalendarScreenState extends State<CalendarScreen>
                               ? () {
                                   _selectDay(index + 1);
                                 }
-                              : null,
+                              : _lockedDay,
                         ),
                       ),
                     ),
@@ -436,7 +470,7 @@ class _DayTile extends StatelessWidget {
       label: '${day.number}. Dezember, $label',
       selected: selected,
       button: true,
-      enabled: day.isAvailable,
+      enabled: onTap != null,
       onTap: onTap,
       child: ExcludeSemantics(
         child: Padding(

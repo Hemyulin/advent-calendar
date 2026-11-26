@@ -56,14 +56,20 @@ void main() {
       expect(melody.bells.length, inInclusiveRange(6, 8));
     }
   });
-  test('Maoz Tzur repeats the high C as two eighth notes', () {
+  test('Maoz Tzur places its first repeated high C before beat one', () {
     final melody = bellMelodies.firstWhere((m) => m.id == 'maoz-tzur');
     expect(melody.notes.length, 16);
     expect(melody.notes.sublist(7, 9).map((n) => n.pitch), [
       BellNote.highC,
       BellNote.highC,
     ]);
-    expect(melody.notes.sublist(7, 9).map((n) => n.beats), [.5, .5]);
+    expect(melody.notes.sublist(7, 9).map((n) => n.beats), [.5, 1]);
+    double onset(int index) => melody.notes
+        .take(index)
+        .fold<double>(0, (sum, n) => sum + n.beats + n.restBeats);
+    expect(onset(7), 7.5); // Eighth-note pickup before the bar line.
+    expect(onset(8), 8); // The repeated C lands on beat one.
+    expect(onset(9), 9);
     expect(melody.notes.fold<double>(0, (sum, n) => sum + n.beats), 16);
   });
   test('difficulty uses trickier patterns, not a growing song-length ladder', () {

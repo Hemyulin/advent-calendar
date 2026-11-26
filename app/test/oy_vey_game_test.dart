@@ -14,6 +14,70 @@ MouthObservation pose(double ratio, {double x = .5}) =>
     MouthObservation(x: x, y: .55, width: .12, gapRatio: ratio);
 
 void main() {
+  test(
+    'GOY vey reverses all six object rules and retains the three-error limit',
+    () {
+      for (final kind in FestiveObject.values) {
+        final g = OyVeyGame(
+          const OyVeyLevel(christmasTargets: true, spawnSeconds: 999),
+        );
+        expect(g.isTarget(kind), !kind.correct);
+        g.objects.add(item(1, kind));
+        g.advance(.01, open);
+        expect(g.collected, kind.correct ? 0 : 1);
+        expect(g.mistakes, kind.correct ? 1 : 0);
+      }
+      final loss = OyVeyGame(
+        const OyVeyLevel(christmasTargets: true, spawnSeconds: 999),
+      );
+      loss.objects.addAll([
+        for (var i = 0; i < 3; i++) item(i, FestiveObject.values[i]),
+      ]);
+      loss.advance(.01, open);
+      expect(loss.lost, isTrue);
+      expect(loss.feedback, 'GOY vey!');
+    },
+  );
+
+  test(
+    'a perfect GOY vey run spawns and collects exactly fifteen Christmas targets',
+    () {
+      final g = OyVeyGame(
+        const OyVeyLevel(
+          christmasTargets: true,
+          seed: 1,
+          startSpeed: 1,
+          spawnSeconds: .5,
+        ),
+      );
+      final generated = <int>{};
+      for (var tick = 0; tick < 10000 && !g.won && !g.lost; tick++) {
+        final candidates =
+            g.objects
+                .where((o) => g.isTarget(o.kind) && o.y >= .45 && o.y <= .7)
+                .toList()
+              ..sort((a, b) => b.y.compareTo(a.y));
+        g.resetTracking();
+        g.advance(
+          .01,
+          candidates.isEmpty ? null : CatchMouth(candidates.first.x, .6, .04),
+        );
+        generated.addAll(
+          g.objects.where((o) => g.isTarget(o.kind)).map((o) => o.id),
+        );
+        expect(
+          g.collected + g.objects.where((o) => g.isTarget(o.kind)).length,
+          lessThanOrEqualTo(15),
+        );
+      }
+      expect(g.won, isTrue);
+      expect(g.collected, 15);
+      expect(g.mistakes, 0);
+      expect(generated.length, 15);
+      expect(g.menorahsCollected, 0);
+      expect(g.feedback, 'Ho, ho, ho!');
+    },
+  );
   test('every missed Jewish kind counts once, including without tracking', () {
     for (final kind in FestiveObject.values) {
       final g = game()..objects.add(item(1, kind, y: 1.1));

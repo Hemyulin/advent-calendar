@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import '../../presentation/calendar_style.dart';
+import '../../presentation/app_haptics.dart';
 import '../completion.dart';
 import '../games/game_widgets.dart';
 import 'battery_art.dart';
@@ -286,7 +287,7 @@ class _BatteryScreenState extends State<BatteryScreen>
         _game.phase == BatteryPhase.won || _game.phase == BatteryPhase.lost;
     final enabled = !terminal && !_paused && _foreground;
     final reduced = MediaQuery.disableAnimationsOf(context);
-    return GameScaffold(
+    final screen = GameScaffold(
       title: hanukkah ? 'Öl-Panik' : 'Akku-Panik',
       instructions: hanukkah
           ? 'Fünf Lichter, ein Ölkrug. Zieh den Krug zum ersten Licht und danach vom versorgten Licht zum nächsten. Halte alle Ölstände ${widget.level.duration.round()} Sekunden über 0 %. Luftzüge verbrauchen zusätzlich Öl.'
@@ -575,6 +576,7 @@ class _BatteryScreenState extends State<BatteryScreen>
           ),
       ],
     );
+    return HapticsScope(enabled: _haptics, child: screen);
   }
 }
 

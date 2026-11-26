@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../presentation/calendar_style.dart';
+import '../presentation/app_haptics.dart';
 import '../presentation/viewport_fit.dart';
 
 /// First-launch copy is independent of calendar progress and achievements.
@@ -40,6 +41,7 @@ class _WelcomeGateState extends State<WelcomeGate> {
 
   Future<void> _continue() async {
     if (_saving) return;
+    AppHaptics.tap(context);
     setState(() => _saving = true);
     try {
       await (await SharedPreferences.getInstance()).setBool(

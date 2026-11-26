@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
 import '../../presentation/calendar_style.dart';
+import '../../presentation/app_haptics.dart';
 import '../completion.dart';
 import '../games/game_widgets.dart';
 import 'chimney_game.dart';
@@ -187,7 +188,12 @@ class _ChimneyScreenState extends State<ChimneyScreen>
                           child: GestureDetector(
                             key: ValueKey('chimney-tile-$index'),
                             onTap: enabled
-                                ? () => setState(() => _game.rotate(index))
+                                ? () {
+                                    if (_game.rotate(index)) {
+                                      AppHaptics.selection(context);
+                                      setState(() {});
+                                    }
+                                  }
                                 : null,
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 160),

@@ -2,6 +2,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 import 'game_skin.dart';
 import '../../presentation/calendar_style.dart';
+import '../../presentation/app_haptics.dart';
 
 class GameSkinScope extends InheritedWidget {
   const GameSkinScope({
@@ -120,6 +121,7 @@ class _SkinnableGameState extends State<SkinnableGame> {
         ? GameSkin.christmas
         : GameSkin.hanukkah;
     if (widget.canSwitchTo?.call(context, next) == false) return;
+    AppHaptics.selection(context);
     setState(() {
       _skin = next;
       _replaying = true;

@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../presentation/calendar_style.dart';
+import '../../presentation/app_haptics.dart';
 import '../completion.dart';
 import '../games/game_widgets.dart';
 import '../games/difficulty.dart';
@@ -53,7 +54,13 @@ class _WorkshopScreenState extends State<WorkshopScreen> {
     final before = _game.placed;
     if (!_game.move(direction)) return;
     setState(() {});
-    if (_game.placed > before) HapticFeedback.lightImpact();
+    if (!_game.won) {
+      if (_game.placed > before) {
+        AppHaptics.tap(context);
+      } else {
+        AppHaptics.selection(context);
+      }
+    }
     if (_game.won) {
       _completionTimer?.cancel();
       _completionTimer = Timer(

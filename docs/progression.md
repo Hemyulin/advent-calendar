@@ -4,7 +4,9 @@ Normal launches use the local device date. Before December all doors are locked;
 on December 1 only door 1 is available, then one more each day. Earlier unsolved
 doors remain available; completed doors can be replayed. Future dates remain
 locked even if old development sessions saved future completions. Locked doors
-have a lock and respond with **Heute noch nicht!** instead of opening a game.
+have a lock and briefly rattle when tapped instead of opening a game or showing
+a bottom toast. The tapped carousel tile also rattles. Reduced-motion settings
+suppress the translation; locked semantics and haptic feedback remain available.
 The existing midnight/resume refresh updates availability without polling.
 
 ## Shared policy

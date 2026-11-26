@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import '../../presentation/calendar_style.dart';
+import '../../presentation/app_haptics.dart';
 import '../completion.dart';
 import '../maze/maze_game.dart' show Vec2;
 import '../maze/tilt_source.dart';
@@ -81,12 +82,14 @@ class _WalkScreenState extends State<WalkScreen>
           : _useSensors
           ? ((_latest - _zero) * 3.4).clamp(-1.0, 1.0)
           : _touchControl;
+      final bumps = _game.bumps;
       setState(
         () => _game.advance(
           (elapsed - previous).inMicroseconds / 1e6,
           control.toDouble(),
         ),
       );
+      if (_game.bumps > bumps) AppHaptics.error(context);
       if (_game.phase != WalkPhase.walking) _finish();
     });
     _listen();

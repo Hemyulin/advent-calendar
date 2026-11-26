@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../content/calendar_day.dart';
 import 'calendar_style.dart';
+import 'app_haptics.dart';
 import 'festive_art.dart';
 
 /// A hinged paper door. Only the leaf moves; its frame and lights stay put.
@@ -39,6 +40,7 @@ class _IllustratedDoorState extends State<IllustratedDoor>
     }
     final onTap = widget.onTap;
     if (onTap == null) return;
+    AppHaptics.tap(context);
     setState(() => _opening = true);
     try {
       if (!MediaQuery.disableAnimationsOf(context)) {

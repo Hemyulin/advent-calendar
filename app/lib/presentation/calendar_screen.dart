@@ -3,6 +3,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'viewport_fit.dart';
+import 'app_haptics.dart';
+import 'shake_feedback.dart';
 
 import '../admin/admin_authenticator.dart';
 import '../admin/admin_pin_dialog.dart';
@@ -56,6 +58,8 @@ class _CalendarScreenState extends State<CalendarScreen>
   final _scrollController = ScrollController();
   Timer? _midnightTimer, _adminTapTimer;
   int _adminTaps = 0;
+  int _lockedAttempt = 0;
+  int? _lockedNumber;
   bool _adminOpening = false;
   Set<String> _completed = {};
   late int _selected;
@@ -104,9 +108,13 @@ class _CalendarScreenState extends State<CalendarScreen>
     if (mounted) setState(() {});
   }
 
-  void _lockedDay() => ScaffoldMessenger.of(context)
-    ..hideCurrentSnackBar()
-    ..showSnackBar(const SnackBar(content: Text('Heute noch nicht!')));
+  void _lockedDay([int? number]) {
+    AppHaptics.locked(context);
+    setState(() {
+      _lockedNumber = number ?? _selected;
+      _lockedAttempt++;
+    });
+  }
 
   void _resetAdminTaps() {
     _adminTapTimer?.cancel();
@@ -192,7 +200,7 @@ class _CalendarScreenState extends State<CalendarScreen>
       unlockAll: _access.unlockAll,
     )[number - 1];
     if (!day.isAvailable) {
-      _lockedDay();
+      _lockedDay(number);
       return;
     }
     await _access.markPlayed(_schedule.forDay(number).game);
@@ -234,6 +242,7 @@ class _CalendarScreenState extends State<CalendarScreen>
   }
 
   Future<void> _openAchievements() async {
+    AppHaptics.tap(context);
     await _access.ready;
     await _loadProgress();
     if (!mounted) return;
@@ -281,7 +290,11 @@ class _CalendarScreenState extends State<CalendarScreen>
       _completed,
       unlockAll: _access.unlockAll,
     )[number - 1];
-    if (!day.isAvailable) return;
+    if (!day.isAvailable) {
+      _lockedDay(number);
+      return;
+    }
+    AppHaptics.selection(context);
     setState(() => _selected = number);
     _scrollToSelected();
   }
@@ -393,16 +406,22 @@ class _CalendarScreenState extends State<CalendarScreen>
                                   192.0,
                                   280.0,
                                 ),
-                                child: IllustratedDoor(
-                                  day: day,
-                                  onLockedTap: _lockedDay,
-                                  onTap: day.isAvailable
-                                      ? () async {
-                                          if (_selected == day.number) {
-                                            await _openDay(day.number);
+                                child: ShakeFeedback(
+                                  key: const ValueKey('calendar-door-feedback'),
+                                  trigger: _lockedNumber == day.number
+                                      ? _lockedAttempt
+                                      : 0,
+                                  child: IllustratedDoor(
+                                    day: day,
+                                    onLockedTap: () => _lockedDay(day.number),
+                                    onTap: day.isAvailable
+                                        ? () async {
+                                            if (_selected == day.number) {
+                                              await _openDay(day.number);
+                                            }
                                           }
-                                        }
-                                      : null,
+                                        : null,
+                                  ),
                                 ),
                               ),
                             ),
@@ -424,14 +443,20 @@ class _CalendarScreenState extends State<CalendarScreen>
                         scrollDirection: Axis.horizontal,
                         itemExtent: constraints.maxWidth / 5,
                         itemCount: days.length,
-                        itemBuilder: (context, index) => _DayTile(
-                          day: days[index],
-                          selected: _selected == index + 1,
-                          onTap: days[index].isAvailable
-                              ? () {
-                                  _selectDay(index + 1);
-                                }
-                              : _lockedDay,
+                        itemBuilder: (context, index) => ShakeFeedback(
+                          key: ValueKey('day-feedback-${index + 1}'),
+                          trigger: _lockedNumber == index + 1
+                              ? _lockedAttempt
+                              : 0,
+                          child: _DayTile(
+                            day: days[index],
+                            selected: _selected == index + 1,
+                            onTap: days[index].isAvailable
+                                ? () {
+                                    _selectDay(index + 1);
+                                  }
+                                : () => _lockedDay(index + 1),
+                          ),
                         ),
                       ),
                     ),

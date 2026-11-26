@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../presentation/calendar_style.dart';
+import '../../presentation/app_haptics.dart';
 import '../../presentation/viewport_fit.dart';
 import '../completion.dart';
 import '../../achievements/run_facts.dart';
@@ -49,7 +50,10 @@ class GameScaffold extends StatelessWidget {
                   IconButton(
                     key: const ValueKey('challenge-assistance'),
                     tooltip: 'Zu schwer?',
-                    onPressed: assistance.open,
+                    onPressed: () {
+                      AppHaptics.tap(context);
+                      assistance.open();
+                    },
                     icon: const Icon(Icons.tune_rounded),
                   ),
               if (GameSkinScope.maybeOf(context)?.toggleReplayTheme
@@ -87,12 +91,18 @@ class GameScaffold extends StatelessWidget {
               if (onRestart != null)
                 IconButton(
                   tooltip: 'Neu starten',
-                  onPressed: onRestart,
+                  onPressed: () {
+                    AppHaptics.tap(context);
+                    onRestart!();
+                  },
                   icon: const Icon(Icons.refresh_rounded),
                 ),
               IconButton(
                 tooltip: 'Anleitung',
-                onPressed: () => showGameHelp(context, title, instructions),
+                onPressed: () {
+                  AppHaptics.tap(context);
+                  showGameHelp(context, title, instructions);
+                },
                 icon: const Icon(Icons.help_outline_rounded),
               ),
             ],
@@ -205,7 +215,10 @@ class GameResultLayer extends StatelessWidget {
                           elevation: 18,
                           borderRadius: BorderRadius.circular(24),
                           clipBehavior: Clip.antiAlias,
-                          child: result,
+                          child: _ResultHaptics(
+                            won: result is CompletionPanel,
+                            child: result!,
+                          ),
                         ),
                       ),
                     ),
@@ -217,6 +230,40 @@ class GameResultLayer extends StatelessWidget {
         ),
     ],
   );
+}
+
+/// A result cue fires when the overlay appears, not on subsequent rebuilds.
+class _ResultHaptics extends StatefulWidget {
+  const _ResultHaptics({required this.won, required this.child});
+  final bool won;
+  final Widget child;
+  @override
+  State<_ResultHaptics> createState() => _ResultHapticsState();
+}
+
+class _ResultHapticsState extends State<_ResultHaptics> {
+  void _notify() => WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (!mounted) return;
+    if (widget.won) {
+      AppHaptics.success(context);
+    } else {
+      AppHaptics.error(context);
+    }
+  });
+  @override
+  void initState() {
+    super.initState();
+    _notify();
+  }
+
+  @override
+  void didUpdateWidget(_ResultHaptics oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.won != oldWidget.won) _notify();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 class GameStats extends StatelessWidget {
@@ -282,6 +329,7 @@ class _CompletionPanelState extends State<CompletionPanel>
   Future<void> _openGift() async {
     if (_isReplay || !_saved || _opening || _opened) return;
     final open = GiftRewardScope.maybeOf(context)?.openGift;
+    AppHaptics.tap(context);
     setState(() => _opening = true);
     // Hardware feedback and the visual reveal run independently. The shared
     // handler bounds the request and never repeats an uncertain physical action.
@@ -308,6 +356,7 @@ class _CompletionPanelState extends State<CompletionPanel>
     if (_isReplay || !_saved || !_opened || _opening) return;
     final reopen = GiftRewardScope.maybeOf(context)?.reopenBox;
     if (reopen == null) return;
+    AppHaptics.tap(context);
     setState(() => _opening = true);
     final result = await _requestGift(reopen);
     if (!mounted) return;
@@ -416,6 +465,7 @@ class _CompletionPanelState extends State<CompletionPanel>
               key: const ValueKey('completion-replay'),
               onPressed: _saved && !_opening
                   ? () {
+                      AppHaptics.tap(context);
                       _CompletionContext.of(context)?.markReplay();
                       final replay = GameSkinScope.maybeOf(context)?.replay;
                       if (replay == null) {
@@ -560,7 +610,12 @@ class _CompletionPanelState extends State<CompletionPanel>
         const SizedBox(height: 24),
         TextButton.icon(
           key: const ValueKey('completion-calendar'),
-          onPressed: _opening ? null : () => Navigator.pop(context),
+          onPressed: _opening
+              ? null
+              : () {
+                  AppHaptics.tap(context);
+                  Navigator.pop(context);
+                },
           icon: const Icon(Icons.arrow_back_rounded, size: 15),
           label: const Text(
             'Zurück zum Kalender',
@@ -599,7 +654,10 @@ class DefeatPanel extends StatelessWidget {
         ?details,
         const SizedBox(height: 14),
         FilledButton(
-          onPressed: onRetry,
+          onPressed: () {
+            AppHaptics.tap(context);
+            onRetry();
+          },
           child: const Text('Noch einmal versuchen'),
         ),
         if (ChallengeAssistance.maybeOf(context) case final assistance?)

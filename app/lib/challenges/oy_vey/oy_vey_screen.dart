@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
 import '../../presentation/calendar_style.dart';
+import '../../presentation/app_haptics.dart';
 import '../completion.dart';
 import '../games/game_widgets.dart';
 import 'mouth_camera.dart';
@@ -58,7 +59,13 @@ class _OyVeyScreenState extends State<OyVeyScreen>
         return;
       }
       final dt = (elapsed - previous).inMicroseconds / 1e6;
+      final collected = _game.collected, mistakes = _game.mistakes;
       setState(() => _game.advance(dt, _mouth, aspectRatio: _aspect));
+      if (_game.mistakes > mistakes) {
+        AppHaptics.error(context);
+      } else if (_game.collected > collected && !_game.won) {
+        AppHaptics.selection(context);
+      }
       if (_game.won || _game.lost) {
         _ticker.stop();
         if (!_testMode) unawaited(_camera.stop());
